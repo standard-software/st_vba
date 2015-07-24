@@ -733,7 +733,7 @@ End Sub
 '----------------------------------------
 
 '----------------------------------------
-'◇変数に値やオブジェクトをセットする
+'・変数に値やオブジェクトをセットする
 '----------------------------------------
 Public Sub SetValue(ByRef Variable, ByVal Value)
     If IsObject(Value) Then
@@ -1061,7 +1061,7 @@ End Sub
 '----------------------------------------
 
 '----------------------------------------
-'◇最大値最小値
+'・最大値最小値
 '----------------------------------------
 Public Function MaxValue(ParamArray Values() As Variant) As Variant
     MaxValue = Empty
@@ -1096,7 +1096,7 @@ Private Sub testMinValue()
 End Sub
 
 '----------------------------------------
-'◇値範囲
+'・値範囲
 '----------------------------------------
 Public Function InRange(ByVal MinValue As Long, _
 ByVal Value As Long, ByVal MaxValue As Long) As Boolean
@@ -1108,7 +1108,11 @@ End Function
 '----------------------------------------
 
 '----------------------------------------
-'◇First
+'◇First / Last
+'----------------------------------------
+
+'----------------------------------------
+'・First
 '----------------------------------------
 Public Function IsFirstStr(ByVal Str As String, ByVal SubStr As String) As Boolean
     Dim Result As Boolean: Result = False
@@ -1165,7 +1169,7 @@ Private Sub testExcludeFirstStr()
 End Sub
 
 '----------------------------------------
-'◇Last
+'・Last
 '----------------------------------------
 Public Function IsLastStr(ByVal Str As String, ByVal SubStr As String) As Boolean
     Dim Result As Boolean: Result = False
@@ -1222,7 +1226,7 @@ Private Sub testExcludeLastStr()
 End Sub
 
 '----------------------------------------
-'◇Both
+'・Both
 '----------------------------------------
 Public Function IncludeBothEndsStr(ByVal Str As String, ByVal SubStr As String) As String
     IncludeBothEndsStr = _
@@ -1236,20 +1240,12 @@ End Function
 
 
 '----------------------------------------
-'◇First/Last Delimiter
+'◇First / Last Delim
 '----------------------------------------
 
 '----------------------------------------
-'◇FirstStrFirstDelim
+'・FirstStrFirstDelim
 '----------------------------------------
-'Public Function FirstStrFirstDelim(ByVal Str As String, _
-'ByVal Delimiter As String) As String
-'    Dim Result As String: Result = ""
-'    Dim Strs() As String
-'    Strs = Split(Str, Delimiter)
-'    Result = Strs(LBound(Strs))
-'    FirstStrFirstDelim = Result
-'End Function
 
 Public Function FirstStrFirstDelim( _
 ByVal Value As String, ByVal Delimiter As String) As String
@@ -1272,13 +1268,8 @@ Public Sub testFirstStrFirstDelim()
 End Sub
 
 '----------------------------------------
-'◇FirstStrLastDelim
+'・FirstStrLastDelim
 '----------------------------------------
-'Public Function GetFirstStrLastDelimiter(ByVal Str As String, _
-'ByVal Delimiter As String) As String
-'    GetFirstStrLastDelimiter = _
-'        ExcludeLastStr(Str, Delimiter + LastStrLastDelim(Str, Delimiter))
-'End Function
 
 Public Function FirstStrLastDelim( _
 ByVal Value As String, ByVal Delimiter As String) As String
@@ -1302,14 +1293,8 @@ End Sub
 
 
 '----------------------------------------
-'◇LastStrFirstDelim
+'・LastStrFirstDelim
 '----------------------------------------
-'Public Function GetLastStrFirstDelimiter(ByVal Str As String, _
-'ByVal Delimiter As String) As String
-'    GetLastStrFirstDelimiter = _
-'        ExcludeFirstStr(Str, FirstStrFirstDelim(Str, Delimiter) + Delimiter)
-'End Function
-
 Public Function LastStrFirstDelim( _
 ByVal Value As String, ByVal Delimiter As String) As String
     Dim Result As String: Result = ""
@@ -1331,18 +1316,8 @@ Public Sub testLastStrFirstDelim()
 End Sub
 
 '----------------------------------------
-'◇LastStrLastDelim
+'・LastStrLastDelim
 '----------------------------------------
-
-'Public Function LastStrLastDelim(ByVal Str As String, _
-'ByVal Delimiter As String) As String
-'    Dim Result As String: Result = ""
-'    Dim Strs() As String
-'    Strs = Split(Str, Delimiter)
-'    Result = Strs(UBound(Strs))
-'    LastStrLastDelim = Result
-'End Function
-
 Public Function LastStrLastDelim( _
 ByVal S As String, ByVal Delimiter As String) As String
     Dim Result: Result = ""
@@ -1389,11 +1364,16 @@ End Function
 '----------------------------------------
 '◇文字列結合
 '----------------------------------------
-'・ 少なくとも1つのDelimiterが間に入って接続される。
-'・ Delimiterが結合の両端に付属する場合も1つになる。
-'・ 2連続で結合の両端にある場合は1つが削除される
+
+'----------------------------------------
+'・文字列結合
+'----------------------------------------
+'   ・  少なくとも1つのDelimiterが間に入って接続される。
+'   ・  Delimiterが結合の両端に付属する場合も1つになる。
+'   ・  2連続で結合の両端にある場合は1つが削除される
 '       (テストでの動作参照)
 '----------------------------------------
+
 Public Function StringCombine(ByVal Delimiter As String, _
 ParamArray Values()) As String
 
@@ -1514,6 +1494,10 @@ End Sub
 '----------------------------------------
 '◆日付時刻処理
 '----------------------------------------
+
+'----------------------------------------
+'・月の最終日を取得
+'----------------------------------------
 Public Function MonthLastDay(ByVal DateValue As Date) As Date
     MonthLastDay = DateSerial(Year(DateValue), Month(DateValue) + 1, 0)
 End Function
@@ -1529,6 +1513,9 @@ Private Sub testMonthLastDay()
         )
 End Sub
 
+'----------------------------------------
+'・月の日数取得
+'----------------------------------------
 Public Function MonthDayCount(ByVal DateValue As Date) As Long
     MonthDayCount = _
         Day(MonthLastDay(DateValue))
@@ -1545,20 +1532,27 @@ Private Sub testMonthMonthDayCount()
         )
 End Sub
 
+'----------------------------------------
+'・日付書式
+'----------------------------------------
 Public Function FormatYYYY_MM_DD( _
 ByVal DateValue As Date, ByVal Delimiter As String) As String
     FormatYYYY_MM_DD = Format(DateValue, _
         "YYYY" + Delimiter + "MM" + Delimiter + "DD")
 End Function
 
+'----------------------------------------
+'・時刻書式
+'----------------------------------------
 Public Function FormatHH_MM_SS( _
 ByVal DateValue As Date, ByVal Delimiter As String) As String
     FormatHH_MM_SS = Format(DateValue, _
         "HH" + Delimiter + "NN" + Delimiter + "SS")
 End Function
 
-'--------------------
-'◇標準的な日付時刻書式文字列の取得
+'----------------------------------------
+'・標準的な日付時刻書式文字列の取得
+'----------------------------------------
 Public Function FormatDateTimeNormal(DateValue As Date) As String
     FormatDateTimeNormal = _
         FormatYYYY_MM_DD(DateValue, "/") + _
@@ -1571,14 +1565,10 @@ End Function
 '----------------------------------------
 
 '----------------------------------------
-'◇エラーなしUBound/LBound
+'・要素無し配列に対してもエラーの起きないUBound/LBound
 '----------------------------------------
-
-'----------------------------------------
-'◇要素無し配列に対してもエラーの起きないUBound
-'----------------------------------------
-'UBoundはArray()で返される要素無しの配列には-1を返すが
-'宣言しただけの動的配列ではエラーになるのでそれを防止する。
+'   ・  UBoundはArray()で返される要素無しの配列には-1を返すが
+'       宣言しただけの動的配列ではエラーになるのでそれを防止する。
 '----------------------------------------
 Public Function UBoundNoError(ByRef Value As Variant) As Long
 On Error Resume Next
@@ -1587,9 +1577,6 @@ On Error Resume Next
     UBoundNoError = UBound(Value)
 End Function
 
-'----------------------------------------
-'◇要素無し配列に対してもエラーの起きないLBound
-'----------------------------------------
 Public Function LBoundNoError(ByRef Value As Variant) As Long
 On Error Resume Next
     Call Assert(IsArray(Value), "Error:LBoundNoError:Value is not Array.")
@@ -1598,9 +1585,9 @@ On Error Resume Next
 End Function
 
 '----------------------------------------
-'◇配列の要素数を求める関数
+'・配列の要素数を求める関数
 '----------------------------------------
-'LBound=0 でも 1 でも対応する。
+'   ・  LBound=0 でも 1 でも対応する。
 '----------------------------------------
 Public Function ArrayCount(ByRef ArrayValue As Variant) As Long
     Call Assert(IsArray(ArrayValue), "Error:ArrayCount:ArrayValue is not Array.")
@@ -1620,36 +1607,11 @@ End Sub
 
 
 '----------------------------------------
-'◇Add/Insert/Delete
+'・配列の要素を追加する
 '----------------------------------------
-
-'----------------------------------------
-'◇配列に要素を代入する関数
-'----------------------------------------
-'・ 値とオブジェクトで処理を分けるために実装
-'----------------------------------------
-'Public Sub ArraySetValueObject(ByRef ArrayValue As Variant, _
-'ByVal Index As Long, ByVal Value As Variant)
-'    Call Assert(IsArray(ArrayValue), "配列ではありません")
-'    Call Assert(ArrayDimension(ArrayValue) = 1, "1次元配列ではありません")
-'    Call Assert(ArrayCount(ArrayValue) <> 0, "配列要素がありません")
-'    Call Assert((LBound(ArrayValue) <= Index) _
-'            And (Index <= UBound(ArrayValue)), "範囲エラーです")
-'
-'    If IsObject(Value) Then
-'        Set ArrayValue(Index) = Value
-'    Else
-'        ArrayValue(Index) = Value
-'    End If
-'End Sub
-
-
-'----------------------------------------
-'◇配列の要素を追加する
-'----------------------------------------
-'・ オブジェクト値にも対応
-'・ ReDim Preserveによって
-'   LBound(Array)=0になってしまう
+'   ・  オブジェクト値にも対応
+'   ・  ReDim Preserveによって
+'       LBound(Array)=0になってしまう
 '----------------------------------------
 Public Sub ArrayAdd(ByRef ArrayValue As Variant, ByVal Value As Variant)
     Call Assert(IsArray(ArrayValue), "Error:ArrayAdd:ArrayValue is not Array.")
@@ -1677,10 +1639,10 @@ End Sub
 
 
 '----------------------------------------
-'◇配列の要素を挿入する
+'・配列の要素を挿入する
 '----------------------------------------
-'・ オブジェクト値にも対応
-'・ LBound(Array)=0でなくても対応。
+'   ・  オブジェクト値にも対応
+'   ・  LBound(Array)=0でなくても対応。
 '----------------------------------------
 Sub ArrayInsert(ByRef ArrayValue As Variant, _
 ByVal Index As Long, ByVal Value As Variant)
@@ -1718,10 +1680,10 @@ End Sub
 
 
 '----------------------------------------
-'◇配列の要素を削除する
+'・配列の要素を削除する
 '----------------------------------------
-'・ LBound(Array)=0でなくても対応。
-'・ オブジェクト値にも対応
+'   ・  LBound(Array)=0でなくても対応。
+'   ・  オブジェクト値にも対応
 '----------------------------------------
 Sub ArrayDelete(ArrayValue As Variant, Index As Long)
     Call Assert(IsArray(ArrayValue), "Error:ArrayDelete:ArrayValue is not Array.")
@@ -1763,7 +1725,7 @@ Private Sub testArrayDelete()
 End Sub
 
 '----------------------------------------
-'◇配列関数のテスト
+'・配列関数のテスト
 '----------------------------------------
 Private Sub testArrayFunctions()
   Dim A As Variant
@@ -1832,9 +1794,9 @@ End Sub
 
 
 '----------------------------------------
-'◇配列内の値を検索してIndexを返す
+'・配列内の値を検索してIndexを返す
 '----------------------------------------
-'・ LBound(Array)=0でなくても対応。
+'   ・  LBound(Array)=0でなくても対応。
 '----------------------------------------
 Public Function ArrayIndexOf(ByRef ArrayValue As Variant, ByVal Value As Variant, _
 Optional StartIndex As Long = -1) As Long
@@ -1886,9 +1848,10 @@ End Sub
 
 
 '----------------------------------------
-'◇配列内の値を検索して同一値を削除
-'LBound(Array)=0でなくても対応。
-'重複があればTrue/なければFalse
+'・配列内の値を検索して同一値を削除
+'----------------------------------------
+'   ・  LBound(Array)=0でなくても対応。
+'       重複があればTrue/なければFalse
 Public Function ArrayDeleteSameItem(ArrayValue As Variant, _
 Optional StartIndex As Long = -1) As Boolean
     Dim Result As Boolean: Result = False
@@ -1931,12 +1894,13 @@ Sub testArrayDeleteSameItem()
 End Sub
 
 '----------------------------------------
-'◇配列の要素タイプを求める
-'LBound=0 でも 1 でも対応する。
+'・配列の要素タイプを求める
+'----------------------------------------
+'   ・  LBound=0 でも 1 でも対応する。
 '----------------------------------------
 Public Function CheckArrayVarType(ByVal ArrayValue As Variant, TypeValue As VbVarType) As Boolean
     Dim Result As Boolean: Result = True
-    Call Assert(IsArray(ArrayValue), "Error:IsStrArray")
+    Call Assert(IsArray(ArrayValue), "Error:IsArray")
     Dim I As Long
     For I = LBound(ArrayValue) To UBound(ArrayValue)
         If VarType(ArrayValue(I)) <> TypeValue Then
@@ -1947,16 +1911,18 @@ Public Function CheckArrayVarType(ByVal ArrayValue As Variant, TypeValue As VbVa
     CheckArrayVarType = Result
 End Function
 
-'文字列配列かどうか
+'----------------------------------------
+'・文字列配列かどうか
+'----------------------------------------
 Public Function IsStrArray(ByVal ArrayValue As Variant) As Boolean
     IsStrArray = CheckArrayVarType(ArrayValue, vbString)
 End Function
 
 '----------------------------------------
-'◇配列を文字列にして出力する関数
+'・配列を文字列にして出力する関数
 '----------------------------------------
-'・ 要素がなくても対応。
-'・ LBound(Array)=0でなくても対応。
+'   ・  要素がなくても対応。
+'   ・  LBound(Array)=0でなくても対応。
 '----------------------------------------
 Public Function ArrayToString(ArrayValue As Variant, Delimiter As String) As String
     Call Assert(IsArray(ArrayValue), "配列ではありません")
@@ -1977,7 +1943,7 @@ Public Function ArrayToString(ArrayValue As Variant, Delimiter As String) As Str
 End Function
 
 '----------------------------------------
-'◇パラメータ配列を文字列配列にして返す関数
+'・パラメータ配列を文字列配列にして返す関数
 '----------------------------------------
 Public Function ArrayStr(ParamArray Values()) As String()
     'パラメータ配列をString配列に代入している
@@ -1993,7 +1959,7 @@ Public Function ArrayStr(ParamArray Values()) As String()
 End Function
 
 '----------------------------------------
-'◇配列を文字列配列にして返す関数
+'・配列を文字列配列にして返す関数
 '----------------------------------------
 Public Function ArrayToStrArray(Values()) As String()
     Dim Result() As String
@@ -2008,7 +1974,7 @@ Public Function ArrayToStrArray(Values()) As String()
 End Function
 
 '----------------------------------------
-'◇パラメータ配列をLong配列にして返す関数
+'・パラメータ配列をLong配列にして返す関数
 '----------------------------------------
 Public Function ArrayLong(ParamArray Values()) As Long()
     'パラメータ配列をLong配列に代入している
@@ -2028,10 +1994,11 @@ End Function
 '----------------------------------------
 
 '----------------------------------------
-'◇次元/列数/行数
+'・次元数を取得する
 '----------------------------------------
-'◇次元数を取得する
-'要素がない配列の場合は次元数は0として返される
+'   ・  要素がない配列の場合は次元数は0として返される
+'----------------------------------------
+
 Public Function ArrayDimension(ArrayValue As Variant) As Long
     Dim Result As Long
     Result = 0
@@ -2057,40 +2024,49 @@ End Function
 '----------------------------------------
 '◆ファイル名処理
 '----------------------------------------
+
+'----------------------------------------
+'・終端にパス区切りを追加する関数
+'----------------------------------------
 Public Function IncludeLastPathDelim(ByVal Path As String) As String
     IncludeLastPathDelim = IncludeLastStr(Path, Application.PathSeparator)
 End Function
 
+'----------------------------------------
+'・終端からパス区切りを削除する関数
+'----------------------------------------
 Public Function ExcludeLastPathDelim(ByVal Path As String) As String
     ExcludeLastPathDelim = ExcludeLastStr(Path, Application.PathSeparator)
 End Function
 
 '----------------------------------------
-'◇ファイルパスから[C:\]などを取得する
+'・ドライブパス"C:"を取り出す関数
 '----------------------------------------
 Public Function GetDrivePath(ByVal Path As String) As String
     GetDrivePath = IncludeLastStr( _
-        FirstStrFirstDelim(Path, ":"), ":\")
+        FirstStrFirstDelim(Path, ":"), ":")
 End Function
 
 '----------------------------------------
-'◇空白を含むファイルパスをダブルクウォートで囲む
+'・空白を含むファイルパスをダブルクウォートで囲む
 '----------------------------------------
-Public Function InSpacePlusDoubleQuotePath(ByVal Path As String) As String
+Public Function InSpacePlusDoubleQuote(ByVal Path As String) As String
     Dim Result As String
     If 1 <= InStr(Path, " ") Then
         Result = IncludeBothEndsStr(Path, """")
     Else
         Result = Path
     End If
-    InSpacePlusDoubleQuotePath = Result
+    InSpacePlusDoubleQuote = Result
 End Function
 
 
 '----------------------------------------
-'◇拡張子の取得
-'fso.GetExtensionNameでは取得できない最後がピリオドで終わるものも
-'判断できるようにした。
+'・拡張子の取得
+'----------------------------------------
+'   ・  fso.GetExtensionNameでは取得できない
+'       最後がピリオドで終わるファイルでも
+'       値を取得することができる
 '----------------------------------------
 Public Function GetExtensionIncludePeriod(ByVal Path As String) As String
     Dim Result As String
@@ -2114,8 +2090,9 @@ Private Sub testGetExtensionIncludePeriod()
 End Sub
 
 '----------------------------------------
-'◇拡張子の変更
-'NewExtには先頭ピリオドがあってもなくてもよい
+'・拡張子の変更
+'----------------------------------------
+'   ・  NewExtには先頭ピリオドがあってもなくてもよい
 '----------------------------------------
 Public Function ChangeFileExtension(ByVal Path As String, _
 ByVal NewExt As String) As String
@@ -2138,7 +2115,7 @@ Private Sub testChangeFileExtension()
 End Sub
 
 '----------------------------------------
-'◇パスの結合
+'・パスの結合
 '----------------------------------------
 Public Function PathCombine(ParamArray Values()) As String
     'パラメータ配列を他のパラメータ配列に渡す事はできないので
@@ -2175,6 +2152,10 @@ End Sub
 
 '----------------------------------------
 '◆ファイルフォルダパス取得
+'----------------------------------------
+
+'----------------------------------------
+'・特殊フォルダ名
 '----------------------------------------
 Public Function GetSpecialFolderPath( _
 ByVal SpecialFolderType As SpecialFolderType) As String
@@ -2244,7 +2225,7 @@ End Sub
 '----------------------------------------
 
 '----------------------------------------
-'◇相対パスから絶対パス取得
+'・相対パスから絶対パス取得
 '----------------------------------------
 Public Function AbsolutePath(ByVal BasePath As String, _
 ByVal RelativePath As String) As String
@@ -2272,7 +2253,26 @@ Private Sub testGetAbsolutePath()
 End Sub
 
 '----------------------------------------
-'◇深い階層のフォルダでも一気に作成する関数
+'・ファイルが作成されるのをしばらく待つ関数
+'----------------------------------------
+'   ・  作成されたらTrueを返す
+'----------------------------------------
+Public Function FileCreateWait(ByVal FilePath As String) As Boolean
+    FileCreateWait = False
+    Dim I As Long: I = 0
+    Do While (fso.FileExists(FilePath) = False)
+        I = I + 1
+        If I = 10 Then Exit Function
+    Loop
+    FileCreateWait = True
+End Function
+
+'----------------------------------------
+'◇Force/Recrate
+'----------------------------------------
+
+'----------------------------------------
+'・深い階層のフォルダでも一気に作成する関数
 '----------------------------------------
 Public Sub ForceCreateFolder(ByVal FolderPath As String)
     Dim ParentFolderPath As String
@@ -2287,7 +2287,7 @@ Public Sub ForceCreateFolder(ByVal FolderPath As String)
 End Sub
 
 '----------------------------------------
-'◇フォルダを再生成する関数
+'・フォルダを再生成する関数
 '----------------------------------------
 Public Sub ReCreateFolder( _
 ByVal FolderPath As String)
@@ -2306,68 +2306,6 @@ ByVal FolderPath As String)
     'フォルダが作成できるまでループ
 End Sub
 
-
-'----------------------------------------
-'◇ファイルが作成されるのをしばらく待つ関数
-'----------------------------------------
-'作成されたらTrueを返す
-Public Function FileCreateWait(ByVal FilePath As String) As Boolean
-    FileCreateWait = False
-    Dim I As Long: I = 0
-    Do While (fso.FileExists(FilePath) = False)
-        I = I + 1
-        If I = 10 Then Exit Function
-    Loop
-    FileCreateWait = True
-End Function
-
-'----------------------------------------
-'◇ショートカットファイルの作成
-'----------------------------------------
-Public Sub CreateShortcutFile( _
-ByVal ShortcutFilePath As String, _
-ByVal TargetFilePath As String, _
-ByVal IconFilePath As String, _
-ByVal Description As String)
-
-    Dim ShortcutFile As IWshRuntimeLibrary.WshShortcut
-    Set ShortcutFile = Shell.CreateShortcut(ShortcutFilePath)
-    ShortcutFile.TargetPath = TargetFilePath
-    ShortcutFile.Description = Description
-    ShortcutFile.IconLocation = IconFilePath
-    ShortcutFile.RelativePath = ""
-    ShortcutFile.WorkingDirectory = ""
-    ShortcutFile.Hotkey = ""
-    ShortcutFile.Save
-End Sub
-
-'----------------------------------------
-'◇ショートカットファイルの作成/削除
-'----------------------------------------
-Public Sub SetShortcutIcon(ByVal Value As Boolean, _
-ByVal ShortcutFilePath As String, ByVal LinkTargetFilePath As String, _
-ByVal IconFilePath As String, _
-ByVal Description As String, _
-ByVal FolderDeleteFlag As Boolean)
-
-    Dim ShortcutFileParentFolderPath As String
-    ShortcutFileParentFolderPath = fso.GetParentFolderName(ShortcutFilePath)
-    
-    Dim FileExistsFlag As Boolean
-    FileExistsFlag = fso.FileExists(ShortcutFilePath)
-    If (Value) And (FileExistsFlag = False) Then
-        Call ForceCreateFolder(ShortcutFileParentFolderPath)
-        Call CreateShortcutFile(ShortcutFilePath, LinkTargetFilePath, _
-            IconFilePath, Description)
-    ElseIf (Value = False) And (FileExistsFlag) Then
-        Call fso.DeleteFile(ShortcutFilePath)
-        '↓フラグONなら空フォルダになった場合はフォルダ削除する
-        If FolderDeleteFlag _
-        And fso.GetFolder(ShortcutFileParentFolderPath).SubFolders.Count = 0 Then
-            Call fso.DeleteFolder(ShortcutFileParentFolderPath)
-        End If
-    End If
-End Sub
 
 
 
@@ -2533,8 +2471,9 @@ End Function
 '◆ファイル日時
 '----------------------------------------
 
-'----------
-'◇UTCファイルタイム変換関数
+'----------------------------------------
+'・UTCファイルタイム変換関数
+'----------------------------------------
 Private Function DateToApiFILETIME(ByVal datPARAM As Date) As FILETIME
     Dim Result As FILETIME
     Dim SysTime As SYSTEMTIME
@@ -2555,8 +2494,9 @@ Private Function DateToApiFILETIME(ByVal datPARAM As Date) As FILETIME
     DateToApiFILETIME = Result
 End Function
 
-'----------
-'◇ファイル/フォルダの作成日時/更新日時/最終アクセス日時の取得
+'----------------------------------------
+'・ファイル/フォルダの作成日時/更新日時/最終アクセス日時の取得
+'----------------------------------------
 Public Function GetFileFolderTime( _
 ByVal Path As String) As FileFolderTime
 
@@ -2579,8 +2519,9 @@ ByVal Path As String) As FileFolderTime
     GetFileFolderTime = Result
 End Function
 
-'----------
-'◇ファイル/フォルダの作成日時/更新日時/最終アクセス日時の設定
+'----------------------------------------
+'・ファイル/フォルダの作成日時/更新日時/最終アクセス日時の設定
+'----------------------------------------
 Public Function SetFileFolderTime( _
 ByVal Path As String, _
 FileFolderTime As FileFolderTime) As Boolean
@@ -2655,6 +2596,59 @@ End Function
 
 
 '----------------------------------------
+'◆ショートカットファイル操作
+'----------------------------------------
+
+'----------------------------------------
+'・ショートカットファイルの作成
+'----------------------------------------
+Public Sub CreateShortcutFile( _
+ByVal ShortcutFilePath As String, _
+ByVal TargetFilePath As String, _
+ByVal IconFilePath As String, _
+ByVal Description As String)
+
+    Dim ShortcutFile As IWshRuntimeLibrary.WshShortcut
+    Set ShortcutFile = Shell.CreateShortcut(ShortcutFilePath)
+    ShortcutFile.TargetPath = TargetFilePath
+    ShortcutFile.Description = Description
+    ShortcutFile.IconLocation = IconFilePath
+    ShortcutFile.RelativePath = ""
+    ShortcutFile.WorkingDirectory = ""
+    ShortcutFile.Hotkey = ""
+    ShortcutFile.Save
+End Sub
+
+'----------------------------------------
+'・ショートカットファイルの作成/削除
+'----------------------------------------
+Public Sub SetShortcutIcon(ByVal Value As Boolean, _
+ByVal ShortcutFilePath As String, ByVal LinkTargetFilePath As String, _
+ByVal IconFilePath As String, _
+ByVal Description As String, _
+ByVal FolderDeleteFlag As Boolean)
+
+    Dim ShortcutFileParentFolderPath As String
+    ShortcutFileParentFolderPath = fso.GetParentFolderName(ShortcutFilePath)
+    
+    Dim FileExistsFlag As Boolean
+    FileExistsFlag = fso.FileExists(ShortcutFilePath)
+    If (Value) And (FileExistsFlag = False) Then
+        Call ForceCreateFolder(ShortcutFileParentFolderPath)
+        Call CreateShortcutFile(ShortcutFilePath, LinkTargetFilePath, _
+            IconFilePath, Description)
+    ElseIf (Value = False) And (FileExistsFlag) Then
+        Call fso.DeleteFile(ShortcutFilePath)
+        '↓フラグONなら空フォルダになった場合はフォルダ削除する
+        If FolderDeleteFlag _
+        And fso.GetFolder(ShortcutFileParentFolderPath).SubFolders.Count = 0 Then
+            Call fso.DeleteFolder(ShortcutFileParentFolderPath)
+        End If
+    End If
+End Sub
+
+
+'----------------------------------------
 '◆Iniファイル処理
 '----------------------------------------
 Public Function IniFile_GetString(ByVal Path As String, _
@@ -2717,18 +2711,21 @@ Public Function CheckEncodeName(EncodeName As String) As Boolean
 End Function
 
 '----------------------------------------
-'◇テキストファイル読込
-'エンコード指定は下記の通り
-'   エンコード         指定文字
-'   ShiftJIS           SHIFT_JIS
-'   UTF-16LE           UNICODE/UNICODEFFFE/UTF-16LE/UTF-16
-'   UTF-16BE BOM有り   UNICODEFEFF
-'   UTF-16BE BOM無し   UTF-16BE
-'   UTF-8              UTF-8
-'   JIS                ISO-2022-JP
-'   EUC-JP             EUC-JP
-'   UTF-7              UTF-7
-'UTF-16LEとUTF-8は、BOMの有無にかかわらず読み込める
+'・テキストファイル読込
+'----------------------------------------
+'   ・  エンコード指定は下記の通り
+'           エンコード          指定文字
+'           ShiftJIS            SHIFT_JIS
+'           UTF-16LE BOM有/無   UNICODEFFFE/UNICODE/UTF-16/UTF-16LE
+'                           BOMの有無に関わらず読込可能
+'           UTF-16BE _BOM_ON    UNICODEFEFF
+'           UTF-16BE _BOM_OFF   UTF-16BE
+'           UTF-8 BOM有/無      UTF-8/UTF-8N
+'                           BOMの有無に関わらず読込可能
+'           JIS                 ISO-2022-JP
+'           EUC-JP              EUC-JP
+'           UTF-7               UTF-7
+'   ・  UTF-16LEとUTF-8は、BOMの有無にかかわらず読み込める
 '----------------------------------------
 Public Function ADOStream_LoadTextFile( _
 ByVal TextFilePath As String, ByVal EncodeName As String) As String
@@ -2753,19 +2750,22 @@ Private Sub testADOStream_LoadTextFile()
 End Sub
 
 '----------------------------------------
-'◇テキストファイル保存
-'エンコード指定は下記の通り
-'   エンコード         指定文字
-'   ShiftJIS           SHIFT_JIS
-'   UTF-16LE           UNICODE/UNICODEFFFE/UTF-16LE/UTF-16
-'   UTF-16BE BOM有り   UNICODEFEFF
-'   UTF-16BE BOM無し   UTF-16BE
-'   UTF-8              UTF-8
-'   JIS                ISO-2022-JP
-'   EUC-JP             EUC-JP
-'   UTF-7              UTF-7
-'UTF-16LEとUTF-8は、そのままだとBOM有りになるので
-'BON無し指定の場合は特殊処理をしている
+'・テキストファイル保存
+'----------------------------------------
+'   ・  エンコード指定は下記の通り
+'           エンコード          指定文字
+'           ShiftJIS            SHIFT_JIS
+'           UTF-16LE _BOM_ON    UNICODEFFFE/UNICODE/UTF-16
+'           UTF-16LE _BOM_OFF    UTF-16LE
+'           UTF-16BE _BOM_ON    UNICODEFEFF
+'           UTF-16BE _BOM_OFF    UTF-16BE
+'           UTF-8 _BOM_ON       UTF-8
+'           UTF-8 _BOM_OFF       UTF-8N
+'           JIS                 ISO-2022-JP
+'           EUC-JP              EUC-JP
+'           UTF-7               UTF-7
+'   ・  UTF-16LEとUTF-8はそのままだと_BOM_ONになるので
+'       BON無し指定の場合は特殊処理をしている
 '----------------------------------------
 Public Sub ADOStream_SaveTextFile(ByVal Text As String, _
 ByVal TextFilePath As String, ByVal EncodeName As String, _
@@ -2852,7 +2852,7 @@ End Sub
 '----------------------------------------
 
 '----------------------------------------
-'◇進捗表示
+'・進捗表示
 '----------------------------------------
 Public Sub Application_StatusBar_Progress(ByVal Message As String, _
 ByVal StartValue As Long, ByVal Value As Long, ByVal EndValue As Long)
@@ -2866,7 +2866,7 @@ ByVal StartValue As Long, ByVal Value As Long, ByVal EndValue As Long)
 End Sub
 
 '----------------------------------------
-'◇列名
+'・列名
 '----------------------------------------
 Public Function ColumnText(ByVal ColumnNumber As Long) As String
     ColumnText = _
@@ -2881,7 +2881,7 @@ Private Sub testColumnText()
 End Sub
 
 '----------------------------------------
-'◇最終行/列
+'・最終行/列
 '----------------------------------------
 Public Function DataLastRow(ByVal Sheet As Worksheet, _
 Optional ByVal ColumnNumber As Long = -1) As Long
@@ -2913,7 +2913,7 @@ Public Function DataLastCell(ByVal Sheet As Worksheet) As Range
 End Function
 
 '----------------------------------------
-'◇最終行列削除
+'・最終行列削除
 '----------------------------------------
 Public Sub ClearLast(ByVal Sheet As Worksheet, _
 ByVal RowIndex As Long, ByVal ColumnIndex As Long)
@@ -2930,7 +2930,7 @@ ByVal RowIndex As Long, ByVal ColumnIndex As Long)
 End Sub
 
 '----------------------------------------
-'◇ワークブックの存在確認
+'・ワークブックの存在確認
 '----------------------------------------
 Public Function WorkbookExists( _
 ByVal WorkbookName As String, _
@@ -2959,7 +2959,7 @@ Optional ByVal App As Application = Nothing) As Boolean
 End Function
 
 '----------------------------------------
-'◇ChartObjectの存在確認
+'・ChartObjectの存在確認
 '----------------------------------------
 Public Function ChartObjectExists( _
 ByVal ChartObjectName As String, _
@@ -2983,7 +2983,7 @@ Private Sub testChartObjectExists()
 End Sub
 
 '----------------------------------------
-'◇Shapesの存在確認
+'・Shapesの存在確認
 '----------------------------------------
 Public Function ShapeExists( _
 ByVal ShapeName As String, _
@@ -3007,7 +3007,7 @@ Private Sub testShapeExists()
 End Sub
 
 '----------------------------------------
-'◇OLEObjectの存在確認
+'・OLEObjectの存在確認
 '----------------------------------------
 Public Function OLEObjectExists( _
 ByVal OLEObjectName As String, _
@@ -3030,7 +3030,7 @@ End Function
 '----------------------------------------
 
 '----------------------------------------
-'◇Excel ウィンドウタイトルバー表示
+'・Excel ウィンドウタイトルバー表示
 '----------------------------------------
 Public Sub SetExcelWindowTitle( _
 ByVal AppTitle As String, _
@@ -3125,7 +3125,7 @@ End Sub
 '----------------------------------------
 
 '----------------------------------------
-'◇GraphFormulaDataを取得と設定
+'・GraphFormulaDataを取得と設定
 '----------------------------------------
 
 'Chart.SeriesCollection.Item(I).Formulaメソッドで得られる文字列の例
@@ -3176,7 +3176,7 @@ End Function
 '----------------------------------------
 
 '----------------------------------------
-'◇GraphFormulaDataの終端操作
+'・GraphFormulaDataの終端操作
 '   Value＝正、終端広がる
 '   Value＝負、終端狭まる
 '----------------------------------------
@@ -3203,7 +3203,7 @@ Public Sub GraphSeriesLastRangeUp(ByRef Data As GraphFormulaData, Value As Long)
 End Sub
 
 '----------------------------------------
-'◇GraphFormulaDataの先頭を操作する
+'・GraphFormulaDataの先頭を操作する
 '   Value＝正、先頭広がる
 '   Value＝負、先頭狭まる
 '----------------------------------------
@@ -3213,7 +3213,7 @@ Public Sub GraphSeriesFirstRangeUp(ByRef Data As GraphFormulaData, Value As Long
 End Sub
 
 '----------------------------------------
-'◇GraphFormulaDataの範囲を移動する
+'・GraphFormulaDataの範囲を移動する
 '   Value＝正、後方移動
 '   Value＝負、前方移動
 '----------------------------------------
@@ -3239,7 +3239,7 @@ Public Sub GraphSeriesMove(ByRef Data As GraphFormulaData, Value As Long)
 End Sub
 
 '----------------------------------------
-'◇GraphFormulaDataのサイズ操作
+'・GraphFormulaDataのサイズ操作
 '   Value＝行数
 '----------------------------------------
 Public Sub GraphSeriesResize(ByRef Data As GraphFormulaData, Value As Long)
@@ -3264,7 +3264,7 @@ Public Sub GraphSeriesResize(ByRef Data As GraphFormulaData, Value As Long)
 End Sub
 
 '----------------------------------------
-'◇グラフの範囲を取得する
+'・グラフの範囲を取得する
 '----------------------------------------
 Public Function GetGraphRowCount(Chart As Chart) As Long
     Dim Result As Long
@@ -3279,7 +3279,7 @@ Public Function GetGraphRowCount(Chart As Chart) As Long
 End Function
 
 '----------------------------------------
-'◇GraphFormulaDataの指定列の変更
+'・GraphFormulaDataの指定列の変更
 '----------------------------------------
 Public Sub SetGraphFormulaDataColumn(ByRef Data As GraphFormulaData, ColumnIndex As Long)
     Dim R1 As Range
@@ -3294,7 +3294,7 @@ Public Sub SetGraphFormulaDataColumn(ByRef Data As GraphFormulaData, ColumnIndex
 End Sub
 
 '----------------------------------------
-'◇グラフのシリーズデータの指定列変更
+'・グラフのシリーズデータの指定列変更
 '----------------------------------------
 Public Sub SetChartSeriesColumn(Chart As Chart, ChartSeriesNumber As Long, ColumnIndex As Long)
     If ChartSeriesNumber <= Chart.SeriesCollection.Count Then
@@ -3310,9 +3310,10 @@ End Sub
 '----------------------------------------
 
 '----------------------------------------
-'◇終端操作
-'   Value＝正、終端広がる
-'   Value＝負、終端狭まる
+'・終端操作
+'----------------------------------------
+'   ・  Value＝正、終端広がる
+'       Value＝負、終端狭まる
 '----------------------------------------
 Public Sub GraphAllSeriesLastRangeUp(Chart As Object, Value As Long)
 On Error GoTo Err:
@@ -3329,9 +3330,10 @@ Err:
 End Sub
 
 '----------------------------------------
-'◇先頭操作
-'   Value＝正、先頭広がる
-'   Value＝負、先頭狭まる
+'・先頭操作
+'----------------------------------------
+'   ・  Value＝正、先頭広がる
+'       Value＝負、先頭狭まる
 '----------------------------------------
 Public Sub GraphAllSeriesFirstRangeUp(Chart As Object, Value As Long)
 On Error GoTo Err:
@@ -3348,9 +3350,10 @@ Err:
 End Sub
 
 '----------------------------------------
-'◇範囲移動
-'   Value＝正、後方移動
-'   Value＝負、前方移動
+'・範囲移動
+'----------------------------------------
+'   ・  Value＝正、後方移動
+'       Value＝負、前方移動
 '----------------------------------------
 Public Sub GraphAllSeriesMove(Chart As Object, Value As Long)
 On Error GoTo Err:
@@ -3367,8 +3370,9 @@ Err:
 End Sub
 
 '----------------------------------------
-'◇サイズ操作
-'   Value＝行数
+'・サイズ操作
+'----------------------------------------
+'   ・  Value＝行数
 '----------------------------------------
 Public Sub GraphAllSeriesResize(Chart As Object, Value As Long)
 On Error GoTo Err:
@@ -3389,7 +3393,7 @@ End Sub
 '----------------------------------------
 
 '----------------------------------------
-'◇WindowStyle
+'・WindowStyle
 '----------------------------------------
 Public Sub SetWindowStyle(hWnd As Long, _
 ByVal TitleBar As Boolean, _
@@ -3448,7 +3452,7 @@ ByRef MaximizeButton As Boolean)
 End Sub
 
 '----------------------------------------
-'◇WindowExStyle
+'・WindowExStyle
 '----------------------------------------
 Public Sub SetWindowExStyle(hWnd As Long, _
 ByVal TaskBarButton As Boolean)
@@ -3473,7 +3477,7 @@ ByRef TaskBarButton As Boolean)
 End Sub
 
 '----------------------------------------
-'◇CloseButton
+'・CloseButton
 '----------------------------------------
 Public Sub SetWindowCloseButton(hWnd As Long, _
 ByVal Enabled As Boolean)
@@ -3504,7 +3508,7 @@ Public Function GetWindowCloseButton(ByVal hWnd As Long) As Boolean
 End Function
 
 '----------------------------------------
-'◇TopMost
+'・TopMost
 '----------------------------------------
 Public Sub SetWindowTopMost(hWnd As Long, _
 ByVal TopMost As Boolean)
@@ -3526,7 +3530,7 @@ Public Function GetWindowTopMost(hWnd As Long) As Boolean
 End Function
 
 '----------------------------------------
-'◇WindowState
+'・WindowState
 '----------------------------------------
 Public Function GetWindowState(ByVal hWnd As Long) As Excel.XlWindowState
     Dim Result As Excel.XlWindowState
@@ -3546,7 +3550,7 @@ Public Function GetWindowState(ByVal hWnd As Long) As Excel.XlWindowState
 End Function
 
 '----------------------------------------
-'◇PixelRect
+'・PixelRect
 '----------------------------------------
 
 Public Function Form_GetRectPixel(Form As Object) As Rect
@@ -3567,7 +3571,7 @@ ByRef RectValue As Rect)
 End Sub
 
 '----------------------------------------
-'◇Iniファイル位置保存復帰
+'・Iniファイル位置保存復帰
 '----------------------------------------
 Public Sub Form_IniWritePosition(Form As Object, _
 ByVal IniFilePath As String, _
@@ -3606,9 +3610,20 @@ End Sub
 '----------------------------------------
 
 '----------------------------------------
+'・Combobox.Textをクリアせずに項目だけクリアする
+'----------------------------------------
+Public Sub Combobox_ClearList(ComboBox As ComboBox)
+    Dim I As Long
+    For I = ComboBox.ListCount - 1 To 0 Step -1
+        ComboBox.RemoveItem (I)
+    Next
+End Sub
+
+'----------------------------------------
 '◇ComboBoxと文字列配列との変換
-'項目をタブで区切る
-'タブ区切り文字列とColumnCountは一致させておくこと
+'----------------------------------------
+'   ・  項目をタブで区切る
+'   ・  タブ区切り文字列とColumnCountは一致させておくこと
 '----------------------------------------
 Public Function ComboBox_GetStrings(ByVal ComboBox As ComboBox) As String()
     Dim Result() As String
@@ -3691,21 +3706,15 @@ Sub testComboBox_GetSetStrings(ComboBox1 As ComboBox)
         ArrayToString(Data, vbCrLf))
 End Sub
 
-'----------------------------------------
-'◇Combobox.Textをクリアせずに項目だけクリアする
-Public Sub Combobox_ClearList(ComboBox As ComboBox)
-    Dim I As Long
-    For I = ComboBox.ListCount - 1 To 0 Step -1
-        ComboBox.RemoveItem (I)
-    Next
-End Sub
+
 
 '----------------------------------------
 '◆ListView
 '----------------------------------------
 
 '----------------------------------------
-'◇ListViewの選択項目個数
+'・ListViewの選択項目個数
+'----------------------------------------
 Public Function ListView_SelectedItemCount(ByVal ListView As ListView) As Long
     Dim Result As Long: Result = 0
     Dim I As Long
@@ -3718,7 +3727,8 @@ Public Function ListView_SelectedItemCount(ByVal ListView As ListView) As Long
 End Function
 
 '----------------------------------------
-'◇ListViewのチェック項目個数
+'・ListViewのチェック項目個数
+'----------------------------------------
 Public Function ListView_CheckedItemCount(ByVal ListView As ListView) As Long
     Dim Result As Long: Result = 0
     Dim I As Long
@@ -3731,7 +3741,8 @@ Public Function ListView_CheckedItemCount(ByVal ListView As ListView) As Long
 End Function
 
 '----------------------------------------
-'◇ListView 全て選択
+'・ListView 全て選択
+'----------------------------------------
 Sub ListView_SelectAll(ListView As ListView, _
 SelectValue As Boolean)
     Dim I As Long
@@ -3741,7 +3752,8 @@ SelectValue As Boolean)
 End Sub
 
 '----------------------------------------
-'◇ListView 全てチェック
+'・ListView 全てチェック
+'----------------------------------------
 Sub ListView_CheckAll(ListView As ListView, _
 CheckValue As Boolean)
     Dim I As Long
@@ -3751,7 +3763,8 @@ CheckValue As Boolean)
 End Sub
 
 '----------------------------------------
-'◇ListView 選択チェック
+'・ListView 選択チェック
+'----------------------------------------
 Sub ListView_CheckSelectedItem(ListView As ListView, _
 CheckValue As Boolean)
     Dim I As Long
@@ -3763,7 +3776,8 @@ CheckValue As Boolean)
 End Sub
 
 '----------------------------------------
-'◇ListView 選択項目が全てチェックされているかどうか確認
+'・ListView 選択項目が全てチェックされているかどうか確認
+'----------------------------------------
 Public Function ListView_IsCheckSelectedItem(ByVal ListView As ListView) As Boolean
     Dim Result As Boolean: Result = True
     Dim I As Long
@@ -3780,12 +3794,14 @@ End Function
 
 
 '----------------------------------------
-'◇複数選択時の同時チェック切り替え
-'例:
-'   次のように使うとよい
-'   Private Sub ListView1_ItemCheck(ByVal Item As MSComctlLib.ListItem)
-'       Call ListView_MultiSelectChecked(ListView1, Item)
-'   End Sub
+'・複数選択時の同時チェック切り替え
+'----------------------------------------
+'   ・  例:
+'       次のように使うとよい
+'       Private Sub ListView1_ItemCheck(ByVal Item As MSComctlLib.ListItem)
+'           Call ListView_MultiSelectChecked(ListView1, Item)
+'       End Sub
+'----------------------------------------
 Sub ListView_MultiSelectChecked(ListView As ListView, _
 CheckedItem As ListItem)
     Dim I As Long
@@ -3808,7 +3824,8 @@ CheckedItem As ListItem)
 End Sub
 
 '----------------------------------------
-'◇キーでサーチするIndexOf
+'・キーでサーチするIndexOf
+'----------------------------------------
 Public Function ListView_IndexOfKey(ByVal ListView As ListView, _
 ByVal SearchKey As String, Optional StartIndex As Long = 0) As Long
     Dim Result As Long: Result = -1
@@ -3827,6 +3844,9 @@ End Function
 '◆タスクダイアログ
 '----------------------------------------
 
+'----------------------------------------
+'・タスクダイアログ表示
+'----------------------------------------
 Public Function TaskDialog( _
 ByVal hWnd As Long, _
 WindowTitle As String, _
@@ -3865,6 +3885,9 @@ Sub testTaskDialog()
     End Select
 End Sub
 
+'----------------------------------------
+'・タスクダイアログ表示機能拡張版
+'----------------------------------------
 Public Function TaskDialogIndirect( _
 ByVal hWnd As Long, _
 ByVal MainIcon As Long, _
@@ -4017,6 +4040,9 @@ Private Sub testTaskDialogIndirect()
     End Select
 End Sub
 
+'----------------------------------------
+'・タスクダイアログでのメッセージ表示
+'----------------------------------------
 Public Function TaskDialogMsgBox( _
 ByVal hWnd As Long, _
 ByVal MainIcon As Long, _
@@ -4060,11 +4086,10 @@ Private Sub testTaskDialogMsgBox()
     End Select
 End Sub
 
-
-
 '----------------------------------------
-'◆アイコン
+'◆アイコン用API操作
 '----------------------------------------
+
 Public Sub SetWindowIcon(ByVal hWnd As Long, _
 ByVal IconPath As String, ByVal IconIndex As Long)
     Dim hIcon As Long
@@ -4146,14 +4171,12 @@ ByVal hBitmap As Long)
     Image.Picture = Pic
 End Sub
 
-
-
 '----------------------------------------
 '◆Windows情報
 '----------------------------------------
 
 '----------------------------------------
-'◇デスクトップ/WorkAreaサイズ
+'・デスクトップ/WorkAreaサイズ
 '----------------------------------------
 Public Function GetRectDesktop() As Rect
     GetRectDesktop = GetRectDesktop1
@@ -4191,7 +4214,7 @@ Sub testGetRectWorkArea()
 End Sub
 
 '----------------------------------------
-'◇Windowsバージョン
+'・Windowsバージョン
 '----------------------------------------
 
 'Windows 8.1 →     Windows (32-bit) NT 6.03(たぶん)
@@ -4250,7 +4273,7 @@ Public Function IsTaskbarPinWindows() As Boolean
 End Function
 
 '----------------------------------------
-'◇タスクバーボタン用のAppIDの登録
+'・タスクバーボタン用のAppIDの登録
 '----------------------------------------
 Public Sub SetTaskbarButtonAppID(ByVal AppID As String)
     If IsTaskbarPinWindows Then
@@ -4260,7 +4283,7 @@ Public Sub SetTaskbarButtonAppID(ByVal AppID As String)
 End Sub
 
 '----------------------------------------
-'◇タスクバーピン止め用コマンド
+'・タスクバーピン止め用コマンド
 '----------------------------------------
 Public Sub SetTaskbarPin(ByVal FilePath As String, ByVal Value As Boolean)
     Dim CommandVerb As String
@@ -4278,7 +4301,7 @@ Public Sub SetTaskbarPin(ByVal FilePath As String, ByVal Value As Boolean)
 End Sub
 
 '----------------------------------------
-'◇タスクバーピン用ショートカットファイルの作成/削除
+'・タスクバーピン用ショートカットファイルの作成/削除
 '----------------------------------------
 Public Sub SetTaskbarPinShortcutIcon(ByVal Value As Boolean, _
 ByVal ShortcutFilePath As String, ByVal LinkTargetFilePath As String, _
@@ -4351,9 +4374,9 @@ End Sub
 '----------------------------------------
 
 '----------------------------------------
-'◇Microsoft Scripting Runtime
+'・Microsoft Scripting Runtime
 '----------------------------------------
-'・ FSO:FileSystemObjectを使用するのに必要
+'   ・  FSO:FileSystemObjectを使用するのに必要
 '----------------------------------------
 Sub ReferenceAdd_ScriptingRuntime(Book As Workbook)
     Call Book.VBProject.References.AddFromFile( _
@@ -4365,9 +4388,9 @@ Sub Run_ReferenceAdd_ScriptingRuntime()
 End Sub
 
 '----------------------------------------
-'◇Windows Script Host Object Model
+'・Windows Script Host Object Model
 '----------------------------------------
-'・ WshShellを使用するのに必要
+'   ・  WshShellを使用するのに必要
 '----------------------------------------
 Sub ReferenceAdd_WshObjectModel(Book As Workbook)
     Call Book.VBProject.References.AddFromFile( _
@@ -4379,7 +4402,7 @@ Sub Run_ReferenceAdd_WshObjectModel()
 End Sub
 
 '----------------------------------------
-'◇Microsoft Windows Common Controls 6.0 (SP6)
+'・Microsoft Windows Common Controls 6.0 (SP6)
 '----------------------------------------
 Sub ReferenceAdd_CommonControls(Book As Workbook)
     Call Book.VBProject.References.AddFromFile( _
@@ -4391,7 +4414,7 @@ Sub Run_ReferenceAdd_CommonControls()
 End Sub
 
 '----------------------------------------
-'◇Microsoft Visual Basic for Applications Extensibility 5.3
+'・Microsoft Visual Basic for Applications Extensibility 5.3
 '----------------------------------------
 Sub ReferenceAdd_VBAExtensibility(Book As Workbook)
     Call Book.VBProject.References.AddFromFile( _
@@ -4403,9 +4426,9 @@ Sub Run_ReferenceAdd_VBAExtensibility()
 End Sub
 
 '----------------------------------------
-'◇Microsoft AxtiveX Data Objects 2.8 Library
+'・Microsoft AxtiveX Data Objects 2.8 Library
 '----------------------------------------
-'・ ADODB.Streamを使用するのに必要
+'   ・  ADODB.Streamを使用するのに必要
 '----------------------------------------
 Sub ReferenceAdd_ADO_2_8(Book As Workbook)
     Call Book.VBProject.References.AddFromFile( _
@@ -4417,9 +4440,9 @@ Sub Run_ReferenceAdd_ADO_2_8()
 End Sub
 
 '----------------------------------------
-'◇Microsoft AxtiveX Data Objects 6.1 Library
+'・Microsoft AxtiveX Data Objects 6.1 Library
 '----------------------------------------
-'・ ADODB.Streamを使用するのに必要
+'   ・  ADODB.Streamを使用するのに必要
 '----------------------------------------
 Sub ReferenceAdd_ADO_6_1(Book As Workbook)
     Call Book.VBProject.References.AddFromFile( _
