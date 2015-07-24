@@ -4322,9 +4322,9 @@ ByVal AppID As String)
             PathCombine(GetSpecialFolderPath(TaskbarPin), DummyTaskbarPinFileName), _
             ShortcutFilePath)
         Call CommandExecuteReturn( _
-            InSpacePlusDoubleQuotePath(TaskbarPinCommandProgramPath) + _
+            InSpacePlusDoubleQuote(TaskbarPinCommandProgramPath) + _
             " " + _
-            InSpacePlusDoubleQuotePath(ShortcutFilePath) + _
+            InSpacePlusDoubleQuote(ShortcutFilePath) + _
             " " + _
             AppID)
 
