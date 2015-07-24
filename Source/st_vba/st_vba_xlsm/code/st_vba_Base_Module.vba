@@ -6,9 +6,9 @@
 '--------------------------------------------------
 'Discription:   Standard Software Library For Windows Excel VBA
 '--------------------------------------------------
-'OpenSource:
+'OpenSource:    https://github.com/standard-software/st_vba/
 'License:       MIT License
-'   URL:
+'   URL:        https://github.com/standard-software/st_vba/blob/master/Document/Readme.txt
 'All Right Reserved:
 '   Name:       Standard Software
 '   URL:        http://standard-software.net/
