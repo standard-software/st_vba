@@ -8,7 +8,7 @@
 '--------------------------------------------------
 'OpenSource:    https://github.com/standard-software/st_vba/
 'License:       MIT License
-'   URL:        https://github.com/standard-software/st_vba/blob/master/Document/Readme.txt
+'   URL:        https://github.com/standard-software/st_vba/blob/master/Document/Readme_jp.txt
 'All Right Reserved:
 '   Name:       Standard Software
 '   URL:        http://standard-software.net/
@@ -4287,7 +4287,7 @@ End Sub
 '・ StarndardSoftwareLibraryからst_vbaに名前変更
 '◇ ver 2015/07/29
 '・ 64bit版Excelへの暫定対応(既存は32bit版Excelのみの対応)
-'   ・  TaskDialogAPIを削除
+'   TaskDialogAPIを削除
 '・ GetDPIの正しい実装を行った。
 '--------------------------------------------------
  
