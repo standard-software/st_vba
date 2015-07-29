@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        http://standard-software.net/
 '--------------------------------------------------
-'Version:       2015/07/24
+'Version:       2015/07/29
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -44,7 +44,22 @@
 '       Image
 '・ Microsoft Windows Common Controls 6.0 (SP6)
 '       ListView
-'       C:\Windows\system32\MSCOMCTL.OCX
+'       32bit Excel
+'           C:\Windows\system32\MSCOMCTL.OCX
+'       64bit Excel
+'           C:\Windows\SysWOW64\mscomctl.ocx
+'--------------------------------------------------
+'・ Microsoft Windows Common Controls 6.0 (SP6)
+'       64bit Excel
+'           C:\Windows\SysWOW64\mscomctl.ocx
+'   ・  http://www.microsoft.com/ja-jp/download/details.aspx?id=10019
+'       Download
+'           VisualBasic6-KB896559-v1-JPN.exe
+'       Unzip
+'           mscomctl.ocx / comctl32.ocx / etc..
+'       FileMove
+'           C:\Windows\SysWOW64\mscomctl.ocx
+'           C:\Windows\SysWOW64\comctl32.ocx (?)
 '--------------------------------------------------
 
 Option Explicit
@@ -177,7 +192,7 @@ End Enum
 '----------------------------------------
 
 'ファイルを作成またはオープン
-Private Declare Function CreateFile Lib "kernel32.dll" _
+Private Declare PtrSafe Function CreateFile Lib "kernel32.dll" _
     Alias "CreateFileA" ( _
     ByVal lpFileName As String, _
     ByVal dwdesiredAccess As Long, _
@@ -187,26 +202,26 @@ Private Declare Function CreateFile Lib "kernel32.dll" _
     ByVal dwFlagsAndAttributes As Long, _
     ByVal hTemplateFile As Long) As Long
 
-Private Declare Function CloseHandle Lib "kernel32.dll" ( _
+Private Declare PtrSafe Function CloseHandle Lib "kernel32.dll" ( _
     ByVal hObject As Long) As Long
 
 'システムタイムをファイルタイムに変換する
-Private Declare Function SystemTimeToFileTime Lib "kernel32.dll" ( _
+Private Declare PtrSafe Function SystemTimeToFileTime Lib "kernel32.dll" ( _
     ByRef lpSystemTime As SYSTEMTIME, _
     ByRef lpFileTime As FILETIME) As Long
 
 'ローカルファイルタイムをUTCファイルタイム形式で取得する
-Private Declare Function LocalFileTimeToFileTime Lib "kernel32.dll" ( _
+Private Declare PtrSafe Function LocalFileTimeToFileTime Lib "kernel32.dll" ( _
     ByRef lpLocalFileTime As FILETIME, _
     ByRef lpFileTime As FILETIME) As Long
- 
+
 'ファイルのファイルタイムを設定する
-Private Declare Function SetFileTime Lib "kernel32.dll" ( _
+Private Declare PtrSafe Function SetFileTime Lib "kernel32.dll" ( _
     ByVal hFile As Long, _
     ByRef lpCreationTime As FILETIME, _
     ByRef lpLastAccessTime As FILETIME, _
     ByRef lpLastWriteTime As FILETIME) As Long
- 
+
 'FILETIME 構造体
 Private Type FILETIME
     dwLowDateTime As Long    '下位32ビット値
@@ -215,9 +230,9 @@ End Type
 
 'SECURITY_ATTRIBUTES 構造体
 Private Type SECURITY_ATTRIBUTES
-    nLength              As Long '構造体のバイト数
-    lpSecurityDescriptor As Long 'セキュリティデスクリプタ(Win95,98では無効)
-    bInheritHandle       As Long '1のとき属性を継承する
+    nLength              As LongPtr '構造体のバイト数
+    lpSecurityDescriptor As LongPtr 'セキュリティデスクリプタ(Win95,98では無効)
+    bInheritHandle       As LongPtr '1のとき属性を継承する
 End Type
 
 'CreateFileで使用する定数
@@ -241,7 +256,7 @@ Private Type SYSTEMTIME
     wSecond       As Integer '秒
     wMilliseconds As Integer 'ミリ秒
 End Type
- 
+
 Public Type FileFolderTime
     CreataionTime As Date
     LastWriteTime As Date
@@ -251,7 +266,7 @@ End Type
 '----------------------------------------
 '◆Iniファイル
 '----------------------------------------
-Public Declare Function GetPrivateProfileString _
+Public Declare PtrSafe Function GetPrivateProfileString _
     Lib "kernel32" Alias "GetPrivateProfileStringA" ( _
     ByVal lpAppName As String, _
     ByVal lpKeyName As Any, _
@@ -260,7 +275,7 @@ Public Declare Function GetPrivateProfileString _
     ByVal nSize As Long, _
     ByVal lpFileName As String) As Long
 
-Public Declare Function WritePrivateProfileString _
+Public Declare PtrSafe Function WritePrivateProfileString _
     Lib "kernel32" Alias "WritePrivateProfileStringA" ( _
     ByVal lpApplicationName As String, _
     ByVal lpKeyName As Any, _
@@ -270,22 +285,22 @@ Public Declare Function WritePrivateProfileString _
 '----------------------------------------
 '◆キーボード入力
 '----------------------------------------
-Public Declare Function GetAsyncKeyState _
+Public Declare PtrSafe Function GetAsyncKeyState _
     Lib "User32.dll" (ByVal vKey As Long) As Long
-    
+
 '----------------------------------------
 '◆マウス
 '----------------------------------------
-Public Declare Function GetCursorPos _
+Public Declare PtrSafe Function GetCursorPos _
     Lib "user32" (lpPoint As Point) As Long
 
-Public Declare Sub mouse_event _
+Public Declare PtrSafe Sub mouse_event _
     Lib "user32" ( _
     ByVal dwFlags As Long, _
     ByVal dx As Long, ByVal dy As Long, _
     ByVal cButtons As Long, _
     ByVal dwExtraInfo As Long)
-    
+
 Public Const MOUSE_MOVED = &H1              'マウスを移動する(相対座標)
 Public Const MOUSEEVENTF_ABSOLUTE = &H8000& 'MOUSE_MOVED or で絶対座標を指定
 Public Const MOUSEEVENTF_LEFTUP = &H4       '左ボタンUP
@@ -313,7 +328,7 @@ End Enum
 '----------------------------------------
 '◇Windowハンドル
 '----------------------------------------
-Public Declare Function WindowFromAccessibleObject _
+Public Declare PtrSafe Function WindowFromAccessibleObject _
     Lib "oleacc.dll" ( _
     ByVal IAcessible As Object, _
     ByRef hWnd As Long) As Long
@@ -338,11 +353,11 @@ Public Const WS_THICKFRAME = &H40000
 Public Const WS_EX_APPWINDOW = &H40000
 Public Const WS_EX_TOPMOST = &H8
 
-Public Declare Function GetWindowLong _
+Public Declare PtrSafe Function GetWindowLong _
     Lib "user32" Alias "GetWindowLongA" ( _
     ByVal hWnd As Long, ByVal nIndex As Long) As Long
 
-Public Declare Function SetWindowLong _
+Public Declare PtrSafe Function SetWindowLong _
     Lib "user32" Alias "SetWindowLongA" ( _
     ByVal hWnd As Long, _
     ByVal nIndex As Long, _
@@ -351,22 +366,22 @@ Public Declare Function SetWindowLong _
 '----------------------------------------
 '◇SystemMenu/Closeボタン
 '----------------------------------------
-Public Declare Function GetSystemMenu _
+Public Declare PtrSafe Function GetSystemMenu _
     Lib "user32" (ByVal hWnd As Long, ByVal bRevert As Long) As Long
 
-Public Declare Function GetMenuItemID _
+Public Declare PtrSafe Function GetMenuItemID _
     Lib "user32" (ByVal hMenu As Long, _
     ByVal nPos As Long) As Long
 
-Public Declare Function DeleteMenu _
+Public Declare PtrSafe Function DeleteMenu _
     Lib "user32" (ByVal hMenu As Long, _
     ByVal nPosition As Long, ByVal wFlags As Long) As Long
-    
-Public Declare Function EnableMenuItem _
+
+Public Declare PtrSafe Function EnableMenuItem _
     Lib "user32" (ByVal hMenu As Long, _
     ByVal uItem As Long, ByVal fuFlags As Long) As Long
-    
-Public Declare Function DrawMenuBar _
+
+Public Declare PtrSafe Function DrawMenuBar _
     Lib "user32" (ByVal hWnd As Long) As Long
 
 Public Const SC_CLOSE As Long = &HF060
@@ -379,13 +394,13 @@ Public Const MF_DISABLED As Long = &H2&
 '----------------------------------------
 '◇FormIcon
 '----------------------------------------
-Public Declare Function ExtractIcon _
+Public Declare PtrSafe Function ExtractIcon _
     Lib "shell32" Alias "ExtractIconA" ( _
     ByVal hInst As Long, _
     ByVal lpszExeFileName As String, _
     ByVal nIconIndex As Long) As Long
 
-Public Declare Function DestroyIcon _
+Public Declare PtrSafe Function DestroyIcon _
     Lib "user32" (ByVal hIcon As Long) As Long
 
 Public Const WM_GETICON As Long = &H7F
@@ -393,7 +408,7 @@ Public Const WM_SETICON = &H80
 Public Const ICON_SMALL = 0&
 Public Const ICON_BIG = 1&
 
-Public Declare Function SendMessage _
+Public Declare PtrSafe Function SendMessage _
     Lib "user32" Alias "SendMessageA" _
     (ByVal hWnd As Long, _
     ByVal wMsg As Long, _
@@ -403,10 +418,10 @@ Public Declare Function SendMessage _
 '----------------------------------------
 '◇Window位置/TopMost
 '----------------------------------------
-Public Declare Function SetWindowPos _
+Public Declare PtrSafe Function SetWindowPos _
     Lib "user32" ( _
-    ByVal hWnd As Long, _
-    ByVal hWndInsertAfter As Long, _
+    ByVal hWnd As LongPtr, _
+    ByVal hWndInsertAfter As LongPtr, _
     ByVal X As Long, ByVal Y As Long, _
     ByVal cx As Long, ByVal cy As Long, _
     ByVal wFlags As Long) As Long
@@ -420,7 +435,7 @@ Public Const SWP_SHOWWINDOW = &H40
 '----------------------------------------
 '◇Window位置/TopMost
 '----------------------------------------
-Public Declare Function GetWindowPlacement _
+Public Declare PtrSafe Function GetWindowPlacement _
     Lib "user32" ( _
     ByVal hWnd As Long, _
     lpwndpl As WINDOWPLACEMENT) As Long
@@ -453,178 +468,71 @@ End Type
 '----------------------------------------
 '◆タスクバーボタン登録
 '----------------------------------------
-Public Declare Function SetCurrentProcessExplicitAppUserModelID _
+Public Declare PtrSafe Function SetCurrentProcessExplicitAppUserModelID _
     Lib "shell32.dll" ( _
-    ByVal lpString As Long) As Long
+    ByVal lpString As LongPtr) As Long
 
-'----------------------------------------
-'◆タスクダイアログ
-'----------------------------------------
-
-Enum TASKDIALOG_COMMON_BUTTON_FLAGS
-    TDCBF_NONE = &H0
-    TDCBF_OK_BUTTON = &H1
-    TDCBF_YES_BUTTON = &H2
-    TDCBF_NO_BUTTON = &H4
-    TDCBF_CANCEL_BUTTON = &H8
-    TDCBF_RETRY_BUTTON = &H10
-    TDCBF_CLOSE_BUTTON = &H20
-End Enum
-
-Enum TASKDIALOG_RESULT
-    TDMR_IDOK = 1
-    TDMR_IDCANCEL = 2
-    TDMR_IDABORT = 3
-    TDMR_IDRETRY = 4
-    TDMR_IDYES = 6
-    TDMR_IDNo = 7
-    TDMR_IDCLOSE = 8
-End Enum
- 
-Enum TASKDIALOG_ICONS
-    TD_ICON_NONE = 0
-    TD_ICON_BLANK = 32512
-    TD_ICON_ERROR = 32513
-    TD_ICON_QUESTION = 32514
-    TD_ICON_WARNING = 32515
-    TD_ICON_INFORMATION = 32516
-    TD_ICON_BLANK_AGAIN = 32517
-    TD_ICON_SHIELD = 32518
-End Enum
-
-Enum TASKDIALOG_INDIRECT_ICONS
-    TDI_ICON_NONE = 0
-    TDI_ICON_WARNING = 65535
-    TDI_ICON_ERROR = 65534
-    TDI_ICON_INFORMATION = 65533
-    TDI_ICON_SECURITY_SHIELD = 65532
-    TDI_ICON_SECURITY_SHIELD_BLUE = 65531
-    TDI_ICON_SECURITY_WARNING = 65530
-    TDI_ICON_SECURITY_ERROR = 65529
-    TDI_ICON_SECURITY_SUCCESS = 65528
-    TDI_ICON_SECURITY_SHIELD_GRAY = 65527
-End Enum
-
-Enum TASKDIALOG_FLAGS
-    TDF_NONE = &H0
-    TDF_ENABLE_HYPERLINKS = &H1
-    TDF_USE_HICON_MAIN = &H2
-    TDF_USE_HICON_FOOTER = &H4
-    TDF_ALLOW_DIALOG_CANCELLATION = &H8
-    TDF_USE_COMMAND_LINKS = &H10
-    TDF_USE_COMMAND_LINKS_NO_ICON = &H20
-    TDF_EXPAND_FOOTER_AREA = &H40
-    TDF_EXPANDED_BY_DEFAULT = &H80
-    TDF_VERIFICATION_FLAG_CHECKED = &H100
-    TDF_SHOW_PROGRESS_BAR = &H200
-    TDF_SHOW_MARQUEE_PROGRESS_BAR = &H400
-    TDF_CALLBACK_TIMER = &H800
-    TDF_POSITION_RELATIVE_TO_WINDOW = &H1000
-    TDF_RTL_LAYOUT = &H2000
-    TDF_NO_DEFAULT_RADIO_BUTTON = &H4000
-    TDF_CAN_BE_MINIMIZED = &H8000&
-End Enum
-
-Type TASKDIALOG_BUTTON
-    nButtonID As Long
-    pszButtonText As Long
-End Type
-
-Type TASKDIALOGCONFIG
-    cbSize As Long
-    hwndParent As Long
-    hInstance As Long
-    dwFlags As TASKDIALOG_FLAGS
-    dwCommonButtons As Long
-    pszWindowTitle As Long
-    pszMainIcon As TASKDIALOG_ICONS
-    pszMainInstruction As Long
-    pszContent As Long
-    cButtons As Long
-    pButtons As Long
-    nDefaultButton As Long
-    cRadioButtons As Long
-    pRadioButtons As Long
-    nDefaultRadioButton As Long
-    pszVerificationText As Long
-    pszExpandedInformation As Long
-    pszExpandedControlText As Long
-    pszCollapsedControlText As Long
-    pszFooterIcon As Long
-    pszFooter As Long
-    pfCallback As Long
-    lpCallbackData As Long
-    cxWidth As Long
-End Type
-
-Public Declare PtrSafe Function TaskDialogAPI _
-    Lib "C:\Windows\winsxs\x86_microsoft.windows.common-controls_6595b64144ccf1df_6.0.7601.17514_none_41e6975e2bd6f2b2\comctl32.dll" _
-    Alias "TaskDialog" ( _
-    ByVal hWnd As LongPtr, _
-    ByVal hInstance As LongPtr, _
-    ByVal WindowTitle As LongPtr, _
-    ByVal MainInstruction As LongPtr, _
-    ByVal Content As LongPtr, _
-    ByVal CommonButton As Long, _
-    ByVal DialogIcon As Long, _
-    ByRef PushedButton As Long) As Long
-
-Public Declare Function TaskDialogIndirectAPI _
-    Lib "C:\Windows\winsxs\x86_microsoft.windows.common-controls_6595b64144ccf1df_6.0.7601.17514_none_41e6975e2bd6f2b2\comctl32.dll" _
-    Alias "TaskDialogIndirect" ( _
-    ByVal pTaskConfig As Long, _
-    ByVal pnButton As Long, _
-    ByVal pnRadioButton As Long, _
-    ByVal pfVerificationFlagChecked As Long) As Long
-
- 
 '----------------------------------------
 '◆Window
 '----------------------------------------
-Public Declare Function GetDesktopWindow _
+Public Declare PtrSafe Function GetDesktopWindow _
     Lib "user32" () As Long
 
 '----------------------------------------
 '◆描画
 '----------------------------------------
 
-Public Declare Function GetDC _
+Private Const LOGPIXELSX As Long = &H58&
+Private Const LOGPIXELSY As Long = &H5A&
+Private Declare PtrSafe Function GetDeviceCaps _
+    Lib "gdi32" ( _
+    ByVal hDC As Long, _
+    ByVal nIndex As Long _
+    ) As Long
+
+Public Declare PtrSafe Function GetDC _
     Lib "user32" (ByVal hHnd As Long) As Long
-    
-Public Declare Function FillRect _
+
+Private Declare PtrSafe Sub ReleaseDC _
+    Lib "user32" ( _
+    ByVal hWnd As Long, _
+    ByVal hDC As Long _
+    )
+
+Public Declare PtrSafe Function FillRect _
     Lib "user32" ( _
     ByVal hDC As Long, _
     ByRef lpRect As Rect, _
     ByVal hBrush As Long) As Long
 
-Public Declare Function DrawIcon _
+Public Declare PtrSafe Function DrawIcon _
     Lib "user32" ( _
     ByVal hDC As Long, _
     ByVal X As Long, _
     ByVal Y As Long, _
     ByVal hIcon As Long) As Long
 
-Public Declare Function SelectObject _
+Public Declare PtrSafe Function SelectObject _
     Lib "gdi32" ( _
     ByVal hDC As Long, ByVal hGdiObject As Long) As Long
 
-Public Declare Function CreateCompatibleDC _
+Public Declare PtrSafe Function CreateCompatibleDC _
     Lib "gdi32" (ByVal hDC As Long) As Long
 
-Public Declare Function CreateCompatibleBitmap _
+Public Declare PtrSafe Function CreateCompatibleBitmap _
     Lib "gdi32" ( _
     ByVal hDC As Long, _
     ByVal pWidth As Long, _
     ByVal pHeight As Long) As Long
 
-Public Declare Function DeleteObject _
+Public Declare PtrSafe Function DeleteObject _
     Lib "gdi32" ( _
     ByVal hObj As Long) As Long
 
-Public Declare Function GetStockObject _
+Public Declare PtrSafe Function GetStockObject _
     Lib "gdi32" (pIx As Long) As Long
-    
-    
+
+
 '----------------------------------------
 '◆アイコン
 '----------------------------------------
@@ -643,13 +551,13 @@ Public Type guid
     Data4(7) As Byte
 End Type
 
-Public Declare Function OleCreatePictureIndirect _
-    Lib "olepro32.dll" ( _
+Public Declare PtrSafe Function OleCreatePictureIndirect _
+    Lib "oleaut32.dll" ( _
     ByRef lpPictDesc As PictDesc, _
     ByRef RefIID As guid, _
     ByVal fPictureOwnsHandle As Long, _
     ByRef IPic As IPicture) As Long
-    
+
 Public Type IconFilePathIndex
     Path As String
     Index As Long
@@ -671,21 +579,21 @@ End Enum
 '----------------------------------------
 '◆Rect
 '----------------------------------------
-Public Declare Function GetWindowRect _
+Public Declare PtrSafe Function GetWindowRect _
     Lib "user32" (ByVal hWnd As Long, lpRect As Rect) As Long
 
-Private Declare Function GetSystemMetrics _
+Private Declare PtrSafe Function GetSystemMetrics _
     Lib "user32" (ByVal nIndex As Long) As Long
     Private Const SM_CXSCREEN As Long = 0
     Private Const SM_CYSCREEN As Long = 1
 
-Public Declare Function SystemParametersInfo _
+Public Declare PtrSafe Function SystemParametersInfo _
     Lib "user32" Alias "SystemParametersInfoA" ( _
     ByVal uAction As Long, ByVal uParam As Long, _
     ByRef lpvParam As Any, ByVal fuWinIni As Long) As Long
 
 Public Const SPI_GETWORKAREA As Long = 48
-    
+
 '--------------------------------------------------
 '■実装
 '--------------------------------------------------
@@ -773,7 +681,7 @@ Private Sub testIsLong()
     Call Check(True, IsLong("123"))
     Call Check(False, IsLong("12a"))
     Call Check(False, IsLong("123.4"))
-    
+
 End Sub
 
 Public Function LongToStrDigitZero(ByVal Value As Long, ByVal Digit As Long) As String
@@ -854,6 +762,10 @@ End Function
 '----------------------------------------
 '◇Rect
 '----------------------------------------
+
+'----------------------------------------
+'・Rect文字列変換
+'----------------------------------------
 Public Function RectToStr(ByRef RectValue As Rect) As String
     Dim Result As String: Result = ""
     Result = _
@@ -871,12 +783,12 @@ End Sub
 
 Public Function StrToRect(ByVal S As String) As Rect
     Dim Result As Rect
-    
+
     Dim Strs() As String
     Strs = Split(S, ",")
     Call Assert(ArrayCount(Strs) = 4, _
         "Error:StrToRect")
-    
+
     Result.Left = CLng(Strs(0))
     Result.Top = CLng(Strs(1))
     Result.Right = CLng(Strs(2))
@@ -897,6 +809,9 @@ Err:
     CanStrToRect = False
 End Function
 
+'----------------------------------------
+'・Rect生成
+'----------------------------------------
 Public Function NewRect( _
 ByVal Left As Long, _
 ByVal Top As Long, _
@@ -921,6 +836,9 @@ ByRef RectSize As RectSize) As Rect
     NewRect_PositionSize = Result
 End Function
 
+'----------------------------------------
+'・Rect比較
+'----------------------------------------
 Public Function RectEqual( _
 ByRef A As Rect, ByRef B As Rect) As Boolean
     RectEqual = False
@@ -932,6 +850,9 @@ ByRef A As Rect, ByRef B As Rect) As Boolean
     End If
 End Function
 
+'----------------------------------------
+'・Rect Width/Height値取得
+'----------------------------------------
 Public Function GetRectWidth( _
 ByRef r As Rect) As Long
     GetRectWidth = _
@@ -998,7 +919,7 @@ ByRef r As Rect, ByRef DesktopRect As Rect) As Rect
     If RectSizeDesktop.Height <= GetRectHeight(r) Then
         Call SetRectHeight(Result, RectSizeDesktop.Height)
     End If
-    
+
     If Result.Left < DesktopRect.Left Then
         Result = GetRectMove(Result, NewPoint(DesktopRect.Left - Result.Left, 0))
     End If
@@ -1011,8 +932,8 @@ ByRef r As Rect, ByRef DesktopRect As Rect) As Rect
     If DesktopRect.Bottom < Result.Bottom Then
         Result = GetRectMove(Result, NewPoint(0, DesktopRect.Bottom - Result.Bottom))
     End If
-    
-    
+
+
     GetRectInsideDesktopRect = Result
 End Function
 
@@ -1038,16 +959,55 @@ End Function
 '----------------------------------------
 '◇Pixel Point 相互変換
 '----------------------------------------
+
+Public Function GetDPI() As Long
+    Dim Result As Long: Result = 0
+
+    Dim hWnd As Long
+    Dim hDC As Long
+    hWnd = Excel.Application.hWnd
+    hDC = GetDC(hWnd)
+    '水平方向DPI
+    Result = GetDeviceCaps(hDC, LOGPIXELSX)
+    '垂直方向DPI
+    Result = GetDeviceCaps(hDC, LOGPIXELSY)
+    Call ReleaseDC(hWnd, hDC)
+
+    GetDPI = Result
+ End Function
+
+'96しか取得できない！
+Public Function GetDPI1() As Long
+    GetDPI1 = ActiveWorkbook.WebOptions.PixelsPerInch
+End Function
+
+'120しか取得できない！
+Public Function GetDPI2() As Long
+    Dim Result As Long: Result = 0
+    Dim Locator As Object
+    Set Locator = CreateObject("WbemScripting.SWbemLocator")
+    Dim Service As Object
+    Set Service = Locator.ConnectServer
+    Dim ClassItems As Object
+    Set ClassItems = Service.ExecQuery("Select * From Win32_DisplayConfiguration")
+    Dim ClassItem As Object
+    For Each ClassItem In ClassItems
+        Result = ClassItem.LogPixels
+    Next
+    GetDPI2 = Result
+End Function
+
+Private Sub testGetDPI()
+    Call MsgBox(GetDPI)
+End Sub
+
+
 Public Function PointToPixel(ByVal PointValue As Double) As Double
-    Dim DPI As Long
-    DPI = ActiveWorkbook.WebOptions.PixelsPerInch
-    PointToPixel = PointValue * DPI / 72
+    PointToPixel = PointValue * GetDPI / 72
 End Function
 
 Public Function PixelToPoint(ByVal PixelValue As Double) As Double
-    Dim DPI As Long
-    DPI = ActiveWorkbook.WebOptions.PixelsPerInch
-    PixelToPoint = PixelValue * 72 / DPI
+    PixelToPoint = PixelValue * 72 / GetDPI
 End Function
 
 Private Sub testPixelToPoint()
@@ -1120,7 +1080,7 @@ Public Function IsFirstStr(ByVal Str As String, ByVal SubStr As String) As Boole
         If SubStr = "" Then Exit Do
         If Str = "" Then Exit Do
         If Len(Str) < Len(SubStr) Then Exit Do
-        
+
         If InStr(1, Str, SubStr) = 1 Then
             Result = True
         End If
@@ -1177,7 +1137,7 @@ Public Function IsLastStr(ByVal Str As String, ByVal SubStr As String) As Boolea
         If SubStr = "" Then Exit Do
         If Str = "" Then Exit Do
         If Len(Str) < Len(SubStr) Then Exit Do
-        
+
         If Mid$(Str, Len(Str) - Len(SubStr) + 1) = SubStr Then
             Result = True
         End If
@@ -1407,7 +1367,7 @@ Private Sub testStringCombine()
     Call Check("1.2.3..4", StringCombine(".", "1.", ".2", "3", "..4"))
     Call Check("1..2.3..4", StringCombine(".", "1..", ".2", "3.", "..4"))
     Call Check(".1..2.3..4..", StringCombine(".", ".1..", ".2", "3.", "..4.."))
-    
+
     Call Check("1.2.3.4", StringCombine(".", "1", "2", "3", "4"))
     Call Check("1..2.3..4", StringCombine(".", "1..", ".2", "3.", "..4"))
     Call Check(".1..2.3..4..", StringCombine(".", ".1..", ".2", "3.", "..4.."))
@@ -1473,20 +1433,20 @@ Private Sub testStringArrayCombine()
     Call Check("1.2.3.4", StringCombineArray(".", ArrayStr("1", "2", "3", "4")))
     Call Check("1..2.3..4", StringCombineArray(".", ArrayStr("1..", ".2", "3.", "..4")))
     Call Check(".1..2.3..4..", StringCombineArray(".", ArrayStr(".1..", ".2", "3.", "..4..")))
-    
+
     Dim Values() As String
     Values = Split("A,B,C", ",")
     Call Check("A,B,C", StringCombineArray(",", Values))
-    
+
     Values = Split("A,B,,C", ",")
     Call Check("A,B,C", StringCombineArray(",", Values))
-    
+
     Values = Split("A,B,,,C", ",")
     Call Check("A,B,C", StringCombineArray(",", Values))
-    
+
     Values = Split("A,B,,,,C", ",")
     Call Check("A,B,C", StringCombineArray(",", Values))
-    
+
     Values = Split(",,A,B,,,,C,,", ",")
     Call Check("A,B,C", StringCombineArray(",", Values))
 End Sub
@@ -1615,7 +1575,7 @@ End Sub
 '----------------------------------------
 Public Sub ArrayAdd(ByRef ArrayValue As Variant, ByVal Value As Variant)
     Call Assert(IsArray(ArrayValue), "Error:ArrayAdd:ArrayValue is not Array.")
-    
+
     ReDim Preserve ArrayValue(ArrayCount(ArrayValue))
     Call SetValue(ArrayValue(UBound(ArrayValue)), Value)
 End Sub
@@ -1735,7 +1695,7 @@ Private Sub testArrayFunctions()
   ArrayAdd A, "D"
   Call Check(4, ArrayCount(A))
   Call Check("A B C D", ArrayToString(A, " "))
-  
+
   ArrayDelete A, 0
   Call Check("B C D", ArrayToString(A, " "))
   ArrayDelete A, 2
@@ -1744,14 +1704,14 @@ Private Sub testArrayFunctions()
   A = Array("A", "B", "C")
   ArrayDelete A, 1
   Call Check("A C", ArrayToString(A, " "))
-  
+
   ArrayInsert A, 1, "B"
   Call Check("A B C", ArrayToString(A, " "))
   ArrayInsert A, 0, "1"
   Call Check("1 A B C", ArrayToString(A, " "))
   ArrayInsert A, 3, "2"
   Call Check("1 A B 2 C", ArrayToString(A, " "))
-  
+
   '要素なし配列
   Dim B() As String
   Call Check(0, ArrayCount(B))
@@ -1763,7 +1723,7 @@ Private Sub testArrayFunctions()
   Call Check("123 456 789", ArrayToString(B, " "))
   ArrayDelete B, 0
   Call Check("456 789", ArrayToString(B, " "))
-  
+
   'LBound(Array)=0ではない配列
   Dim C() As String
   ReDim C(4 To 6)
@@ -1780,16 +1740,16 @@ Private Sub testArrayFunctions()
   ArrayDelete C, 4
   ArrayDelete C, 6
   Call Check("A B C", ArrayToString(C, " "))
-  
+
   ArrayDelete C, 5
   Call Check("A C", ArrayToString(C, " "))
   ArrayDelete C, 4
   Call Check("C", ArrayToString(C, " "))
-  
+
   ArrayDelete C, 4
   Call Check("", ArrayToString(C, " "))
   Call Check(0, ArrayCount(C))
-  
+
 End Sub
 
 
@@ -1822,7 +1782,7 @@ Optional StartIndex As Long = -1) As Long
                 Exit Do
             End If
         Next
-            
+
     Loop While False
     ArrayIndexOf = Result
 End Function
@@ -1834,16 +1794,16 @@ Sub testArrayIndexOf()
   Call Check(1, ArrayIndexOf(A, "C"))
   Call Check(2, ArrayIndexOf(A, "D"))
   Call Check(-1, ArrayIndexOf(A, "E"))
-  
+
   Call Check(0, ArrayIndexOf(A, "B", 0))
   Call Check(1, ArrayIndexOf(A, "C", 1))
   Call Check(2, ArrayIndexOf(A, "D", 2))
   Call Check(-1, ArrayIndexOf(A, "B", 1))
   Call Check(-1, ArrayIndexOf(A, "C", 2))
   Call Check(2, ArrayIndexOf(A, "D", 2))
-  
+
   Call Check(-1, ArrayIndexOf(A, "D", 3))
-  
+
 End Sub
 
 
@@ -1861,11 +1821,11 @@ Optional StartIndex As Long = -1) As Boolean
                 And (UBound(ArrayValue) < StartIndex) = False), "Error:ArrayDeleteSameItem:Range Over")
         '↑範囲エラーの場合もある。
     End If
-    
+
     Do
         If ArrayDimension(ArrayValue) <> 1 Then Exit Do
         If ArrayCount(ArrayValue) = 0 Then Exit Do
-        
+
         If StartIndex = -1 Then
             StartIndex = LBound(ArrayValue)
         End If
@@ -1877,7 +1837,7 @@ Optional StartIndex As Long = -1) As Boolean
                 Result = True
             End If
         Next
-            
+
     Loop While False
     ArrayDeleteSameItem = Result
 End Function
@@ -1885,11 +1845,11 @@ End Function
 Sub testArrayDeleteSameItem()
   Dim A As Variant
   A = Array("B", "C", "D", "A", "B", "C")
-  
+
   Call Check("B C D A B C", ArrayToString(A, " "))
-  
+
   Call ArrayDeleteSameItem(A)
-  
+
   Call Check("B C D A", ArrayToString(A, " "))
 End Sub
 
@@ -1931,7 +1891,7 @@ Public Function ArrayToString(ArrayValue As Variant, Delimiter As String) As Str
     Result = ""
     Do
         If ArrayCount(ArrayValue) = 0 Then Exit Do
-        
+
         Call Assert(ArrayDimension(ArrayValue) = 1, "1次元配列ではありません")
         Dim I As Long
         For I = LBound(ArrayValue) To UBound(ArrayValue)
@@ -2002,9 +1962,9 @@ End Function
 Public Function ArrayDimension(ArrayValue As Variant) As Long
     Dim Result As Long
     Result = 0
-    
+
     Call Assert(IsArray(ArrayValue), "配列ではありません")
-    
+
     Dim TempData As Variant
     Dim I As Long
     I = 0
@@ -2015,10 +1975,9 @@ Public Function ArrayDimension(ArrayValue As Variant) As Long
     Loop
     On Error GoTo 0
     Result = I - 1
-    
+
     ArrayDimension = Result
 End Function
-
 
 
 '----------------------------------------
@@ -2132,7 +2091,7 @@ Public Function PathCombine(ParamArray Values()) As String
 End Function
 
 Private Sub testPathCombine()
-        
+
     Call Check("C:\Temp\Temp\temp.txt", PathCombine("C:", "Temp", "Temp", "temp.txt"))
     Call Check("C:\Temp\Temp\temp.txt", PathCombine("C:\Temp", "Temp\temp.txt"))
     Call Check("C:\Temp\Temp\temp.txt", PathCombine("C:\Temp\Temp\", "\temp.txt"))
@@ -2159,7 +2118,7 @@ End Sub
 '----------------------------------------
 Public Function GetSpecialFolderPath( _
 ByVal SpecialFolderType As SpecialFolderType) As String
-    
+
     Dim Result As String
     Select Case SpecialFolderType
     Case Desktop
@@ -2176,7 +2135,7 @@ ByVal SpecialFolderType As SpecialFolderType) As String
         Result = Shell.SpecialFolders("SENDTO")
     Case AppData
         Result = Shell.SpecialFolders("Appdata")
-    
+
     Case AllUsersDesktop
         Result = Shell.SpecialFolders("AllUsersDesktop")
     Case AllUsersStartMenu
@@ -2185,7 +2144,7 @@ ByVal SpecialFolderType As SpecialFolderType) As String
         Result = Shell.SpecialFolders("AllUsersPrograms")
     Case AllUsersStartMenuStartup
         Result = Shell.SpecialFolders("AllUsersStartup")
-    
+
     Case TaskbarPin
         Result = PathCombine(Shell.SpecialFolders("Appdata"), _
             "Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar")
@@ -2197,7 +2156,7 @@ ByVal SpecialFolderType As SpecialFolderType) As String
         'C:\Windows\System32
     Case Temporary
         Result = fso.GetSpecialFolder(TemporaryFolder)
-            
+
     Case Else
         Call Assert(False, "Error:GetSpecialFolderPath")
     End Select
@@ -2305,7 +2264,6 @@ ByVal FolderPath As String)
     Loop Until fso.FolderExists(FolderPath)
     'フォルダが作成できるまでループ
 End Sub
-
 
 
 
@@ -2478,7 +2436,7 @@ Private Function DateToApiFILETIME(ByVal datPARAM As Date) As FILETIME
     Dim Result As FILETIME
     Dim SysTime As SYSTEMTIME
     Dim LocalTime As FILETIME
-    
+
     SysTime.wYear = Year(datPARAM)
     SysTime.wMonth = Month(datPARAM)
     SysTime.wDayOfWeek = Weekday(datPARAM)
@@ -2487,7 +2445,7 @@ Private Function DateToApiFILETIME(ByVal datPARAM As Date) As FILETIME
     SysTime.wMinute = Minute(datPARAM)
     SysTime.wSecond = Second(datPARAM)
     SysTime.wMilliseconds = 0
-    
+
     Call SystemTimeToFileTime(SysTime, LocalTime)
     Call LocalFileTimeToFileTime(LocalTime, Result)
 
@@ -2565,19 +2523,19 @@ FileFolderTime As FileFolderTime) As Boolean
         If FileFolderTime.LastAccessTime <> 0 Then
             SetTime.LastAccessTime = FileFolderTime.LastAccessTime
         End If
-        
+
         '// SECURITY_ATTRIBUTES構造体初期化
-        
+
         SecurityAttr.nLength = LenB(SecurityAttr)
         SecurityAttr.lpSecurityDescriptor = 0&
         SecurityAttr.bInheritHandle = 0&
-        
-        
+
+
         '// ファイルまたはフォルダハンドルを取得
         FileHandle = CreateFile(Path, GENERIC_WRITE, _
             FILE_SHARE_READ, SecurityAttr, OPEN_EXISTING, CreateFileFlag, vbNull)
         If FileHandle = INVALID_HANDLE_VALUE Then Exit Do
-        
+
         '// ファイルタイムに変換し、設定する
         CreateFILETIME = DateToApiFILETIME(SetTime.CreataionTime)
         AccessFILETIME = DateToApiFILETIME(SetTime.LastAccessTime)
@@ -2586,7 +2544,7 @@ FileFolderTime As FileFolderTime) As Boolean
         If ReturnSetFileTime <> 0 Then
             Result = True
         End If
-        
+
         '// ファイルまたはフォルダハンドル開放
         Call CloseHandle(FileHandle)
     Loop While False
@@ -2630,7 +2588,7 @@ ByVal FolderDeleteFlag As Boolean)
 
     Dim ShortcutFileParentFolderPath As String
     ShortcutFileParentFolderPath = fso.GetParentFolderName(ShortcutFilePath)
-    
+
     Dim FileExistsFlag As Boolean
     FileExistsFlag = fso.FileExists(ShortcutFilePath)
     If (Value) And (FileExistsFlag = False) Then
@@ -3042,7 +3000,7 @@ Optional ByVal ActTitle As String = "")
     'ActionWindow.Caption <> "" の場合
     '  ウィンドウタイトル - アプリケーションタイトル
     'というようにハイフンで接続される
-    
+
     'なので単に文字列を入れたい場合は
     'Application.Captionに文字設定して
     'ActiveWindow.Caption = "" にするとよい
@@ -3063,7 +3021,7 @@ Public Sub ApplicationMode(ByVal Sheet As Worksheet, ByVal Switch As Boolean)
 
     Application.DisplayStatusBar = Not Switch
     Application.DisplayFormulaBar = Not Switch
-    
+
     ActiveWindow.DisplayGridlines = Not Switch
     ActiveWindow.DisplayHeadings = Not Switch
     ActiveWindow.DisplayHeadings = Not Switch
@@ -3073,22 +3031,21 @@ Public Sub ApplicationMode(ByVal Sheet As Worksheet, ByVal Switch As Boolean)
 '
     If Switch Then
         Call Application.ExecuteExcel4Macro("SHOW.TOOLBAR(""Ribbon"",False)")
-        
+
         Sheet.Unprotect
         Call Sheet.Protect(userinterfaceonly:=True)
         Sheet.EnableSelection = xlUnlockedCells
         ActiveSheet.ScrollArea = "$A$1"
     Else
         Call Application.ExecuteExcel4Macro("SHOW.TOOLBAR(""Ribbon"",True)")
-        
+
         Sheet.Unprotect
         Sheet.EnableSelection = xlNoRestrictions
         Sheet.ScrollArea = ""
     End If
-    
+
     Application.ScreenUpdating = ScreenUpdatingBuffer
 End Sub
-
 
 
 '----------------------------------------
@@ -3468,10 +3425,10 @@ End Sub
 
 Public Sub GetWindowExStyle(hWnd As Long, _
 ByRef TaskBarButton As Boolean)
-    
+
     Dim ExStyle As Long
     ExStyle = GetWindowLong(hWnd, GWL_EXSTYLE)
-    
+
     TaskBarButton = _
         ExStyle = (ExStyle Or WS_EX_APPWINDOW)
 End Sub
@@ -3484,7 +3441,7 @@ ByVal Enabled As Boolean)
 
     Dim hMenu As Long
     Dim rc As Long
-    
+
     If Enabled Then
         'メニューをリセット
         hMenu = GetSystemMenu(hWnd, True)
@@ -3494,7 +3451,7 @@ ByVal Enabled As Boolean)
         rc = DeleteMenu(hMenu, SC_CLOSE, MF_BYCOMMAND)
     End If
     rc = DrawMenuBar(hWnd)
-    
+
     'EnableMenuItemAPIを使って制御しようとしても
     'システムメニュー表示時に
     'メニューが勝手に有効化してしまう不具合があるようなので
@@ -3687,7 +3644,7 @@ Sub testComboBox_GetSetStrings(ComboBox1 As ComboBox)
             .ColumnWidths = "50;50;50"
             .Column() = myData
         End With
-    
+
     Dim Data() As String
     Data = ComboBox_GetStrings(ComboBox1)
     Call Check( _
@@ -3705,7 +3662,6 @@ Sub testComboBox_GetSetStrings(ComboBox1 As ComboBox)
         "D" + vbTab + "えええ" + vbTab + "4", _
         ArrayToString(Data, vbCrLf))
 End Sub
-
 
 
 '----------------------------------------
@@ -3841,252 +3797,6 @@ End Function
 
 
 '----------------------------------------
-'◆タスクダイアログ
-'----------------------------------------
-
-'----------------------------------------
-'・タスクダイアログ表示
-'----------------------------------------
-Public Function TaskDialog( _
-ByVal hWnd As Long, _
-WindowTitle As String, _
-Instruction As String, _
-Content As String, _
-Buttons As TASKDIALOG_COMMON_BUTTON_FLAGS, _
-DialogIcon As TASKDIALOG_ICONS) As TASKDIALOG_RESULT
-
-    Dim Result As Long
-    Dim DialogReturn As Long
-
-    DialogReturn = _
-        TaskDialogAPI(hWnd, _
-            0, _
-            StrPtr(WindowTitle), _
-            StrPtr(Instruction), _
-            StrPtr(Content), _
-            Buttons, _
-            DialogIcon, _
-            Result)
-
-    If DialogReturn = 0 Then
-        TaskDialog = Result
-    End If
-End Function
-
-Sub testTaskDialog()
-    Select Case 1
-    Case 1
-        Call TaskDialog(Application.hWnd, _
-            "WindowTitle", _
-            "MainInstruction", _
-            "Content", _
-            TDCBF_YES_BUTTON Or TDCBF_NO_BUTTON, _
-            TD_ICON_INFORMATION)
-    End Select
-End Sub
-
-'----------------------------------------
-'・タスクダイアログ表示機能拡張版
-'----------------------------------------
-Public Function TaskDialogIndirect( _
-ByVal hWnd As Long, _
-ByVal MainIcon As Long, _
-ByVal WindowTitle As String, _
-ByVal Instruction As String, _
-ByVal Content As String, _
-ByVal ExpandInfo As String, _
-ByVal ExpandControlText As String, _
-ByVal CollapseControlText As String, _
-ByVal FooterIcon As Long, _
-ByVal FooterText As String, _
-ByVal CommonButtons As Long, _
-ByVal ButtonTexts As Variant, _
-ByVal ButtonIDs As Variant, _
-ByVal Flags As Long) As Long
-
-    If (IsArray(ButtonTexts) = False) Then
-        ButtonTexts = ArrayStr()
-    End If
-    If (IsArray(ButtonIDs) = False) Then
-        ButtonIDs = ArrayLong()
-    End If
-    
-    Call Assert(ArrayCount(ButtonTexts) = ArrayCount(ButtonIDs), _
-        "Error:TaskDialogIndirect")
-        
-    Dim Count As Long
-    Count = ArrayCount(ButtonTexts)
-
-    Dim Buttons() As TASKDIALOG_BUTTON
-    If 1 <= Count Then
-        ReDim Buttons(Count - 1)
-        Dim ButtonTextArray() As String
-        ReDim ButtonTextArray(Count - 1)
-        Dim I As Long
-        For I = 0 To Count - 1
-            ButtonTextArray(I) = ButtonTexts(I)
-            Buttons(I).pszButtonText = StrPtr(ButtonTextArray(I))
-            Buttons(I).nButtonID = ButtonIDs(I)
-        Next
-    Else
-        ReDim Buttons(0)
-    End If
-    
-    Dim Config As TASKDIALOGCONFIG
-    Config.cbSize = Len(Config)
-    Config.hwndParent = hWnd
-    
-    If MainIcon <> 0 Then
-        If OrValue(MainIcon, _
-                TD_ICON_NONE, _
-                TD_ICON_BLANK, _
-                TD_ICON_ERROR, _
-                TD_ICON_QUESTION, _
-                TD_ICON_WARNING, _
-                TD_ICON_INFORMATION, _
-                TD_ICON_BLANK_AGAIN, _
-                TD_ICON_SHIELD, _
-                TDI_ICON_WARNING, _
-                TDI_ICON_ERROR, _
-                TDI_ICON_INFORMATION, _
-                TDI_ICON_SECURITY_SHIELD, _
-                TDI_ICON_SECURITY_SHIELD_BLUE, _
-                TDI_ICON_SECURITY_WARNING, _
-                TDI_ICON_SECURITY_ERROR, _
-                TDI_ICON_SECURITY_SUCCESS, _
-                TDI_ICON_SECURITY_SHIELD_GRAY) = False Then
-            Flags = Flags Or TDF_USE_HICON_MAIN
-        End If
-    End If
-    
-    Config.pszMainIcon = MainIcon
-    Config.pszWindowTitle = StrPtr(WindowTitle)
-    Config.pszMainInstruction = StrPtr(Instruction)
-    Config.pszContent = StrPtr(Content)
-    
-    Config.pszExpandedInformation = StrPtr(ExpandInfo)
-    Config.pszExpandedControlText = StrPtr(ExpandControlText)
-    Config.pszCollapsedControlText = StrPtr(CollapseControlText)
-    Config.pszFooterIcon = FooterIcon
-    Config.pszFooter = StrPtr(FooterText)
-    If 1 <= Count Then
-        Config.pButtons = VarPtr(Buttons(0))
-        Config.cButtons = Count
-    Else
-        Config.pButtons = 0
-        Config.cButtons = 0
-    End If
-    Config.dwCommonButtons = CommonButtons
-    Config.dwFlags = Flags
-    
-    Dim Result As Long
-    Call TaskDialogIndirectAPI( _
-        VarPtr(Config), VarPtr(Result), 0, 0)
-    
-    TaskDialogIndirect = Result
-End Function
-
-Private Sub testTaskDialogIndirect()
-    Select Case 5
-    Case 1
-        Call Check(True, OrValue(TaskDialogIndirect(0, _
-            TD_ICON_INFORMATION, _
-            "WindowTitle", "Instruction", "Content", _
-            "", "", "", _
-            TD_ICON_NONE, "", _
-            TDCBF_OK_BUTTON Or TDCBF_YES_BUTTON Or TDCBF_CLOSE_BUTTON, _
-            Nothing, Nothing, TDF_NONE), _
-            TDMR_IDOK, TDMR_IDYES, TDMR_IDCLOSE))
-    Case 2
-        Call Check(True, OrValue(TaskDialogIndirect(0, _
-            TDI_ICON_SECURITY_SUCCESS, _
-            "WindowTitle", "Instruction", "Content", _
-            "ExpandInfo", "Expand", "Collapse", _
-            TD_ICON_SHIELD, "Footer", _
-            TDCBF_NONE, _
-            ArrayStr("ABC", "DEF"), ArrayLong(10, 11), TDF_NONE), _
-            10, 11))
-    Case 3
-        Call Check(True, OrValue(TaskDialogIndirect(0, _
-            TD_ICON_QUESTION, _
-            "WindowTitle", "Instruction", "Content", _
-            "", "Expand", "Collapse", _
-            TD_ICON_NONE, "", _
-            TDCBF_NONE, _
-            ArrayStr("ABC", "DEF"), ArrayLong(10, 11), _
-            TDF_USE_COMMAND_LINKS), _
-            10, 11))
-    Case 4
-        Call Check(True, OrValue(TaskDialogIndirect(0, _
-            TDI_ICON_SECURITY_ERROR, _
-            "WindowTitle", "Instruction", "Content", _
-            "ExpandInfo", "Expand", "Collapse", _
-            TD_ICON_INFORMATION, "Footer", _
-            TDCBF_NONE, _
-            ArrayStr("ABC", "DEF"), ArrayLong(10, 11), _
-            TDF_USE_COMMAND_LINKS), _
-            10, 11))
-    Case 5
-        Call Check(True, OrValue(TaskDialogIndirect(0, _
-            TDI_ICON_SECURITY_SHIELD_BLUE, _
-            "WindowTitle", "Instruction", "Content", _
-            "ExpandInfo", "Expand", "Collapse", _
-            TD_ICON_INFORMATION, "Footer", _
-            TDCBF_OK_BUTTON Or TDCBF_RETRY_BUTTON, _
-            ArrayStr("ABC", "DEF"), ArrayLong(10, 11), _
-            TDF_USE_COMMAND_LINKS), _
-            10, 11, TDMR_IDOK, TDMR_IDRETRY))
-            
-    End Select
-End Sub
-
-'----------------------------------------
-'・タスクダイアログでのメッセージ表示
-'----------------------------------------
-Public Function TaskDialogMsgBox( _
-ByVal hWnd As Long, _
-ByVal MainIcon As Long, _
-ByVal WindowTitle As String, _
-ByVal Instruction As String, _
-ByVal Content As String, _
-ByVal CommonButtons As Long, _
-ByVal UseCancelButtonFlag As Boolean) As Long
-
-    Dim Flags As Long
-    If hWnd <> 0 Then
-        Flags = Flags Or TDF_POSITION_RELATIVE_TO_WINDOW
-    End If
-    
-    If UseCancelButtonFlag Then
-        Flags = Flags Or TDF_ALLOW_DIALOG_CANCELLATION
-    End If
-    
-    TaskDialogMsgBox = TaskDialogIndirect(hWnd, _
-        MainIcon, WindowTitle, Instruction, Content, _
-        "", "", "", TD_ICON_NONE, "", _
-        CommonButtons, Nothing, Nothing, Flags)
-End Function
-
-Private Sub testTaskDialogMsgBox()
-    Select Case 2
-    Case 1
-        Call Check(True, OrValue(TaskDialogMsgBox(0, _
-            TDI_ICON_SECURITY_SUCCESS, _
-            "WindowTitle", "Instruction", "Content", _
-            TDCBF_YES_BUTTON Or TDCBF_NO_BUTTON, _
-            True), _
-            TDMR_IDYES, TDMR_IDNo))
-    Case 2
-        Call Check(True, OrValue(TaskDialogMsgBox(0, _
-            ExtractIcon(0, ThisWorkbook.Path + "\FormMainIcon.ico", 0), _
-            "WindowTitle", "Instruction", "Content", _
-            TDCBF_YES_BUTTON Or TDCBF_NO_BUTTON, _
-            False), _
-            TDMR_IDYES, TDMR_IDNo))
-    End Select
-End Sub
-
-'----------------------------------------
 '◆アイコン用API操作
 '----------------------------------------
 
@@ -4140,16 +3850,16 @@ ByRef IconSize As RectSize) As Long
     hDC = CreateCompatibleDC(GetDC(0))
     hBitmap = CreateCompatibleBitmap(GetDC(0&), IconSize.Width, IconSize.Height)
     hBitmapOld = SelectObject(hDC, hBitmap)
-    
+
     Dim r As Rect
     r = NewRect(0, 0, IconSize.Width, IconSize.Height)
     Call FillRect(hDC, r, GetStockObject(0))
     Call DrawIcon(hDC, 0, 0, hIcon)
-    
+
     Call SelectObject(hDC, hBitmapOld)
     Call DeleteObject(hDC)
     Call DestroyIcon(hIcon)
-    
+
     GetBitmapDrawIcon = hBitmap
 End Function
 
@@ -4315,7 +4025,7 @@ ByVal AppID As String)
     Dim FileExistsFlag As Boolean
     FileExistsFlag = fso.FileExists(ShortcutFilePath)
     If (Value) And (FileExistsFlag = False) Then
-    
+
         'タスクバーにピン止め
         Call SetTaskbarPin(DummyLinkTargetFilePath, True)
         Call fso.MoveFile( _
@@ -4337,9 +4047,9 @@ ByVal AppID As String)
         'スクリプトファイルを直接はタスクバーピン止めできないので
         '一度ダミーのプログラムを登録して
         'その後でショートカットファイルのリンク先を書き換えている。
-            
+
     ElseIf (Value = False) And (FileExistsFlag) Then
-    
+
         'タスクバーピン解除
         Call SetTaskbarPin(ShortcutFilePath, False)
     End If
@@ -4575,4 +4285,9 @@ End Sub
 '・ コメントの修正
 '◇ ver 2015/07/23
 '・ StarndardSoftwareLibraryからst_vbaに名前変更
+'◇ ver 2015/07/29
+'・ 64bit版Excelへの暫定対応(既存は32bit版Excelのみの対応)
+'   ・  TaskDialogAPIを削除
+'・ GetDPIの正しい実装を行った。
 '--------------------------------------------------
+ 
