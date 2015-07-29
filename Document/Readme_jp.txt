@@ -39,6 +39,18 @@ Excel VBA の標準にはないが汎用的に使える機能を関数として�
 より多くの開発者の方に提供させていただくために
 MIT ライセンスとします。
 
+■対応
+
+st_vba は次の Excel の VBA に対応しています。
+・  Excel 2010 32bit for Windows
+・  Excel 2013 32bit for Windows
+・  Excel 2013 64bit for Windows
+
+64bit版はコンパイルが通るようにしていますが、
+一部のWindowsAPIの呼び出しが間違っているかもしれません。
+適宜Long型をLongPtr型に変更してください。
+
+
 ■使用方法
 
 Excel ファイルで VBA プロジェクトを開いてください。
