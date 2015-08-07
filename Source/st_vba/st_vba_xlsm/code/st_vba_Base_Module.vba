@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        http://standard-software.net/
 '--------------------------------------------------
-'Version:       2015/07/29
+'Version:       2015/08/07
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -2183,6 +2183,26 @@ End Sub
 '◆ファイル処理
 '----------------------------------------
 
+'------------------------------
+'・ファイル存在確認
+'------------------------------
+'   ・ Win/Mac両対応版
+'------------------------------
+Function FileExists(ByVal AFileName As String) As Boolean
+    On Error GoTo Catch
+
+    FileSystem.FileLen AFileName
+
+    FileExists = True
+
+    GoTo Finally
+
+Catch:
+        FileExists = False
+Finally:
+End Function
+
+
 '----------------------------------------
 '・相対パスから絶対パス取得
 '----------------------------------------
@@ -2802,6 +2822,43 @@ End Function
 
 Private Sub testCommandExecuteReturn()
     Call MsgBox(CommandExecuteReturn("ping"))
+End Sub
+
+'----------------------------------------
+'◆クリップボード
+'----------------------------------------
+'   ・  参照設定[Microsoft Forms 2.0 Object Library]で
+'       DataObjectが使用可能
+'       Macでも可能
+'----------------------------------------
+
+'----------------------------------------
+'・テキストデータ取得
+'----------------------------------------
+'   ・  Win/Mac両対応動作確認隋
+'----------------------------------------
+Public Function GetClipboardText()
+    Dim DataObject1 As New MSForms.DataObject
+
+    DataObject1.GetFromClipboard
+    GetClipboardText = DataObject1.GetText
+End Function
+
+'----------------------------------------
+'・テキストデータ設定
+'----------------------------------------
+'   ・  Win/Mac両対応動作確認隋
+'----------------------------------------
+Public Sub SetClipboardText(ByVal ClipboardToText)
+    Dim DataObject1 As New MSForms.DataObject
+    
+    Call DataObject1.SetText(ClipboardToText)
+    DataObject1.PutInClipboard
+End Sub
+
+Public Sub testGetSetClipboard()
+    Call SetClipboardText("ABC")
+    Call Check("ABC", GetClipboardText)
 End Sub
 
 
@@ -4289,5 +4346,10 @@ End Sub
 '・ 64bit版Excelへの暫定対応(既存は32bit版Excelのみの対応)
 '   TaskDialogAPIを削除
 '・ GetDPIの正しい実装を行った。
+'◇ ver 2015/08/07
+'・ FileExists(Win/Mac両対応版)を追加
+'・ GetClipboardText/SetClipboardText(Win/Mac両対応版)を追加
 '--------------------------------------------------
  
+
+
