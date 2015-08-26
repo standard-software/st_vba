@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        http://standard-software.net/
 '--------------------------------------------------
-'Version:       2015/08/07
+'Version:       2015/08/23
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -2578,6 +2578,18 @@ End Function
 '----------------------------------------
 
 '----------------------------------------
+'・ショートカットファイル判定(拡張子)
+'----------------------------------------
+
+Public Function IsShortcutLinkFile(ByVal FilePath As String)
+    Dim Result As Boolean: Result = False
+    If LCase(GetExtensionIncludePeriod(FilePath)) = ".lnk" Then
+        Result = True
+    End If
+    IsShortcutLinkFile = Result
+End Function
+
+'----------------------------------------
 '・ショートカットファイルの作成
 '----------------------------------------
 Public Sub CreateShortcutFile( _
@@ -2792,10 +2804,82 @@ Private Sub testADOStream_SaveTextFile()
         "UTF-16LE", False)
 End Sub
 
+'----------------------------------------
+'◆画像ファイル
+'----------------------------------------
+
+
+'----------------------------------------
+'・Jpegファイル判定(拡張子)
+'----------------------------------------
+Public Function IsJpegImageFile(ByVal FilePath As String)
+    Dim Result As Boolean: Result = False
+    If OrValue(LCase(GetExtensionIncludePeriod(FilePath)), ".jpg", ".jpeg") Then
+        Result = True
+    End If
+    IsJpegImageFile = Result
+End Function
+
+'----------------------------------------
+'・JpegExif含むファイル判定
+'----------------------------------------
+'   ・  Exifの撮影日時取得可能かどうかを判定なので
+'       ファイルが実際に存在することも確認される
+'----------------------------------------
+Public Function IsJpegExifFile(ByVal FilePath As String)
+    Dim Result As Boolean: Result = False
+    
+    If IsJpegImageFile(FilePath) Then
+        If GetJpegExifDateTime(FilePath) <> 0 Then
+            Result = True
+        End If
+    End If
+    
+    IsJpegExifFile = Result
+End Function
+
+'----------------------------------------
+'・JpegExif情報撮影日時取得
+'----------------------------------------
+'   ・  取得できない場合はCDate(0)を返す
+'----------------------------------------
+Public Function GetJpegExifDateTime(ByVal FilePath As String) As Date
+On Error GoTo Err:
+    Dim Result As Date: Result = 0
+    If IsJpegImageFile(FilePath) Then
+
+        Dim WIA_ImageFile As Object
+        Set WIA_ImageFile = CreateObject("Wia.ImageFile")
+        Call WIA_ImageFile.LoadFile(FilePath)
+
+        
+        '撮影日時
+        Dim ExifDateTime As String
+        ExifDateTime = WIA_ImageFile.Properties("36867")
+        ExifDateTime = Replace(ExifDateTime, ":", "/", , 2)
+        Result = CDate(ExifDateTime)
+    End If
+Err:
+    GetJpegExifDateTime = Result
+End Function
+
 
 '----------------------------------------
 '◆シェル起動
 '----------------------------------------
+Public Sub CommandExecute(Command As String)
+    Dim Result As String: Result = ""
+
+    Call Shell.Run( _
+        "%ComSpec% /c " + Command, _
+         VBA.VbAppWinStyle.vbHide, True)
+
+End Sub
+
+Private Sub testCommandExecute()
+    Call CommandExecute("ping")
+End Sub
+
 Public Function CommandExecuteReturn(Command As String, _
 Optional ByVal EncodeName As String = "Shift_JIS") As String
     Dim Result As String: Result = ""
@@ -3127,6 +3211,13 @@ ByVal X As Long, ByVal Y As Long) As String
     PopupMenu_Return = ""
     Call PopupMenu.ShowPopup(X, Y)
     PopupMenu_PopupReturn = PopupMenu_Return
+End Function
+
+Public Function PopupMenu_PopupReturn_NoPosition( _
+ByRef PopupMenu As CommandBar) As String
+    PopupMenu_Return = ""
+    Call PopupMenu.ShowPopup
+    PopupMenu_PopupReturn_NoPosition = PopupMenu_Return
 End Function
 
 Public Sub PopupMenu_ActionReturn(ByVal ReturnValue As String)
@@ -4349,6 +4440,12 @@ End Sub
 '◇ ver 2015/08/07
 '・ FileExists(Win/Mac両対応版)を追加
 '・ GetClipboardText/SetClipboardText(Win/Mac両対応版)を追加
+'◇ ver 2015/08/23
+'・ CommandExecuteを追加
+'・ PopupMenu_PopupReturn_NoPositionを追加
+'・ IsShortcutLinkFile追加
+'・ IsJpegImageFile/IsJpegExifFile追加
+'・ GetJpegExifDateTime追加
 '--------------------------------------------------
  
 
