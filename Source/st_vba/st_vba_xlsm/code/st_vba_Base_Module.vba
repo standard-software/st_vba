@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        http://standard-software.net/
 '--------------------------------------------------
-'Version:       2015/08/23
+'Version:       2015/12/12
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -42,6 +42,8 @@
 '       ADODB.Stream
 '・ Microsoft Forms 2.0 Object Library
 '       Image
+'・ Microsoft Internet Controls
+'       InternetExplorer
 '・ Microsoft Windows Common Controls 6.0 (SP6)
 '       ListView
 '       32bit Excel
@@ -182,6 +184,15 @@ Enum SpecialFolderType
     System
     Temporary
 End Enum
+
+'----------------------------------------
+'◆システム
+'----------------------------------------
+#If VBA7 And Win64 Then
+    Const Excel64bit As Boolean = True
+#Else
+    Const Excel64bit As Boolean = False
+#End If
 
 '--------------------------------------------------
 '■API
@@ -454,7 +465,11 @@ Public Const SW_SHOWMINIMIZED As Long = 2
 Public Const SW_SHOWMAXIMIZED  As Long = 3
 
 '----------------------------------------
-'◆Windows
+'◆システム
+'----------------------------------------
+
+'----------------------------------------
+'・OSバージョン
 '----------------------------------------
 Public Type OSVERSIONINFO
    dwOSVersionInfoSize As Long
@@ -464,6 +479,15 @@ Public Type OSVERSIONINFO
    dwPlatformId As Long
    szCSDVersion As String * 128
 End Type
+
+'----------------------------------------
+'・Sleep
+'----------------------------------------
+#If VBA7 And Win64 Then
+    Private Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal ms As LongPtr)
+#Else
+    Private Declare Sub Sleep Lib "kernel32" (ByVal ms As Long)
+#End If
 
 '----------------------------------------
 '◆タスクバーボタン登録
@@ -1066,6 +1090,14 @@ End Function
 '----------------------------------------
 '◆文字列処理
 '----------------------------------------
+
+'----------------------------------------
+'・IsInclude
+'----------------------------------------
+Public Function IsIncludeStr(ByVal Str As String, ByVal SubStr As String)
+    IsIncludeStr = _
+        (1 <= InStr(Str, SubStr))
+End Function
 
 '----------------------------------------
 '◇First / Last
@@ -4223,6 +4255,162 @@ Public Sub MouseClick()
 End Sub
 
 '----------------------------------------
+'◆InternetExplorer操作
+'----------------------------------------
+
+'----------------------------------------
+'・新規IEオブジェクト生成
+'----------------------------------------
+Function IE_NewObject() As InternetExplorer
+    Set IE_NewObject = New InternetExplorer
+    IE_NewObject.Visible = True
+End Function
+
+Sub testIE_NewObject()
+    Dim ie As InternetExplorer
+    Set ie = IE_NewObject
+    Call IE_Navigate(ie, "http://www.yahoo.co.jp/")
+    Call MsgBox("finish")
+    ie.Quit
+End Sub
+
+'----------------------------------------
+'・既存の起動IEの取得
+'----------------------------------------
+'   ・  起動済みIEがあればそれを取得
+'       なければ新規にIEを起動する
+'----------------------------------------
+Function IE_GetObject(Optional ByVal url As String = "") As InternetExplorer
+    Dim ie As InternetExplorer
+    Set ie = Nothing
+
+    Dim ShellApp As Object
+    Dim Window As Object
+    
+    Set ShellApp = CreateObject("Shell.Application")
+    
+    For Each Window In ShellApp.Windows
+       If IsIncludeStr(Window.Name, "Internet Explorer") Then
+            If (url = "") Then
+                Set ie = Window
+                Exit For
+            Else
+                If (IsIncludeStr(Window.LocationURL, url)) Then
+                    Set ie = Window
+                    Exit For
+                End If
+            End If
+        End If
+    Next
+    
+    If ie Is Nothing Then
+        Set ie = New InternetExplorer
+        ie.Visible = True
+    End If
+
+    Set IE_GetObject = ie
+End Function
+
+Sub testIE_GetObject()
+    Dim ie As InternetExplorer
+    Set ie = IE_GetObject("https://www.google.co.jp/")
+    Call IE_Navigate(ie, "http://www.yahoo.co.jp/")
+    Call MsgBox("finish")
+    Call IE_Quit(ie)
+End Sub
+
+'----------------------------------------
+'・IE起動とアドレス表示
+'----------------------------------------
+Sub IE_Navigate(ByVal ie As InternetExplorer, _
+ByVal url As String)
+    Call ie.Navigate(url)
+    Call IE_NavigateWait(ie, 20)
+End Sub
+
+
+'----------------------------------------
+'・IEナビゲート待機
+'----------------------------------------
+Sub IE_NavigateWait(ByVal ie As InternetExplorer, ByVal TimeOutSecond As Long)
+
+    Dim timeOut As Date
+
+    timeOut = Now + TimeSerial(0, 0, TimeOutSecond)
+
+    Do Until (ie.Busy = False) And (ie.ReadyState = READYSTATE_COMPLETE)
+        'READYSTATE_COMPLETE=4
+        DoEvents
+        Call Sleep(1)
+        If Now > timeOut Then
+            'ページの再読み込み(リフレッシュ)
+            ie.Refresh
+            timeOut = Now + TimeSerial(0, 0, TimeOutSecond)
+        End If
+    Loop
+
+    '現在の時間から20秒後の時間
+    timeOut = Now + TimeSerial(0, 0, TimeOutSecond)
+
+    Do Until (ie.Document.ReadyState = "complete")
+        DoEvents
+        Call Sleep(1)
+        If Now > timeOut Then
+            'ページの再読み込み(リフレッシュ)
+            ie.Refresh
+            timeOut = Now + TimeSerial(0, 0, TimeOutSecond)
+        End If
+    Loop
+
+End Sub
+
+Sub testIE_NavigateWait()
+
+    Dim ie As InternetExplorer
+    Set ie = IE_NewObject
+    Call IE_Navigate(ie, "https://www.google.co.jp/")
+
+    Set ie = IE_GetObject
+    Call IE_Navigate(ie, "http://www.yahoo.co.jp/")
+    
+    Call MsgBox("finish")
+
+    ie.Quit
+End Sub
+
+'----------------------------------------
+'・IEを閉じる
+'----------------------------------------
+'   ・  IEオブジェクトが見つからない場合でも
+'       エラーを起こさずに終わる
+'----------------------------------------
+Sub IE_Quit(ByVal ie As InternetExplorer)
+On Error Resume Next
+    ie.Quit
+End Sub
+
+
+'----------------------------------------
+'・IEでJavaScriptを実行する
+'----------------------------------------
+Sub IE_RunJavaScript(ByVal ie As InternetExplorer, ByVal ScriptCode As String)
+    Call ie.Navigate("JavaScript:" + ScriptCode)
+End Sub
+
+Sub testIE_RunJavaScript()
+    Dim ie As InternetExplorer
+    Set ie = IE_GetObject
+    Call IE_Navigate(ie, "http://www.yahoo.co.jp/")
+    
+    '1ページ分スクロール
+    Call IE_RunJavaScript(ie, "scrollTo(0," & ie.Document.body.ScrollHeight & ")")
+
+    Call MsgBox("finish")
+    Call IE_Quit(ie)
+End Sub
+
+
+'----------------------------------------
 '◆VBE操作
 '----------------------------------------
 
@@ -4310,6 +4498,7 @@ End Sub
 Sub Run_ReferenceAdd_ADO_6_1()
     Call ReferenceAdd_ADO_6_1(ThisWorkbook)
 End Sub
+
 
 
 '--------------------------------------------------
@@ -4446,6 +4635,12 @@ End Sub
 '・ IsShortcutLinkFile追加
 '・ IsJpegImageFile/IsJpegExifFile追加
 '・ GetJpegExifDateTime追加
+'◇ ver 2015/12/12
+'・ Excel64bit定数追加
+'・ SleepAPI追加
+'・ IE_NewObject/IE_GetObject/IE_Navigate
+'   /IE_NavigateWait/IE_RunJavaScript追加
+'・ IsIncludeStr追加
 '--------------------------------------------------
  
 
