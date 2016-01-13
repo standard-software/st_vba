@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        http://standard-software.net/
 '--------------------------------------------------
-'Version:       2015/12/12
+'Version:       2016/01/08
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -101,8 +101,13 @@ Public fso As New FileSystemObject
 Public Shell As New WshShell
 
 '----------------------------------------
-'◆Excel列指定
+'◆Excel
 '----------------------------------------
+
+'----------------------------------------
+'◇列指定
+'----------------------------------------
+
 Public Const Col__A = 1, Col__B = 2, Col__C = 3, Col__D = 4, Col__E = 5, Col__F = 6
 Public Const Col__G = 7, Col__H = 8, Col__I = 9, Col__J = 10, Col__K = 11, Col__L = 12
 Public Const Col__M = 13, Col__N = 14, Col__O = 15, Col__P = 16, Col__Q = 17, Col__R = 18
@@ -148,6 +153,19 @@ Public Const Col_IG = 241, Col_IH = 242, Col_II = 243, Col_IJ = 244, Col_IK = 24
 Public Const Col_IM = 247, Col_IN = 248, Col_IO = 249, Col_IP = 250, Col_IQ = 251, Col_IR = 252
 Public Const Col_IS = 253, Col_IT = 254, Col_IU = 255, Col_IV = 256, Col_IW = 257, Col_IX = 258
 Public Const Col_IY = 259, Col_IZ = 260
+
+'----------------------------------------
+'◇Cell削除処理
+'----------------------------------------
+'   ・  ClearComments/ClearOutlineは
+'       特に用途がなさそうなので実装しなかった
+'----------------------------------------
+Enum RangeClearType
+    rcClear
+    rcClearContents
+    rcClearFormats
+    
+End Enum
 
 '----------------------------------------
 '◆グラフ処理
@@ -1334,24 +1352,82 @@ End Sub
 '----------------------------------------
 '◇Trim
 '----------------------------------------
-Public Function TrimFirstChar(ByVal Str As String, ByVal TrimChar As String) As String
-    Do While IsFirstStr(Str, TrimChar)
-        Str = ExcludeFirstStr(Str, TrimChar)
-    Loop
-    TrimFirstChar = Str
+'Public Function TrimFirstChar(ByVal Str As String, ByVal TrimChar As String) As String
+'    Do While IsFirstStr(Str, TrimChar)
+'        Str = ExcludeFirstStr(Str, TrimChar)
+'    Loop
+'    TrimFirstChar = Str
+'End Function
+'
+'Public Function TrimLastChar(ByVal Str As String, ByVal TrimChar As String) As String
+'    Do While IsLastStr(Str, TrimChar)
+'        Str = ExcludeLastStr(Str, TrimChar)
+'    Loop
+'    TrimLastChar = Str
+'End Function
+'
+'Public Function TrimBothEndsChar(ByVal Str As String, ByVal TrimChar As String) As String
+'    TrimBothEndsChar = _
+'        TrimFirstChar(TrimLastChar(Str, TrimChar), TrimChar)
+'End Function
+
+
+Public Function TrimFirstStrs(ByVal Str As String, ByRef TrimStrs() As String) As String
+    Call Assert(IsArray(TrimStrs), "Error:TrimFirstStrs:TrimStrs is not Array.")
+    Dim Result As String: Result = Str
+    Do
+        Str = Result
+        Dim I As Long
+        For I = LBound(TrimStrs) To UBound(TrimStrs)
+            Result = ExcludeFirstStr(Result, TrimStrs(I))
+        Next
+    Loop While Result <> Str
+    TrimFirstStrs = Result
 End Function
 
-Public Function TrimLastChar(ByVal Str As String, ByVal TrimChar As String) As String
-    Do While IsLastStr(Str, TrimChar)
-        Str = ExcludeLastStr(Str, TrimChar)
-    Loop
-    TrimLastChar = Str
+Private Sub testTrimFirstStrs()
+    Call Check("123 ", TrimFirstStrs("   123 ", ArrayStr(" ")))
+    Call Check(vbTab + "  123 ", TrimFirstStrs("   " + vbTab + "  123 ", ArrayStr(" ")))
+    Call Check("123 ", TrimFirstStrs("   " + vbTab + "  123 ", ArrayStr(" ", vbTab)))
+End Sub
+
+Public Function TrimLastStrs(ByVal Str As String, ByRef TrimStrs() As String) As String
+    Call Assert(IsArray(TrimStrs), "Error:TrimLastStrs:TrimStrs is not Array.")
+    Dim Result As String: Result = Str
+    Do
+        Str = Result
+        Dim I As Long
+        For I = LBound(TrimStrs) To UBound(TrimStrs)
+            Result = ExcludeLastStr(Result, TrimStrs(I))
+        Next
+    Loop While Result <> Str
+    TrimLastStrs = Result
 End Function
 
-Public Function TrimBothEndsChar(ByVal Str As String, ByVal TrimChar As String) As String
-    TrimBothEndsChar = _
-        TrimFirstChar(TrimLastChar(Str, TrimChar), TrimChar)
+Private Sub testTrimLastStrs()
+    Call Check(" 123", TrimLastStrs(" 123   ", ArrayStr(" ")))
+    Call Check(" 123  " + vbTab, TrimLastStrs(" 123  " + vbTab + "   ", ArrayStr(" ")))
+    Call Check(" 123", TrimLastStrs(" 123  " + vbTab + "   ", ArrayStr(" ", vbTab)))
+End Sub
+
+Public Function TrimBothEndsStrs(ByVal Str As String, ByRef TrimStrs() As String) As String
+    TrimBothEndsStrs = _
+        TrimFirstStrs(TrimLastStrs(Str, TrimStrs), TrimStrs)
 End Function
+
+Public Function TrimFirstSpace(ByVal Str As String) As String
+    TrimFirstSpace = TrimFirstStrs(Str, ArrayStr(" ", vbCr, vbLf, vbTab))
+End Function
+
+Public Function TrimLastSpace(ByVal Str As String) As String
+    TrimLastSpace = TrimLastStrs(Str, ArrayStr(" ", vbCr, vbLf, vbTab))
+End Function
+
+Public Function TrimBothEndsSpace(ByVal Str As String) As String
+    TrimBothEndsSpace = _
+        TrimFirstSpace(TrimLastSpace(Str))
+End Function
+
 
 '----------------------------------------
 '◇文字列結合
@@ -2902,7 +2978,7 @@ End Function
 Public Sub CommandExecute(Command As String)
     Dim Result As String: Result = ""
 
-    Call Shell.Run( _
+    Call Shell.run( _
         "%ComSpec% /c " + Command, _
          VBA.VbAppWinStyle.vbHide, True)
 
@@ -2924,7 +3000,7 @@ Optional ByVal EncodeName As String = "Shift_JIS") As String
             fso.GetSpecialFolder(TemporaryFolder), fso.GetTempName)
     Loop While fso.FileExists(TempFilePath)
 
-    Call Shell.Run( _
+    Call Shell.run( _
         "%ComSpec% /c " + Command + ">" + TempFilePath + " 2>&1", _
          VBA.VbAppWinStyle.vbHide, True)
 
@@ -3002,7 +3078,7 @@ End Sub
 Public Function ColumnText(ByVal ColumnNumber As Long) As String
     ColumnText = _
         FirstStrFirstDelim( _
-            Application.Columns(ColumnNumber).Address(False, False, xlA1), _
+            Application.Columns(ColumnNumber).address(False, False, xlA1), _
             ":")
 End Function
 
@@ -3014,9 +3090,12 @@ End Sub
 '----------------------------------------
 '・最終行/列
 '----------------------------------------
+'   ・  データがない場合は1を戻す
+'----------------------------------------
 Public Function DataLastRow(ByVal Sheet As Worksheet, _
 Optional ByVal ColumnNumber As Long = -1) As Long
-
+On Error Resume Next
+    DataLastRow = 1
     Call Assert(-1 <= ColumnNumber, "Error:DataLastRow")
     If ColumnNumber = -1 Then
         DataLastRow = Sheet.UsedRange.Find("*", _
@@ -3028,7 +3107,8 @@ End Function
 
 Public Function DataLastCol(ByVal Sheet As Worksheet, _
 Optional ByVal RowNumber As Long = -1) As Long
-
+On Error Resume Next
+    DataLastCol = 1
     Call Assert(-1 <= RowNumber, "Error:DataLastCol")
     If RowNumber = -1 Then
         DataLastCol = Sheet.UsedRange.Find("*", _
@@ -3044,20 +3124,60 @@ Public Function DataLastCell(ByVal Sheet As Worksheet) As Range
 End Function
 
 '----------------------------------------
-'・最終行列削除
+'◇最終行列削除
 '----------------------------------------
-Public Sub ClearLast(ByVal Sheet As Worksheet, _
-ByVal RowIndex As Long, ByVal ColumnIndex As Long)
-    Sheet.Range( _
-        Sheet.Cells(RowIndex, ColumnIndex), _
-        Sheet.Cells(DataLastRow(Sheet), DataLastCol(Sheet))).Clear
+Public Sub RangeClear(ByRef Range As Range, ByVal RangeClearType As RangeClearType)
+    Call Assert(OrValue(RangeClearType, _
+        rcClear, rcClearContents, rcClearFormats), _
+        "Error:RangeClear:Args RangeClear")
+
+    Select Case RangeClearType
+    Case rcClear
+        Range.Clear
+    Case rcClearContents
+        Range.ClearContents
+    Case rcClearFormats
+        Range.ClearFormats
+    End Select
 End Sub
 
-Public Sub ClearLineColumn(ByVal Sheet As Worksheet, _
-ByVal RowIndex As Long, ByVal ColumnIndex As Long)
-    Sheet.Range( _
-        Sheet.Cells(RowIndex, ColumnIndex), _
-        Sheet.Cells(DataLastRow(Sheet, ColumnIndex), ColumnIndex)).Clear
+Public Sub ClearLastRange(ByVal Sheet As Worksheet, _
+ByVal RowIndex As Long, ByVal ColumnIndex As Long, _
+Optional ByVal RangeClearType As RangeClearType = rcClear)
+    If (RowIndex <= DataLastRow(Sheet)) _
+    And (ColumnIndex <= DataLastCol(Sheet)) Then
+        Call RangeClear( _
+            Sheet.Range( _
+                Sheet.Cells(RowIndex, ColumnIndex), _
+                Sheet.Cells(DataLastRow(Sheet), DataLastCol(Sheet))), _
+            RangeClearType)
+    End If
+End Sub
+
+Public Sub ClearLastColumn(ByVal Sheet As Worksheet, _
+ByVal RowIndex As Long, ByVal ColumnIndex As Long, _
+Optional ByVal RangeClearType As RangeClearType = rcClear)
+    Dim LastRow As Long: LastRow = DataLastRow(Sheet, ColumnIndex)
+    If (RowIndex <= LastRow) Then
+        Call RangeClear( _
+            Sheet.Range( _
+                Sheet.Cells(RowIndex, ColumnIndex), _
+                Sheet.Cells(DataLastRow(Sheet, ColumnIndex), ColumnIndex)), _
+            RangeClearType)
+    End If
+End Sub
+
+Public Sub ClearLastRow(ByVal Sheet As Worksheet, _
+ByVal RowIndex As Long, ByVal ColumnIndex As Long, _
+Optional ByVal RangeClearType As RangeClearType = rcClear)
+    Dim LastCol As Long: LastCol = DataLastCol(Sheet, RowIndex)
+    If (ColumnIndex <= LastCol) Then
+        Call RangeClear( _
+            Sheet.Range( _
+                Sheet.Cells(RowIndex, ColumnIndex), _
+                Sheet.Cells(RowIndex, DataLastCol(Sheet, RowIndex))), _
+            RangeClearType)
+    End If
 End Sub
 
 '----------------------------------------
@@ -3327,7 +3447,7 @@ Public Sub GraphSeriesLastRangeUp(ByRef Data As GraphFormulaData, Value As Long)
         SheetName = FirstStrFirstDelim(Data.ItemXAxisRangeStr, "!")
         Data.ItemXAxisRangeStr = _
             IncludeFirstStr( _
-                R1.Resize(R1.Rows.Count + Value, R1.Columns.Count).Address, _
+                R1.Resize(R1.Rows.Count + Value, R1.Columns.Count).address, _
                 SheetName + "!")
     End If
 
@@ -3335,7 +3455,7 @@ Public Sub GraphSeriesLastRangeUp(ByRef Data As GraphFormulaData, Value As Long)
     SheetName = FirstStrFirstDelim(Data.DataRangeStr, "!")
     Data.DataRangeStr = _
         IncludeFirstStr( _
-            R1.Resize(R1.Rows.Count + Value, R1.Columns.Count).Address, _
+            R1.Resize(R1.Rows.Count + Value, R1.Columns.Count).address, _
             SheetName + "!")
 End Sub
 
@@ -3363,7 +3483,7 @@ Public Sub GraphSeriesMove(ByRef Data As GraphFormulaData, Value As Long)
         SheetName = FirstStrFirstDelim(Data.ItemXAxisRangeStr, "!")
         Data.ItemXAxisRangeStr = _
             IncludeFirstStr( _
-                R1.Offset(Value, 0).Address, _
+                R1.Offset(Value, 0).address, _
                 SheetName + "!")
     End If
 
@@ -3371,7 +3491,7 @@ Public Sub GraphSeriesMove(ByRef Data As GraphFormulaData, Value As Long)
     SheetName = FirstStrFirstDelim(Data.DataRangeStr, "!")
     Data.DataRangeStr = _
         IncludeFirstStr( _
-            R1.Offset(Value, 0).Address, _
+            R1.Offset(Value, 0).address, _
             SheetName + "!")
 End Sub
 
@@ -3388,7 +3508,7 @@ Public Sub GraphSeriesResize(ByRef Data As GraphFormulaData, Value As Long)
         SheetName = FirstStrFirstDelim(Data.ItemXAxisRangeStr, "!")
         Data.ItemXAxisRangeStr = _
             IncludeFirstStr( _
-                R1.Resize(Value, R1.Columns.Count).Address, _
+                R1.Resize(Value, R1.Columns.Count).address, _
                 SheetName + "!")
     End If
 
@@ -3396,7 +3516,7 @@ Public Sub GraphSeriesResize(ByRef Data As GraphFormulaData, Value As Long)
     SheetName = FirstStrFirstDelim(Data.DataRangeStr, "!")
     Data.DataRangeStr = _
         IncludeFirstStr( _
-            R1.Resize(Value, R1.Columns.Count).Address, _
+            R1.Resize(Value, R1.Columns.Count).address, _
             SheetName + "!")
 End Sub
 
@@ -3426,7 +3546,7 @@ Public Sub SetGraphFormulaDataColumn(ByRef Data As GraphFormulaData, ColumnIndex
 
     Data.DataRangeStr = _
         IncludeFirstStr( _
-            R1.Offset(0, ColumnIndex - R1.Column).Address, _
+            R1.Offset(0, ColumnIndex - R1.Column).address, _
             SheetName + "!")
 End Sub
 
@@ -4641,7 +4761,17 @@ End Sub
 '・ IE_NewObject/IE_GetObject/IE_Navigate
 '   /IE_NavigateWait/IE_RunJavaScript追加
 '・ IsIncludeStr追加
+'◇ ver 2015/12/16
+'・ ClearLastRange/ClearLastColumn/ClearLastRow
+'   /ClearLastRangeContents
+'   /ClearLastColumnContents/ClearLastRowContentsを修正追加
+'◇ ver 2016/01/08
+'・ ClearLastRange/ClearLastColumn/ClearLastRowを修正
+'   ClearContents機能を追加
+'・ TrimFirstChar/TrimLastChar/TrimBothEndsCharを廃止
+'   TrimFirstStrs/TrimLastStrs/TrimBothEndsStrs
+'   /TrimFirstSpace/TrimLastSpace/TrimBothEndsSpaceを追加
+'・ DataLastRow/DataLastColがデータがないときにエラー発生するので
+'   OnErrorResumeするように修正
 '--------------------------------------------------
- 
-
 
