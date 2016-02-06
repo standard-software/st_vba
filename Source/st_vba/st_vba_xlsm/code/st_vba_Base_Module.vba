@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        http://standard-software.net/
 '--------------------------------------------------
-'Version:       2016/01/08
+'Version:       2016/02/06
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -71,7 +71,7 @@ Option Explicit
 '--------------------------------------------------
 
 '----------------------------------------
-'◆型
+'◆位置・サイズ
 '----------------------------------------
 Public Type Point
     X As Long
@@ -89,6 +89,18 @@ Public Type RectSize
     Width As Long
     Height As Long
 End Type
+
+Public Enum AlineHorizontal
+    alLeft
+    alCenter
+    alRight
+End Enum
+
+Public Enum AlineVertical
+    alTop
+    alCenter
+    alBottom
+End Enum
 
 '----------------------------------------
 '◆FileSystemObject
@@ -159,6 +171,9 @@ Public Const Col_IY = 259, Col_IZ = 260
 '----------------------------------------
 '   ・  ClearComments/ClearOutlineは
 '       特に用途がなさそうなので実装しなかった
+'   ・  rcClear:            全てクリア
+'       rcClearContents:    数式・文字列のクリア
+'       rcClearFormats:     書式のクリア
 '----------------------------------------
 Enum RangeClearType
     rcClear
@@ -635,6 +650,18 @@ Public Declare PtrSafe Function SystemParametersInfo _
     ByRef lpvParam As Any, ByVal fuWinIni As Long) As Long
 
 Public Const SPI_GETWORKAREA As Long = 48
+
+'----------------------------------------
+'◆インターネット
+'----------------------------------------
+Public Declare Function URLDownloadToFile _
+    Lib "urlmon" Alias "URLDownloadToFileA" ( _
+    ByVal pCaller As Long, _
+    ByVal szURL As String, _
+    ByVal szFileName As String, _
+    ByVal dwReserved As Long, _
+    ByVal lpfnCB As Long) As Long
+
 
 '--------------------------------------------------
 '■実装
@@ -1601,21 +1628,56 @@ Private Sub testMonthMonthDayCount()
 End Sub
 
 '----------------------------------------
+'◇日付時刻書式指定
+'----------------------------------------
+
+'----------------------------------------
 '・日付書式
 '----------------------------------------
+Public Function FormatYYYYMMDD(ByVal DateValue As Date) As String
+    FormatYYYYMMDD = FormatYYYY_MM_DD(DateValue, "")
+End Function
+
+Sub testFormatYYYYMMDD()
+    Dim Value As Date: Value = CDate("2015/02/03")
+    Call Check("20150203", FormatYYYYMMDD(Value))
+End Sub
+
 Public Function FormatYYYY_MM_DD( _
 ByVal DateValue As Date, ByVal Delimiter As String) As String
     FormatYYYY_MM_DD = Format(DateValue, _
         "YYYY" + Delimiter + "MM" + Delimiter + "DD")
 End Function
 
+Public Function FormatYYYY_MM( _
+ByVal DateValue As Date, ByVal Delimiter As String) As String
+    FormatYYYY_MM = Format(DateValue, _
+        "YYYY" + Delimiter + "MM")
+End Function
+
+
 '----------------------------------------
 '・時刻書式
 '----------------------------------------
+Public Function FormatHHMMSS(ByVal TimeValue As Date) As String
+    FormatHHMMSS = FormatHH_MM_SS(TimeValue, "")
+End Function
+
+Sub testFormatHHMMSS()
+    Dim Value As Date: Value = CDate("2015/02/03 05:05")
+    Call Check("05:05:00", FormatHH_MM_SS(Value, ":"))
+End Sub
+
 Public Function FormatHH_MM_SS( _
-ByVal DateValue As Date, ByVal Delimiter As String) As String
-    FormatHH_MM_SS = Format(DateValue, _
+ByVal TimeValue As Date, ByVal Delimiter As String) As String
+    FormatHH_MM_SS = Format(TimeValue, _
         "HH" + Delimiter + "NN" + Delimiter + "SS")
+End Function
+
+Public Function FormatHH_MM( _
+ByVal TimeValue As Date, ByVal Delimiter As String)
+    FormatHH_MM = Format(TimeValue, _
+        "HH" + Delimiter + "NN")
 End Function
 
 '----------------------------------------
@@ -1627,6 +1689,24 @@ Public Function FormatDateTimeNormal(DateValue As Date) As String
         " " + _
         FormatHH_MM_SS(DateValue, ":")
 End Function
+
+'----------------------------------------
+'・日付時刻書式
+'----------------------------------------
+Public Function FormatYYYYMMDDHHMMSS(ByVal DateTimeValue As Date) As String
+    FormatYYYYMMDDHHMMSS = _
+        FormatYYYYMMDD(DateTimeValue) + _
+        FormatHHMMSS(DateTimeValue)
+End Function
+
+
+Public Function FormatYYYYMMDDHHMMSS_Hyphen(ByVal DateTimeValue)
+    FormatYYYYMMDDHHMMSS_Hyphen = _
+        FormatYYYY_MM_DD(DateTimeValue, "-") + "-" + _
+        FormatHH_MM_SS(DateTimeValue, "-")
+End Function
+
+
 
 '----------------------------------------
 '◆配列処理
@@ -3092,6 +3172,8 @@ End Sub
 '----------------------------------------
 '   ・  データがない場合は1を戻す
 '----------------------------------------
+
+'・データ最終行
 Public Function DataLastRow(ByVal Sheet As Worksheet, _
 Optional ByVal ColumnNumber As Long = -1) As Long
 On Error Resume Next
@@ -3105,6 +3187,7 @@ On Error Resume Next
     End If
 End Function
 
+'・データ最終列
 Public Function DataLastCol(ByVal Sheet As Worksheet, _
 Optional ByVal RowNumber As Long = -1) As Long
 On Error Resume Next
@@ -3126,6 +3209,8 @@ End Function
 '----------------------------------------
 '◇最終行列削除
 '----------------------------------------
+'   ・  RangeClearTypeは
+'----------------------------------------
 Public Sub RangeClear(ByRef Range As Range, ByVal RangeClearType As RangeClearType)
     Call Assert(OrValue(RangeClearType, _
         rcClear, rcClearContents, rcClearFormats), _
@@ -3141,7 +3226,7 @@ Public Sub RangeClear(ByRef Range As Range, ByVal RangeClearType As RangeClearTy
     End Select
 End Sub
 
-Public Sub ClearLastRange(ByVal Sheet As Worksheet, _
+Public Sub ClearRangeLast(ByVal Sheet As Worksheet, _
 ByVal RowIndex As Long, ByVal ColumnIndex As Long, _
 Optional ByVal RangeClearType As RangeClearType = rcClear)
     If (RowIndex <= DataLastRow(Sheet)) _
@@ -3154,7 +3239,8 @@ Optional ByVal RangeClearType As RangeClearType = rcClear)
     End If
 End Sub
 
-Public Sub ClearLastColumn(ByVal Sheet As Worksheet, _
+'・クリア最終列
+Public Sub ClearColumnLast(ByVal Sheet As Worksheet, _
 ByVal RowIndex As Long, ByVal ColumnIndex As Long, _
 Optional ByVal RangeClearType As RangeClearType = rcClear)
     Dim LastRow As Long: LastRow = DataLastRow(Sheet, ColumnIndex)
@@ -3167,7 +3253,7 @@ Optional ByVal RangeClearType As RangeClearType = rcClear)
     End If
 End Sub
 
-Public Sub ClearLastRow(ByVal Sheet As Worksheet, _
+Public Sub ClearRowLast(ByVal Sheet As Worksheet, _
 ByVal RowIndex As Long, ByVal ColumnIndex As Long, _
 Optional ByVal RangeClearType As RangeClearType = rcClear)
     Dim LastCol As Long: LastCol = DataLastCol(Sheet, RowIndex)
@@ -3275,6 +3361,95 @@ Optional ByVal Sheet As Worksheet = Nothing) As Boolean
     Next
     OLEObjectExists = Result
 End Function
+
+'----------------------------------------
+'◇Shape
+'----------------------------------------
+
+'----------------------------------------
+'・セル範囲に当てはまるように画像ファイルを貼り付ける処理
+'----------------------------------------
+Public Function GetShapeFromImageFile(ByVal Sheet As Worksheet, _
+    ByVal ImageFilePath As String, _
+    ByVal SheetRange As Range, _
+    Optional ByVal Margin As Long = 1, _
+    Optional HorizontalAlign As AlineHorizontal = AlineHorizontal.alCenter, _
+    Optional VerticalAlign As AlineVertical = AlineVertical.alCenter) _
+    As Shape
+    
+    'マージンをとるために値を設定
+    Dim Rect As Rect
+    Rect.Left = SheetRange.Left + Margin
+    Rect.Top = SheetRange.Top + Margin
+    Call SetRectWidth(Rect, SheetRange.Width - (Margin * 2))
+    Call SetRectHeight(Rect, SheetRange.Height - (Margin * 2))
+    
+    Dim Shape As Shape
+    Set Shape = Sheet.Shapes.AddPicture( _
+        Filename:=ImageFilePath, LinkToFile:=False, _
+        SaveWithDocument:=True, _
+        Left:=Rect.Left, _
+        Top:=Rect.Top, _
+        Width:=0, _
+        Height:=0)
+    
+    '元画像サイズに戻す
+    Call Shape.ScaleHeight(1#, True)
+    Call Shape.ScaleWidth(1#, True)
+    
+    '縦横比を保持したまま、高さを調整する
+    Shape.LockAspectRatio = True
+    Shape.Height = GetRectHeight(Rect)
+    
+    '画像横サイズが範囲内に収まっているかどうか確認
+    If Shape.Width > GetRectWidth(Rect) Then
+        '横サイズがはみ出ているなら横を合わせる
+        Shape.Width = GetRectWidth(Rect)
+        
+        '左右位置はぴったりなので上下位置調整をする
+        Select Case VerticalAlign
+        Case AlineVertical.alCenter
+            Shape.Top = Shape.Top + (GetRectHeight(Rect) - Shape.Height) / 2
+        Case AlineVertical.alBottom
+            Shape.Top = Shape.Top + (GetRectHeight(Rect) - Shape.Height)
+        End Select
+    Else
+        '上下位置はぴったりなので左右位置調整をする
+        Select Case HorizontalAlign
+        Case AlineHorizontal.alCenter
+            Shape.Left = Shape.Left + (GetRectWidth(Rect) - Shape.Width) / 2
+        Case AlineHorizontal.alRight
+            Shape.Left = Shape.Left + (GetRectWidth(Rect) - Shape.Width)
+        End Select
+    End If
+    
+    Set GetShapeFromImageFile = Shape
+End Function
+
+'----------------------------------------
+'・Shape画像を圧縮する
+'----------------------------------------
+'   ・  クリップボードを経由する方法しか無いらしい
+'----------------------------------------
+Public Sub ShapeCompressUseClipboard(ByVal Sheet As Worksheet, ByVal Shape As Shape)
+    Dim Point As Point
+    Dim RectSize As RectSize
+    Point.X = Shape.Left
+    Point.Y = Shape.Top
+    RectSize.Width = Shape.Width
+    RectSize.Height = Shape.Height
+    
+    Shape.Cut
+    
+'    Sheet.PasteSpecial Format:="図 (拡張メタファイル)", Link:=False, DisplayAsIcon:=False
+    Sheet.PasteSpecial Format:="図 (JPEG)", Link:=False, DisplayAsIcon:=False
+    Selection.ShapeRange.Width = RectSize.Width
+    Selection.ShapeRange.Height = RectSize.Height
+    Selection.Left = Point.X
+    Selection.Top = Point.Y
+End Sub
+
+
 
 '----------------------------------------
 '◆Excel アプリケーション
@@ -4381,9 +4556,9 @@ End Sub
 '----------------------------------------
 '・新規IEオブジェクト生成
 '----------------------------------------
-Function IE_NewObject() As InternetExplorer
+Function IE_NewObject(Optional ByVal Visible As Boolean = True) As InternetExplorer
     Set IE_NewObject = New InternetExplorer
-    IE_NewObject.Visible = True
+    IE_NewObject.Visible = Visible
 End Function
 
 Sub testIE_NewObject()
@@ -4424,8 +4599,7 @@ Function IE_GetObject(Optional ByVal url As String = "") As InternetExplorer
     Next
     
     If ie Is Nothing Then
-        Set ie = New InternetExplorer
-        ie.Visible = True
+        Set ie = IE_NewObject(True)
     End If
 
     Set IE_GetObject = ie
@@ -4443,42 +4617,71 @@ End Sub
 '・IE起動とアドレス表示
 '----------------------------------------
 Sub IE_Navigate(ByVal ie As InternetExplorer, _
-ByVal url As String)
+ByVal URL As String, _
+Optional ByRef NavigateCancelFlag As Boolean = False)
     Call ie.Navigate(url)
-    Call IE_NavigateWait(ie, 20)
+    Call IE_NavigateWait(ie, 120, 300, NavigateCancelFlag)
 End Sub
 
+'----------------------------------------
+'・IEリフレッシュ
+'----------------------------------------
+'   ・  リフレッシュ時に非表示が表示になってしまう場合が
+'       あるようなので対応
+'----------------------------------------
+Sub IE_Refresh(ByVal ie As InternetExplorer)
+    Dim VisibleBuffer As Boolean
+    VisibleBuffer = ie.Visible
+    Call ie.Refresh
+    ie.Visible = VisibleBuffer
+End Sub
 
 '----------------------------------------
 '・IEナビゲート待機
 '----------------------------------------
-Sub IE_NavigateWait(ByVal ie As InternetExplorer, ByVal TimeOutSecond As Long)
+Sub IE_NavigateWait(ByVal ie As InternetExplorer, _
+ByVal RefreshSecond As Long, _
+ByVal TimeOutSecond As Long, _
+Optional ByRef NavigateCancelFlag As Boolean = False)
 
-    Dim timeOut As Date
-
-    timeOut = Now + TimeSerial(0, 0, TimeOutSecond)
+    'リフレッシュ時間/タイムアウト時間
+    Dim RefreshTime As Date
+    Dim TimeOutTime As Date
+    RefreshTime = Now + TimeSerial(0, 0, RefreshSecond)
+    TimeOutTime = Now + TimeSerial(0, 0, TimeOutSecond)
 
     Do Until (ie.Busy = False) And (ie.ReadyState = READYSTATE_COMPLETE)
         'READYSTATE_COMPLETE=4
         DoEvents
         Call Sleep(1)
-        If Now > timeOut Then
+        If NavigateCancelFlag Then
+            Exit Sub
+        End If
+        If Now > TimeOutTime Then
+            Exit Sub
+        End If
+        If Now > RefreshTime Then
             'ページの再読み込み(リフレッシュ)
-            ie.Refresh
-            timeOut = Now + TimeSerial(0, 0, TimeOutSecond)
+            Call IE_Refresh(ie)
+            RefreshTime = Now + TimeSerial(0, 0, RefreshSecond)
         End If
     Loop
 
-    '現在の時間から20秒後の時間
-    timeOut = Now + TimeSerial(0, 0, TimeOutSecond)
+    RefreshTime = Now + TimeSerial(0, 0, RefreshSecond)
+    TimeOutTime = Now + TimeSerial(0, 0, TimeOutSecond)
 
     Do Until (ie.Document.ReadyState = "complete")
         DoEvents
         Call Sleep(1)
-        If Now > timeOut Then
-            'ページの再読み込み(リフレッシュ)
-            ie.Refresh
-            timeOut = Now + TimeSerial(0, 0, TimeOutSecond)
+        If NavigateCancelFlag Then
+            Exit Sub
+        End If
+        If Now > TimeOutTime Then
+            Exit Sub
+        End If
+        If Now > RefreshTime Then
+            Call IE_Refresh(ie)
+            RefreshTime = Now + TimeSerial(0, 0, RefreshSecond)
         End If
     Loop
 
@@ -4528,6 +4731,16 @@ Sub testIE_RunJavaScript()
     Call MsgBox("finish")
     Call IE_Quit(ie)
 End Sub
+
+'----------------------------------------
+'・URL指定のファイルダウンロード
+'----------------------------------------
+'   ・  APIのURLDownloadToFileを使いやすくした
+'----------------------------------------
+Public Function URLDownloadFile(ByVal URL As String, ByVal FilePath As String) As Long
+    URLDownloadFile = URLDownloadToFile(0, URL, FilePath, 0, 0)
+End Function
+
 
 
 '----------------------------------------
@@ -4773,5 +4986,23 @@ End Sub
 '   /TrimFirstSpace/TrimLastSpace/TrimBothEndsSpaceを追加
 '・ DataLastRow/DataLastColがデータがないときにエラー発生するので
 '   OnErrorResumeするように修正
+'◇ ver 2016/02/06
+'・ Enum AlineHorizontal/AlineVertical の定義
+'・ URLDownloadToFile APIとURLDownloadFileの追加
+'・ 日付時刻書式指定関数の追加
+'   FormatYYYYMMDD/FormatYYYY_MM
+'   /FormatHHMMSS/FormatHH_MM
+'   /FormatYYYYMMDDHHMMSS/FormatYYYYMMDDHHMMSS_Hyphen
+'・ クリア形処理の名前変更
+'   ClearLastRange→ClearRangeLast
+'   ClearLastColumn→ClearColumnLast
+'   ClearLastRow→ClearRowLast
+'・ Shape処理の追加
+'   GetShapeFromImageFile/ShapeCompressUseClipboard
+'・ IE処理の修正 IE_NewObject/IE_Refresh
+'   /IE_Navigate/IE_NavigateWait
 '--------------------------------------------------
+
+
+
 
