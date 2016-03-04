@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        http://standard-software.net/
 '--------------------------------------------------
-'Version:       2016/02/06
+'Version:       2016/03/04
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -517,9 +517,9 @@ End Type
 '・Sleep
 '----------------------------------------
 #If VBA7 And Win64 Then
-    Private Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal ms As LongPtr)
+    Public Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal ms As LongPtr)
 #Else
-    Private Declare Sub Sleep Lib "kernel32" (ByVal ms As Long)
+    Public Declare Sub Sleep Lib "kernel32" (ByVal ms As Long)
 #End If
 
 '----------------------------------------
@@ -689,6 +689,9 @@ Public Function Check(ByVal A As Variant, ByVal B As Variant) As Boolean
     End If
 End Function
 
+'----------------------------------------
+'・OrValue
+'----------------------------------------
 Public Function OrValue(ByVal Value As Variant, ParamArray Values() As Variant) As Boolean
     OrValue = False
     Dim I As Long
@@ -704,6 +707,30 @@ Private Sub testOrValue()
     Call Check(True, OrValue(10, 20, 30, 40, 10))
     Call Check(False, OrValue(50, 20, 30, 40, 10))
 End Sub
+
+'----------------------------------------
+'・IsNothing/IsNotNothing
+'----------------------------------------
+Public Function IsNothing(ByRef Value As Object) As Boolean
+    IsNothing = (Value Is Nothing)
+End Function
+
+Public Function IsNotNothing(ByRef Value As Object) As Boolean
+    IsNotNothing = Not (Value Is Nothing)
+End Function
+
+'----------------------------------------
+'・値が空文字の場合だけ別の値を返す関数
+'----------------------------------------
+Function IfEmptyStr(ByVal Value As String, ByVal EmptyStrCaseValue) As String
+    Dim Result As String: Result = ""
+    If Value = "" Then
+        Result = EmptyStrCaseValue
+    Else
+        Result = Value
+    End If
+    IfEmptyStr = Result
+End Function
 
 '----------------------------------------
 '◆型、型変換
@@ -783,6 +810,19 @@ Private Sub testStrToLongDefault()
     Call Check(123, StrToLongDefault(" 123 ", 0))
     Call Check(0, StrToLongDefault(" A123 ", 0))
     Call Check(123, StrToLongDefault("BBB", 123))
+End Sub
+
+'----------------------------------------
+'◇カンマ付き文字の変換
+'----------------------------------------
+Public Function CastExcludeComma(ByVal CommaNumber As String) As Double
+    CastExcludeComma = CDbl( _
+        Replace(CommaNumber, ",", ""))
+End Function
+
+Public Sub testCastExcludeComma()
+    Call Check(1000, CastExcludeComma("1,000"))
+    Call Check(1000000, CastExcludeComma("1,000,000"))
 End Sub
 
 '----------------------------------------
@@ -1283,13 +1323,17 @@ End Function
 '----------------------------------------
 '・FirstStrFirstDelim
 '----------------------------------------
-
+'   ・  先頭で見つかれば空文字を返す
+'   ・  見つからなければ文字をそのまま返す
+'----------------------------------------
 Public Function FirstStrFirstDelim( _
 ByVal Value As String, ByVal Delimiter As String) As String
     Dim Result As String: Result = ""
     Dim Index As Long: Index = InStr(Value, Delimiter)
     If 1 <= Index Then
         Result = Left$(Value, Index - 1)
+    Else
+        Result = Value
     End If
     FirstStrFirstDelim = Result
 End Function
@@ -1300,7 +1344,7 @@ Public Sub testFirstStrFirstDelim()
     Call Check("123", FirstStrFirstDelim("123ttt456", "ttt"))
     Call Check("123", FirstStrFirstDelim("123ttt456", "tt"))
     Call Check("123", FirstStrFirstDelim("123ttt456", "t"))
-    Call Check("", FirstStrFirstDelim("123ttt456", ","))
+    Call Check("123ttt456", FirstStrFirstDelim("123ttt456", ","))
     Call Check("", FirstStrFirstDelim(",123,", ","))
 End Sub
 
@@ -1314,6 +1358,8 @@ ByVal Value As String, ByVal Delimiter As String) As String
     Dim Index: Index = InStrRev(Value, Delimiter)
     If 1 <= Index Then
         Result = Left$(Value, Index - 1)
+    Else
+        Result = Value
     End If
     FirstStrLastDelim = Result
 End Function
@@ -1324,7 +1370,7 @@ Public Sub testFirstStrLastDelim()
     Call Check("123", FirstStrLastDelim("123ttt456", "ttt"))
     Call Check("123t", FirstStrLastDelim("123ttt456", "tt"))
     Call Check("123tt", FirstStrLastDelim("123ttt456", "t"))
-    Call Check("", FirstStrLastDelim("123ttt456", ","))
+    Call Check("123ttt456", FirstStrLastDelim("123ttt456", ","))
     Call Check(",123", FirstStrLastDelim(",123,", ","))
 End Sub
 
@@ -1338,6 +1384,8 @@ ByVal Value As String, ByVal Delimiter As String) As String
     Dim Index: Index = InStr(Value, Delimiter)
     If 1 <= Index Then
         Result = Mid$(Value, Index + Len(Delimiter))
+    Else
+        Result = Value
     End If
     LastStrFirstDelim = Result
 End Function
@@ -1348,7 +1396,7 @@ Public Sub testLastStrFirstDelim()
     Call Check("456", LastStrFirstDelim("123ttt456", "ttt"))
     Call Check("t456", LastStrFirstDelim("123ttt456", "tt"))
     Call Check("tt456", LastStrFirstDelim("123ttt456", "t"))
-    Call Check("", LastStrFirstDelim("123ttt456", ","))
+    Call Check("123ttt456", LastStrFirstDelim("123ttt456", ","))
     Call Check("123,", LastStrFirstDelim(",123,", ","))
 End Sub
 
@@ -1356,11 +1404,13 @@ End Sub
 '・LastStrLastDelim
 '----------------------------------------
 Public Function LastStrLastDelim( _
-ByVal S As String, ByVal Delimiter As String) As String
+ByVal Value As String, ByVal Delimiter As String) As String
     Dim Result: Result = ""
-    Dim Index As Long: Index = InStrRev(S, Delimiter)
+    Dim Index As Long: Index = InStrRev(Value, Delimiter)
     If 1 <= Index Then
-        Result = Mid$(S, Index + Len(Delimiter))
+        Result = Mid$(Value, Index + Len(Delimiter))
+    Else
+        Result = Value
     End If
     LastStrLastDelim = Result
 End Function
@@ -1371,10 +1421,105 @@ Public Sub testLastStrLastDelim()
     Call Check("456", LastStrLastDelim("123ttt456", "ttt"))
     Call Check("456", LastStrLastDelim("123ttt456", "tt"))
     Call Check("456", LastStrLastDelim("123ttt456", "t"))
-    Call Check("", LastStrLastDelim("123ttt456", ","))
+    Call Check("123ttt456", LastStrLastDelim("123ttt456", ","))
     Call Check("", LastStrLastDelim(",123,", ","))
 End Sub
 
+'----------------------------------------
+'◇Tag処理
+'----------------------------------------
+
+'----------------------------------------
+'・タグの内部文字列
+'----------------------------------------
+Public Function TagInnerText(ByVal Text As String, _
+    ByVal StartTag As String, ByVal EndTag As String) As String
+    
+    Dim Result As String
+    Result = IfEmptyStr(LastStrFirstDelim(Text, StartTag), Text)
+    Result = FirstStrFirstDelim(Result, EndTag)
+    TagInnerText = Result
+End Function
+
+Public Sub testTagInnerText()
+    Call Check("456", TagInnerText("000<123>456<789>000", "<123>", "<789>"))
+    Call Check("456", TagInnerText("<123>456<789>", "<123>", "<789>"))
+    Call Check("456", TagInnerText("000<123>456", "<123>", "<789>"))
+    Call Check("456", TagInnerText("456<789>000", "<123>", "<789>"))
+    Call Check("456", TagInnerText("456", "<123>", "<789>"))
+    Call Check("", TagInnerText("000<123><789>000", "<123>", "<789>"))
+End Sub
+
+'----------------------------------------
+'・タグを含んだ内部文字列
+'----------------------------------------
+Public Function TagOuterText(ByVal Text As String, _
+    ByVal StartTag As String, ByVal EndTag As String) As String
+
+    Dim Result1 As String
+    Dim Result2 As String
+    Result1 = LastStrFirstDelim(Text, StartTag)
+    If Result1 <> Text Then
+        Result1 = StartTag + Result1
+    End If
+    
+    Result2 = FirstStrFirstDelim(Result1, EndTag)
+    If Result2 <> Result1 Then
+        Result2 = Result2 + EndTag
+    End If
+    TagOuterText = Result2
+End Function
+
+Public Sub testTagOuterText()
+    Call Check("<123>456<789>", TagOuterText("000<123>456<789>000", "<123>", "<789>"))
+    Call Check("<123>456<789>", TagOuterText("<123>456<789>", "<123>", "<789>"))
+    Call Check("<123>456", TagOuterText("000<123>456", "<123>", "<789>"))
+    Call Check("456<789>", TagOuterText("456<789>000", "<123>", "<789>"))
+    Call Check("456", TagOuterText("456", "<123>", "<789>"))
+End Sub
+
+
+'----------------------------------------
+'・指定のタグではさまれた文字列のリストを出力する
+'----------------------------------------
+'   ・ 結果は改行コードで区切られて出力される
+'----------------------------------------
+Public Function TagOuterTextList(ByVal Text As String, _
+    ByVal StartTag As String, ByVal EndTag As String) As String
+    
+    Dim Result As String: Result = ""
+    Dim StartTagToEnd As String
+    Dim InnerText As String
+    Do
+        StartTagToEnd = LastStrFirstDelim(Text, StartTag)
+        If StartTagToEnd = Text Then Exit Do
+        InnerText = FirstStrFirstDelim(StartTagToEnd, EndTag)
+        If InnerText = StartTagToEnd Then Exit Do
+        Result = StringCombine(vbCrLf, Result, _
+            StartTag + InnerText + EndTag)
+        Text = LastStrFirstDelim(StartTagToEnd, EndTag)
+    Loop While True
+    TagOuterTextList = Result
+End Function
+
+Public Sub testTagOuterTextList()
+
+    Call Check("http://a.jpg" + vbCrLf + "http://b.jpg", _
+        TagOuterTextList("abc http://a.jpg def http://b.jpg ghi", _
+            "http://", ".jpg"))
+End Sub
+
+
+'----------------------------------------
+'・HTMLタグを削除する関数
+'----------------------------------------
+ Function ReplaceHTMLTag(ByVal txt As String) As String
+ With CreateObject("vbscript.regexp")
+     .Pattern = "<[^>]*>"
+     .Global = True
+     ReplaceHTMLTag = .Replace(txt, "")
+ End With
+ End Function
 
 '----------------------------------------
 '◇Trim
@@ -1625,6 +1770,56 @@ Private Sub testMonthMonthDayCount()
         28, _
         MonthDayCount(DateValue("2014/2/3")) _
         )
+End Sub
+
+
+'----------------------------------------
+'◇今週/先週/来週の曜日指定の日付取得
+'----------------------------------------
+
+Public Function ThisWeekDay(ByVal WeekDayValue As Long, ByVal DateValue As Date) As Date
+    ThisWeekDay = _
+        DateAdd("d", (WeekDayValue - Weekday(DateValue)), DateValue)
+End Function
+
+Public Sub testThisWeekDay()
+    Call Check(CDate("2016/02/21"), ThisWeekDay(vbSunday, CDate("2016/02/23")))
+    Call Check(CDate("2016/02/22"), ThisWeekDay(vbMonday, CDate("2016/02/23")))
+    Call Check(CDate("2016/02/23"), ThisWeekDay(vbTuesday, CDate("2016/02/23")))
+    Call Check(CDate("2016/02/24"), ThisWeekDay(vbWednesday, CDate("2016/02/23")))
+    Call Check(CDate("2016/02/25"), ThisWeekDay(vbThursday, CDate("2016/02/23")))
+    Call Check(CDate("2016/02/26"), ThisWeekDay(vbFriday, CDate("2016/02/23")))
+    Call Check(CDate("2016/02/27"), ThisWeekDay(vbSaturday, CDate("2016/02/23")))
+End Sub
+
+Public Function LastWeekDay(ByVal WeekDayValue As Long, ByVal DateValue As Date) As Date
+    LastWeekDay = _
+        DateAdd("d", -7, ThisWeekDay(WeekDayValue, DateValue))
+End Function
+
+Public Sub testLastWeekDay()
+    Call Check(CDate("2016/02/14"), LastWeekDay(vbSunday, CDate("2016/02/23")))
+    Call Check(CDate("2016/02/15"), LastWeekDay(vbMonday, CDate("2016/02/23")))
+    Call Check(CDate("2016/02/16"), LastWeekDay(vbTuesday, CDate("2016/02/23")))
+    Call Check(CDate("2016/02/17"), LastWeekDay(vbWednesday, CDate("2016/02/23")))
+    Call Check(CDate("2016/02/18"), LastWeekDay(vbThursday, CDate("2016/02/23")))
+    Call Check(CDate("2016/02/19"), LastWeekDay(vbFriday, CDate("2016/02/23")))
+    Call Check(CDate("2016/02/20"), LastWeekDay(vbSaturday, CDate("2016/02/23")))
+End Sub
+
+Public Function NextWeekDay(ByVal WeekDayValue As Long, ByVal DateValue As Date) As Date
+    NextWeekDay = _
+        DateAdd("d", 7, ThisWeekDay(WeekDayValue, DateValue))
+End Function
+
+Public Sub testNextWeekDay()
+    Call Check(CDate("2016/02/28"), NextWeekDay(vbSunday, CDate("2016/02/23")))
+    Call Check(CDate("2016/02/29"), NextWeekDay(vbMonday, CDate("2016/02/23")))
+    Call Check(CDate("2016/03/01"), NextWeekDay(vbTuesday, CDate("2016/02/23")))
+    Call Check(CDate("2016/03/02"), NextWeekDay(vbWednesday, CDate("2016/02/23")))
+    Call Check(CDate("2016/03/03"), NextWeekDay(vbThursday, CDate("2016/02/23")))
+    Call Check(CDate("2016/03/04"), NextWeekDay(vbFriday, CDate("2016/02/23")))
+    Call Check(CDate("2016/03/05"), NextWeekDay(vbSaturday, CDate("2016/02/23")))
 End Sub
 
 '----------------------------------------
@@ -2195,6 +2390,30 @@ Public Function GetDrivePath(ByVal Path As String) As String
 End Function
 
 '----------------------------------------
+'・ドライブパスが含まれているかどうか確認する関数
+'[:]が2文字目以降にあるかどうかで判定
+'----------------------------------------
+Public Function IsDrivePath(ByVal Path As String) As String
+    Dim Result As String
+    Result = (OrValue(InStr(Path, ":"), 2, 3))
+    IsDrivePath = Result
+End Function
+'
+'----------------------------------------
+'・ネットワークドライブかどうか確認する関数
+'----------------------------------------
+Public Function IsNetworkPath(ByVal Path As String) As String
+    Dim Result As String: Result = False
+    If IsFirstStr(Path, "\\") Then
+        If 3 <= Len(Path) Then
+            Result = True
+        End If
+    End If
+    IsNetworkPath = Result
+End Function
+
+
+'----------------------------------------
 '・空白を含むファイルパスをダブルクウォートで囲む
 '----------------------------------------
 Public Function InSpacePlusDoubleQuote(ByVal Path As String) As String
@@ -2390,7 +2609,6 @@ Catch:
 Finally:
 End Function
 
-
 '----------------------------------------
 '・相対パスから絶対パス取得
 '----------------------------------------
@@ -2400,7 +2618,8 @@ ByVal RelativePath As String) As String
     CurDirBuffer = CurDir
 
     Call Assert(fso.FolderExists(BasePath) Or fso.FileExists(BasePath), _
-        "Error:GetAbsolutePath")
+        "Error:AbsolutePath")
+    Call Assert(IsDrivePath(BasePath), "Error:AbsolutePath")
 
     'カレントドライブ/ディレクトリをBasePathに合わせる
     Call ChDrive(ExcludeLastStr(BasePath, ":\"))
@@ -2415,9 +2634,39 @@ ByVal RelativePath As String) As String
     Call ChDir(CurDirBuffer)
 End Function
 
-Private Sub testGetAbsolutePath()
+Private Sub testAbsolutePath()
     Call Check("C:\Program Files", AbsolutePath("C:\", "..\Program Files"))
 End Sub
+
+'----------------------------------------
+'プログラムの設定などでパスを取得する関数
+'----------------------------------------
+'   ・  相対アドレスなどに対応
+'----------------------------------------
+Public Function SettingFullPath( _
+ByVal SettingPath As String, _
+Optional ByVal BasePath As String = "") As String
+    Dim Result As String
+    
+    If SettingPath = "" Then
+        Result = ThisWorkbook.Path
+    Else
+        If BasePath = "" Then BasePath = ThisWorkbook.Path
+        
+        If IsDrivePath(BasePath) Then
+            'ファイルダイアログを開いた後
+            'カレントディレクトリが変になる場合があるので
+            'カレントディレクトリをリセットする
+            Call ChDrive(ExcludeLastStr(BasePath, ":\"))
+            Call ChDir(BasePath)
+        
+            Result = AbsolutePath(BasePath, SettingPath)
+        Else
+            Result = SettingPath
+        End If
+    End If
+    SettingFullPath = Result
+End Function
 
 '----------------------------------------
 '・ファイルが作成されるのをしばらく待つ関数
@@ -2433,6 +2682,23 @@ Public Function FileCreateWait(ByVal FilePath As String) As Boolean
     Loop
     FileCreateWait = True
 End Function
+
+
+'----------------------------------------
+'・ファイルコピー上書き失敗を検知するための関数
+'----------------------------------------
+'   ・  Success:=True / Fail:=False
+'----------------------------------------
+Public Function CopyFile( _
+ByVal SourceFilePath, ByVal DestFilePath) As Boolean
+On Error GoTo Err:
+    Call fso.CopyFile(SourceFilePath, DestFilePath, True)
+    CopyFile = True
+    Exit Function
+Err:
+    CopyFile = False
+End Function
+
 
 '----------------------------------------
 '◇Force/Recrate
@@ -3058,7 +3324,7 @@ End Function
 Public Sub CommandExecute(Command As String)
     Dim Result As String: Result = ""
 
-    Call Shell.run( _
+    Call Shell.Run( _
         "%ComSpec% /c " + Command, _
          VBA.VbAppWinStyle.vbHide, True)
 
@@ -3080,7 +3346,7 @@ Optional ByVal EncodeName As String = "Shift_JIS") As String
             fso.GetSpecialFolder(TemporaryFolder), fso.GetTempName)
     Loop While fso.FileExists(TempFilePath)
 
-    Call Shell.run( _
+    Call Shell.Run( _
         "%ComSpec% /c " + Command + ">" + TempFilePath + " 2>&1", _
          VBA.VbAppWinStyle.vbHide, True)
 
@@ -3153,12 +3419,12 @@ ByVal StartValue As Long, ByVal Value As Long, ByVal EndValue As Long)
 End Sub
 
 '----------------------------------------
-'・列名
+'・列番号から列名を取得する
 '----------------------------------------
 Public Function ColumnText(ByVal ColumnNumber As Long) As String
     ColumnText = _
         FirstStrFirstDelim( _
-            Application.Columns(ColumnNumber).address(False, False, xlA1), _
+            Application.Columns(ColumnNumber).Address(False, False, xlA1), _
             ":")
 End Function
 
@@ -3167,6 +3433,70 @@ Private Sub testColumnText()
     Call Check("AX", ColumnText(50))
 End Sub
 
+'----------------------------------------
+'・列名(A,B,C,…)から列番号を取得する
+'----------------------------------------
+'   ・  A→1, B→2, …, Z→26, AA→27, AB→28
+'----------------------------------------
+'Function ColumnNumber(ColumnText As String) As Long
+'    ColumnNumber = Columns(ColumnText).Column
+'End Function
+
+Public Function ColumnNumber(ColumnText As String) As Long
+    Dim Result As Long: Result = 0
+    Dim CharNumber As Long
+    Dim I As Long
+    For I = 0 To Len(ColumnText) - 1
+        CharNumber = Asc(UCase(Mid(ColumnText, Len(ColumnText) - I, 1))) - 64
+        If I = 0 Then
+            Result = CharNumber
+        Else
+            Result = Result + (CharNumber * (I * 26))
+        End If
+    Next
+    ColumnNumber = Result
+End Function
+
+Sub testColumnNumber()
+    Call Check(ColumnNumber("A"), 1)
+    Call Check(ColumnNumber("b"), 2)
+    Call Check(ColumnNumber("Z"), 26)
+    Call Check(ColumnNumber("AA"), 27)
+    Call Check(ColumnNumber("AB"), 28)
+End Sub
+
+
+'----------------------------------------
+'◇タイトル行指定処理
+'----------------------------------------
+
+'----------------------------------------
+'・タイトル行の列名から列番号を返す関数
+'----------------------------------------
+'   ・  日本語タイトル行などに対してタイトル文字列で行番号を返す
+'----------------------------------------
+Public Function ColumnNumberByTitle(ByRef Sheet As Worksheet, _
+ByVal TitleRowIndex As Long, _
+ByVal ColumnTitle As String, _
+Optional TitleMatchCount As Long = 1)
+    Dim Result As Long: Result = 0
+    Dim Counter As Long: Counter = 0
+    Dim I As Long
+    For I = Col__A To DataLastCol(Sheet, TitleRowIndex)
+        If Sheet.Cells(TitleRowIndex, I).Value = ColumnTitle Then
+            Counter = Counter + 1
+            If Counter = TitleMatchCount Then
+            Result = I
+            Exit For
+        End If
+        End If
+    Next
+    ColumnNumberByTitle = Result
+End Function
+
+'----------------------------------------
+'◇最終行/列
+'----------------------------------------
 '----------------------------------------
 '・最終行/列
 '----------------------------------------
@@ -3207,93 +3537,334 @@ Public Function DataLastCell(ByVal Sheet As Worksheet) As Range
 End Function
 
 '----------------------------------------
-'◇最終行列削除
+'◇最終行/列削除
 '----------------------------------------
 '   ・  RangeClearTypeは
+'       Clear/ClearContents/ClearFormats
 '----------------------------------------
-Public Sub RangeClear(ByRef Range As Range, ByVal RangeClearType As RangeClearType)
+Public Sub RangeClear(ByRef Range As Range, _
+ByVal RangeClearType As RangeClearType, _
+Optional ByVal MergeCellOption As Boolean = False)
     Call Assert(OrValue(RangeClearType, _
         rcClear, rcClearContents, rcClearFormats), _
         "Error:RangeClear:Args RangeClear")
 
-    Select Case RangeClearType
-    Case rcClear
-        Range.Clear
-    Case rcClearContents
-        Range.ClearContents
-    Case rcClearFormats
-        Range.ClearFormats
-    End Select
+    If MergeCellOption Then
+        Dim Cell As Range
+        Select Case RangeClearType
+        Case rcClear
+            For Each Cell In Range
+                If Cell.MergeCells Then
+                    Cell.MergeArea.Clear
+                Else
+                    Cell.Clear
+                End If
+            Next
+        Case rcClearContents
+            For Each Cell In Range
+                If Cell.MergeCells Then
+                    Cell.MergeArea.ClearContents
+                Else
+                    Cell.ClearContents
+                End If
+            Next
+        Case rcClearFormats
+            For Each Cell In Range
+                If Cell.MergeCells Then
+                    Cell.MergeArea.ClearFormats
+                Else
+                    Cell.ClearFormats
+                End If
+            Next
+        End Select
+    Else
+        Select Case RangeClearType
+        Case rcClear
+            Range.Clear
+        Case rcClearContents
+            Range.ClearContents
+        Case rcClearFormats
+            Range.ClearFormats
+        End Select
+    End If
 End Sub
 
-Public Sub ClearRangeLast(ByVal Sheet As Worksheet, _
+Public Sub ClearRangeLastData(ByVal Sheet As Worksheet, _
 ByVal RowIndex As Long, ByVal ColumnIndex As Long, _
-Optional ByVal RangeClearType As RangeClearType = rcClear)
+Optional ByVal RangeClearType As RangeClearType = rcClear, _
+Optional ByVal MergeCellOption As Boolean = False)
     If (RowIndex <= DataLastRow(Sheet)) _
     And (ColumnIndex <= DataLastCol(Sheet)) Then
         Call RangeClear( _
             Sheet.Range( _
                 Sheet.Cells(RowIndex, ColumnIndex), _
                 Sheet.Cells(DataLastRow(Sheet), DataLastCol(Sheet))), _
-            RangeClearType)
+            RangeClearType, MergeCellOption)
     End If
 End Sub
 
-'・クリア最終列
-Public Sub ClearColumnLast(ByVal Sheet As Worksheet, _
+'・列のクリア、最終行まで
+Public Sub ClearColumnLastRow(ByVal Sheet As Worksheet, _
 ByVal RowIndex As Long, ByVal ColumnIndex As Long, _
-Optional ByVal RangeClearType As RangeClearType = rcClear)
+Optional ByVal RangeClearType As RangeClearType = rcClear, _
+Optional ByVal MergeCellOption As Boolean = False)
     Dim LastRow As Long: LastRow = DataLastRow(Sheet, ColumnIndex)
     If (RowIndex <= LastRow) Then
         Call RangeClear( _
             Sheet.Range( _
                 Sheet.Cells(RowIndex, ColumnIndex), _
                 Sheet.Cells(DataLastRow(Sheet, ColumnIndex), ColumnIndex)), _
-            RangeClearType)
+            RangeClearType, MergeCellOption)
     End If
 End Sub
 
-Public Sub ClearRowLast(ByVal Sheet As Worksheet, _
+'・行のクリア、最終列まで
+Public Sub ClearRowLastColumn(ByVal Sheet As Worksheet, _
 ByVal RowIndex As Long, ByVal ColumnIndex As Long, _
-Optional ByVal RangeClearType As RangeClearType = rcClear)
+Optional ByVal RangeClearType As RangeClearType = rcClear, _
+Optional ByVal MergeCellOption As Boolean = False)
     Dim LastCol As Long: LastCol = DataLastCol(Sheet, RowIndex)
     If (ColumnIndex <= LastCol) Then
         Call RangeClear( _
             Sheet.Range( _
                 Sheet.Cells(RowIndex, ColumnIndex), _
                 Sheet.Cells(RowIndex, DataLastCol(Sheet, RowIndex))), _
-            RangeClearType)
+            RangeClearType, MergeCellOption)
     End If
 End Sub
 
 '----------------------------------------
+'◇数式
+'----------------------------------------
+
+'----------------------------------------
+'・数式を削除する関数
+'----------------------------------------
+Public Sub RangeDeleteFormula(ByRef Sheet As Worksheet, ByRef Range As Range)
+
+    '数式に影響が出ないように指定範囲の後方から値を指定している
+    '=SUBTOTAL(9, …
+    'とかの数式は、数式を無視して値に対して合算するというものなので
+    '上部の数式が数値になった場合に値が変化してしまう
+    Dim RowIndex As Long
+    Dim ColIndex As Long
+    For RowIndex = Range.Row + Range.Rows.Count To Range.Row Step -1
+        For ColIndex = Range.Column + Range.Columns.Count To Range.Column Step -1
+            If Sheet.Cells(RowIndex, ColIndex).HasFormula Then
+                Sheet.Cells(RowIndex, ColIndex).Value = _
+                    Sheet.Cells(RowIndex, ColIndex).Value
+            End If
+        Next
+    Next
+End Sub
+
+
+'----------------------------------------
+'◇Sheet.Rangeのコピー処理
+'----------------------------------------
+
+'----------------------------------------
+'・数値書式のコピー
+'----------------------------------------
+'   ・  Excelの書式のコピーがバグっているので修正のために作成
+'   ・  Excelのコピーでは
+'       【#,##0_);[赤](#,##0)】が【#,##0_);[赤]-#,##0】に
+'       なってしまう場合がある。
+'       ファイルが破損しているのかもしれないが解消できなかったので
+'       この関数を作成
+'----------------------------------------
+Public Sub RangeCopyNumberFormat( _
+ByRef RangeSource As Range, _
+ByRef RangeDest As Range)
+    Dim FormatText As String
+    Dim CellRangeSource As Range
+    For Each CellRangeSource In RangeSource
+        FormatText = CellRangeSource.NumberFormatLocal
+        
+        RangeDest.Parent.Cells( _
+            RangeDest.Row + (CellRangeSource.Row - RangeSource.Row), _
+            RangeDest.Column + (CellRangeSource.Column - RangeSource.Column) _
+        ).NumberFormatLocal = FormatText
+
+    Next
+End Sub
+
+'----------------------------------------
+'・書式のコピー
+'----------------------------------------
+Public Sub RangeCopyFormat( _
+ByRef RangeSource As Range, _
+ByRef RangeDest As Range)
+    RangeSource.Copy
+    Call RangeDest.PasteSpecial(Paste:=xlPasteFormats)
+    Call RangeCopyNumberFormat(RangeSource, RangeDest)
+End Sub
+
+'----------------------------------------
+'・値など全てのコピー
+'----------------------------------------
+Public Sub RangeCopyAll( _
+ByRef RangeSource As Range, _
+ByRef RangeDest As Range)
+    RangeSource.Copy
+    Call RangeDest.PasteSpecial(Paste:=xlPasteAll)
+    Call RangeCopyNumberFormat(RangeSource, RangeDest)
+End Sub
+
+'----------------------------------------
+'◆Excel オブジェクト
+'----------------------------------------
+
+'----------------------------------------
 '・ワークブックの存在確認
 '----------------------------------------
-Public Function WorkbookExists( _
-ByVal WorkbookName As String, _
+Public Function GetWorkbook( _
+ByVal WorkbookNameWildCard As String, _
 Optional ByVal WorkbookFolderPath As String = "", _
-Optional ByVal App As Application = Nothing) As Boolean
+Optional ByVal App As Application = Nothing) As Workbook
 
     If App Is Nothing Then Set App = Application
 
-    Dim Result As Boolean: Result = False
+    Dim Result As Workbook: Set Result = Nothing
     Dim Book As Workbook
     If WorkbookFolderPath = "" Then
         For Each Book In App.Workbooks
-            If Book.Name = WorkbookName Then
-                Result = True
+            If Book.Name Like WorkbookNameWildCard Then
+                Set Result = Book
+                Exit For
             End If
         Next
     Else
         For Each Book In App.Workbooks
-            If (Book.Name = WorkbookName) _
+            If (Book.Name Like WorkbookNameWildCard) _
             And (Book.Path = WorkbookFolderPath) Then
-                Result = True
+                Set Result = Book
+                Exit For
             End If
         Next
     End If
+    Set GetWorkbook = Result
+End Function
+
+Public Function WorkbookExists( _
+ByVal WorkbookNameWildCard As String, _
+Optional ByVal WorkbookFolderPath As String = "", _
+Optional ByVal App As Application = Nothing) As Boolean
+
+    Dim Result As Boolean: Result = False
+    If (GetWorkbook(WorkbookNameWildCard) Is Nothing) = False Then
+        Result = True
+    End If
+
     WorkbookExists = Result
 End Function
+
+Public Sub testWorkbookExists()
+    Call Check(True, WorkbookExists("st_vba.xlsm"))
+    Call Check(True, WorkbookExists("st_vba*"))
+    Call Check(False, WorkbookExists("st_vba.xls"))
+End Sub
+
+'----------------------------------------
+'・ワークシートの存在確認
+'----------------------------------------
+
+Public Function GetWorksheet(ByVal SheetNameWildCard As String, _
+Optional ByVal Book As Workbook = Nothing) As Worksheet
+
+    If Book Is Nothing Then
+        Set Book = ThisWorkbook
+    End If
+
+    Dim Result As Worksheet: Set Result = Nothing
+    Dim I As Long
+    For I = 1 To Book.Sheets.Count
+        If Book.Sheets(I).Name Like SheetNameWildCard Then
+            Set Result = Book.Sheets(I)
+        End If
+    Next
+    
+    Set GetWorksheet = Result
+End Function
+
+Public Function WorksheetExists(ByVal SheetNameWildCard As String, _
+Optional ByVal Book As Workbook = Nothing) As Boolean
+
+    Dim Result As Boolean: Result = False
+    If (GetWorksheet(SheetNameWildCard) Is Nothing) = False Then
+        Result = True
+    End If
+        
+    WorksheetExists = Result
+End Function
+
+Public Sub testWorksheetExists()
+    Call Check(True, WorksheetExists("Sheet1"))
+    Call Check(True, WorksheetExists("Sheet*"))
+    Call Check(False, WorksheetExists("Sheet"))
+End Sub
+
+'----------------------------------------
+'・ワークシートの削除
+'----------------------------------------
+
+Public Sub DeleteSheet(ByVal SheetNameWildCard As String, _
+Optional MatchUnDelete As Boolean = False, _
+Optional ByVal Book As Workbook = Nothing)
+
+    If Book Is Nothing Then
+        Set Book = ThisWorkbook
+    End If
+
+    Dim Sheet As Worksheet
+    Dim I As Long
+    For I = Book.Sheets.Count To 1 Step -1
+        If MatchUnDelete Then
+            If Not (Book.Sheets(I).Name Like SheetNameWildCard) Then
+                Book.Sheets(I).Delete
+            End If
+        Else
+            If (Book.Sheets(I).Name Like SheetNameWildCard) Then
+            Book.Sheets(I).Delete
+        End If
+        End If
+    Next
+    
+End Sub
+
+Public Sub DeleteDefaultSheet()
+    Call DeleteSheet("Sheet*")
+End Sub
+
+'----------------------------------------
+'・ワークシートへのテキスト配置
+'----------------------------------------
+
+Public Sub SetTextSheet(ByVal Sheet As Worksheet, _
+ByVal RowIndex As Long, ByVal ColumnIndex As Long, _
+ByVal DocumentText As String)
+
+    DocumentText = Replace(DocumentText, vbCrLf, vbCr)
+    DocumentText = Replace(DocumentText, vbLf, vbCr)
+
+    Dim Lines() As String
+    Lines = Split(DocumentText, vbCr)
+    Dim LineIndex As Long: LineIndex = RowIndex
+    Dim I As Long
+    For I = 0 To ArrayCount(Lines) - 1
+        If IsIncludeStr(Lines(I), vbTab) Then
+            Dim Columns() As String
+            Columns = Split(Lines(I), vbTab)
+            Dim J As Long
+            For J = 0 To ArrayCount(Columns) - 1
+                Sheet.Cells(LineIndex, ColumnIndex + J).Value = Columns(J)
+            Next
+        Else
+        Sheet.Cells(LineIndex, ColumnIndex).Value = Lines(I)
+        End If
+        LineIndex = LineIndex + 1
+    Next
+End Sub
 
 '----------------------------------------
 '・ChartObjectの存在確認
@@ -3376,6 +3947,11 @@ Public Function GetShapeFromImageFile(ByVal Sheet As Worksheet, _
     Optional HorizontalAlign As AlineHorizontal = AlineHorizontal.alCenter, _
     Optional VerticalAlign As AlineVertical = AlineVertical.alCenter) _
     As Shape
+    
+    If fso.FileExists(ImageFilePath) = False Then
+        Set GetShapeFromImageFile = Nothing
+        Exit Function
+    End If
     
     'マージンをとるために値を設定
     Dim Rect As Rect
@@ -3622,7 +4198,7 @@ Public Sub GraphSeriesLastRangeUp(ByRef Data As GraphFormulaData, Value As Long)
         SheetName = FirstStrFirstDelim(Data.ItemXAxisRangeStr, "!")
         Data.ItemXAxisRangeStr = _
             IncludeFirstStr( _
-                R1.Resize(R1.Rows.Count + Value, R1.Columns.Count).address, _
+                R1.Resize(R1.Rows.Count + Value, R1.Columns.Count).Address, _
                 SheetName + "!")
     End If
 
@@ -3630,7 +4206,7 @@ Public Sub GraphSeriesLastRangeUp(ByRef Data As GraphFormulaData, Value As Long)
     SheetName = FirstStrFirstDelim(Data.DataRangeStr, "!")
     Data.DataRangeStr = _
         IncludeFirstStr( _
-            R1.Resize(R1.Rows.Count + Value, R1.Columns.Count).address, _
+            R1.Resize(R1.Rows.Count + Value, R1.Columns.Count).Address, _
             SheetName + "!")
 End Sub
 
@@ -3658,7 +4234,7 @@ Public Sub GraphSeriesMove(ByRef Data As GraphFormulaData, Value As Long)
         SheetName = FirstStrFirstDelim(Data.ItemXAxisRangeStr, "!")
         Data.ItemXAxisRangeStr = _
             IncludeFirstStr( _
-                R1.Offset(Value, 0).address, _
+                R1.Offset(Value, 0).Address, _
                 SheetName + "!")
     End If
 
@@ -3666,7 +4242,7 @@ Public Sub GraphSeriesMove(ByRef Data As GraphFormulaData, Value As Long)
     SheetName = FirstStrFirstDelim(Data.DataRangeStr, "!")
     Data.DataRangeStr = _
         IncludeFirstStr( _
-            R1.Offset(Value, 0).address, _
+            R1.Offset(Value, 0).Address, _
             SheetName + "!")
 End Sub
 
@@ -3683,7 +4259,7 @@ Public Sub GraphSeriesResize(ByRef Data As GraphFormulaData, Value As Long)
         SheetName = FirstStrFirstDelim(Data.ItemXAxisRangeStr, "!")
         Data.ItemXAxisRangeStr = _
             IncludeFirstStr( _
-                R1.Resize(Value, R1.Columns.Count).address, _
+                R1.Resize(Value, R1.Columns.Count).Address, _
                 SheetName + "!")
     End If
 
@@ -3691,7 +4267,7 @@ Public Sub GraphSeriesResize(ByRef Data As GraphFormulaData, Value As Long)
     SheetName = FirstStrFirstDelim(Data.DataRangeStr, "!")
     Data.DataRangeStr = _
         IncludeFirstStr( _
-            R1.Resize(Value, R1.Columns.Count).address, _
+            R1.Resize(Value, R1.Columns.Count).Address, _
             SheetName + "!")
 End Sub
 
@@ -3721,7 +4297,7 @@ Public Sub SetGraphFormulaDataColumn(ByRef Data As GraphFormulaData, ColumnIndex
 
     Data.DataRangeStr = _
         IncludeFirstStr( _
-            R1.Offset(0, ColumnIndex - R1.Column).address, _
+            R1.Offset(0, ColumnIndex - R1.Column).Address, _
             SheetName + "!")
 End Sub
 
@@ -4575,7 +5151,7 @@ End Sub
 '   ・  起動済みIEがあればそれを取得
 '       なければ新規にIEを起動する
 '----------------------------------------
-Function IE_GetObject(Optional ByVal url As String = "") As InternetExplorer
+Function IE_GetObject(Optional ByVal URL As String = "") As InternetExplorer
     Dim ie As InternetExplorer
     Set ie = Nothing
 
@@ -4586,11 +5162,11 @@ Function IE_GetObject(Optional ByVal url As String = "") As InternetExplorer
     
     For Each Window In ShellApp.Windows
        If IsIncludeStr(Window.Name, "Internet Explorer") Then
-            If (url = "") Then
+            If (URL = "") Then
                 Set ie = Window
                 Exit For
             Else
-                If (IsIncludeStr(Window.LocationURL, url)) Then
+                If (IsIncludeStr(Window.LocationURL, URL)) Then
                     Set ie = Window
                     Exit For
                 End If
@@ -4619,7 +5195,7 @@ End Sub
 Sub IE_Navigate(ByVal ie As InternetExplorer, _
 ByVal URL As String, _
 Optional ByRef NavigateCancelFlag As Boolean = False)
-    Call ie.Navigate(url)
+    Call ie.Navigate(URL)
     Call IE_NavigateWait(ie, 120, 300, NavigateCancelFlag)
 End Sub
 
@@ -4712,7 +5288,6 @@ On Error Resume Next
     ie.Quit
 End Sub
 
-
 '----------------------------------------
 '・IEでJavaScriptを実行する
 '----------------------------------------
@@ -4733,12 +5308,58 @@ Sub testIE_RunJavaScript()
 End Sub
 
 '----------------------------------------
+'・IEで条件に一致したエレメントを取得する
+'----------------------------------------
+Public Function IE_GetElementByTagNameClassName(ByVal ie As InternetExplorer, _
+ByVal TagName As String, ByVal ClassNameWildCard As String) As Object
+    Dim Result As Object: Set Result = Nothing
+    Dim E1 As Object
+    For Each E1 In ie.Document.getElementsByTagName(TagName)
+        If E1.ClassName Like ClassNameWildCard Then
+            Set Result = E1
+            Exit For
+        End If
+    Next
+    Set IE_GetElementByTagNameClassName = Result
+End Function
+
+Public Function IE_GetElementByTagNameId(ByVal ie As InternetExplorer, _
+ByVal TagName As String, ByVal IdWildCard As String) As Object
+    Dim Result As Object: Set Result = Nothing
+    Dim E1 As Object
+    For Each E1 In ie.Document.getElementsByTagName(TagName)
+        If E1.ID Like IdWildCard Then
+            Set Result = E1
+            Exit For
+        End If
+    Next
+    Set IE_GetElementByTagNameId = Result
+End Function
+
+Public Function IE_GetElementByTagNameInnerHTML(ByVal ie As InternetExplorer, _
+ByVal TagName As String, ByVal InnerHTMLWildCard As String) As Object
+    Dim Result As Object: Set Result = Nothing
+    Dim E1 As Object
+    For Each E1 In ie.Document.getElementsByTagName(TagName)
+        If E1.InnerHTML Like InnerHTMLWildCard Then
+            Set Result = E1
+            Exit For
+        End If
+    Next
+    Set IE_GetElementByTagNameInnerHTML = Result
+End Function
+
+
+
+'----------------------------------------
 '・URL指定のファイルダウンロード
 '----------------------------------------
 '   ・  APIのURLDownloadToFileを使いやすくした
 '----------------------------------------
-Public Function URLDownloadFile(ByVal URL As String, ByVal FilePath As String) As Long
-    URLDownloadFile = URLDownloadToFile(0, URL, FilePath, 0, 0)
+Public Function URLDownloadFile(ByVal URL As String, ByVal FilePath As String) As Boolean
+    Dim Result As Long
+    Result = URLDownloadToFile(0, URL, FilePath, 0, 0)
+    URLDownloadFile = (Result = 0)
 End Function
 
 
@@ -5001,8 +5622,47 @@ End Sub
 '   GetShapeFromImageFile/ShapeCompressUseClipboard
 '・ IE処理の修正 IE_NewObject/IE_Refresh
 '   /IE_Navigate/IE_NavigateWait
+'◇ ver 2016/02/20
+'・ GetWorkbook追加
+'・ GetWorksheet/WorksheetExists追加
+'・ DeleteSheet/DeleteDefaultSheet追加
+'・ SetTextSheet追加
+'・ TagInnerText/TagOuterText追加
+'・ IfEmptyStr追加
+'・ セルクリア系処理の名前変更
+'   ClearRangeLast→ClearRangeLastData
+'   ClearColumnLast→ClearColumnLastRow
+'   ClearRowLast→ClearRowLastColumn
+'・ URLDownloadFileの戻り値をBooleanに変更
+'◇ ver 2016/02/21
+'・ IsNothing/IsNotNothing追加
+'・ CastExcludeComma追加
+'・ IE_GetElementByTagNameClassName/IE_GetElementByTagNameInnerHTMLの追加
+'・ FormulaDeleteRange追加
+'・ ColumnNumberByTitle追加
+'・ ColumnNumber追加
+'・ CopyFile追加
+'◇ ver 2016/02/23
+'・ ThisWeekDay/LastWeekDay/NextWeekDay追加
+'◇ ver 2016/02/24
+'・ IsDrivePath/IsNetworkPath追加
+'・ SettingFullPath追加
+'   AbsolutePath修正
+'◇ ver 2016/02/28
+'・ ThisWeekDay/LastWeekDay/NextWeekDay修正
+'・ ColumnNumberByTitle修正
+'・ RangeClear機能追加MergeCellOption対応
+'・ RangeCopyNumberFormat/RangeCopyFormat/RangeCopyAll追加
+'・ FormulaDeleteRange→RangeDeleteFormula名前変更
+'・ FirstStrFirstDelim/FirstStrLastDelim
+'   /LastStrFirstDelim/LastStrLastDelim の修正
+'・ DeleteSheetの修正
+'・ SetTextSheetの修正
+'・ IE_GetElementByTagNameId追加
+'◇ ver 2016/02/29
+'・ ClearRangeLastData/ClearColumnLastRow/ClearRowLastColumn修正
+'◇ ver 2016/03/04
+'・ TagOuterTextの修正
+'・ TagOuterTextList追加
+'・ ReplaceHTMLTag追加
 '--------------------------------------------------
-
-
-
-
