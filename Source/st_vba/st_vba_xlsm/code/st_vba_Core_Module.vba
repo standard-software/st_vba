@@ -2,7 +2,7 @@
 'st_vba
 '--------------------------------------------------
 'ModuleName:    Base Module
-'ObjectName:    st_vba_Base
+'ObjectName:    st_vba_Core
 '--------------------------------------------------
 'Discription:   Standard Software Library For Windows Excel VBA
 '--------------------------------------------------
@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        http://standard-software.net/
 '--------------------------------------------------
-'Version:       2016/03/04
+'Version:       2016/03/23
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -42,17 +42,20 @@
 '       ADODB.Stream
 '・ Microsoft Forms 2.0 Object Library
 '       Image
+'       ComboBox
 '・ Microsoft Internet Controls
 '       InternetExplorer
 '・ Microsoft Windows Common Controls 6.0 (SP6)
 '       ListView
-'       32bit Excel
+'       32bit Windows / 32bit Excel
 '           C:\Windows\system32\MSCOMCTL.OCX
-'       64bit Excel
+'       64bit Windows / 32bit Excel
 '           C:\Windows\SysWOW64\mscomctl.ocx
+'       64bit Windows / 64bit Excel
+'           仕様不可
 '--------------------------------------------------
 '・ Microsoft Windows Common Controls 6.0 (SP6)
-'       64bit Excel
+'       64bit Windows / 32bit Excel
 '           C:\Windows\SysWOW64\mscomctl.ocx
 '   ・  http://www.microsoft.com/ja-jp/download/details.aspx?id=10019
 '       Download
@@ -111,6 +114,23 @@ Public fso As New FileSystemObject
 '◆Shell
 '----------------------------------------
 Public Shell As New WshShell
+
+'----------------------------------------
+'◆文字列比較
+'----------------------------------------
+Public Enum MatchType
+    FullMatch = 0   '完全一致
+    PartMatch = 1   '部分一致
+    WildCardValue = 2
+    WildCardArray = 3
+    RegExpValue = 4
+    RegExpArray = 5
+End Enum
+
+Public Enum CaseCompare
+    CaseSensitive
+    IgnoreCase
+End Enum
 
 '----------------------------------------
 '◆Excel
@@ -654,7 +674,7 @@ Public Const SPI_GETWORKAREA As Long = 48
 '----------------------------------------
 '◆インターネット
 '----------------------------------------
-Public Declare Function URLDownloadToFile _
+Public Declare PtrSafe Function URLDownloadToFile _
     Lib "urlmon" Alias "URLDownloadToFileA" ( _
     ByVal pCaller As Long, _
     ByVal szURL As String, _
@@ -816,8 +836,12 @@ End Sub
 '◇カンマ付き文字の変換
 '----------------------------------------
 Public Function CastExcludeComma(ByVal CommaNumber As String) As Double
-    CastExcludeComma = CDbl( _
+    Dim Result As Double: Result = 0
+    If CommaNumber <> "" Then
+        Result = CDbl( _
         Replace(CommaNumber, ",", ""))
+    End If
+    CastExcludeComma = Result
 End Function
 
 Public Sub testCastExcludeComma()
@@ -836,6 +860,15 @@ Public Function BoolToStr(ByVal Value As Boolean) As String
         Result = "False"
     End If
     BoolToStr = Result
+End Function
+
+Function StrToBool(ByVal Value As String) As Boolean
+    Dim Result As Boolean: Result = False
+    Select Case UCase(Value)
+        Case "TRUE"
+            Result = True
+    End Select
+    StrToBool = Result
 End Function
 
 '----------------------------------------
@@ -1177,11 +1210,58 @@ End Function
 '----------------------------------------
 
 '----------------------------------------
+'・StrCount
+'----------------------------------------
+'   ・  文字列の数を数える関数
+'       AAAからAAを数えると2を返す
+'----------------------------------------
+Public Function StrCount(str As String, SubStr As String) As Long
+  Dim Result As Long
+  Result = 0
+  Dim Index As Long
+  Index = 0
+  Do
+    Index = InStr(Index + 1, str, SubStr)
+    If Index = 0 Then
+      Exit Do
+    Else
+      Result = Result + 1
+    End If
+  Loop
+  StrCount = Result
+End Function
+
+Sub testStrCount()
+    Call Check(2, StrCount("AAA", "AA"))
+End Sub
+
+
+'----------------------------------------
+'・連続スペースを単独スペースに変換
+'----------------------------------------
+Public Function ReplaceContinuousSpace(ByVal Value As String, _
+Optional Space As String = " ") As String
+    Call Assert(Space <> "", "Error:ReplaceContinuousSpace:Space is Empty.")
+
+    Dim Result As String
+    Result = Value
+    Do While IsIncludeStr(Result, Space + Space)
+        Result = Replace(Result, Space + Space, Space)
+    Loop
+    ReplaceContinuousSpace = Result
+End Function
+
+Public Sub testReplaceContinuousSpace()
+    Call Check(" A B C ", ReplaceContinuousSpace("  A  B   C "))
+
+End Sub
+
+'----------------------------------------
 '・IsInclude
 '----------------------------------------
-Public Function IsIncludeStr(ByVal Str As String, ByVal SubStr As String)
+Public Function IsIncludeStr(ByVal str As String, ByVal SubStr As String)
     IsIncludeStr = _
-        (1 <= InStr(Str, SubStr))
+        (1 <= InStr(str, SubStr))
 End Function
 
 '----------------------------------------
@@ -1191,14 +1271,14 @@ End Function
 '----------------------------------------
 '・First
 '----------------------------------------
-Public Function IsFirstStr(ByVal Str As String, ByVal SubStr As String) As Boolean
+Public Function IsFirstStr(ByVal str As String, ByVal SubStr As String) As Boolean
     Dim Result As Boolean: Result = False
     Do
         If SubStr = "" Then Exit Do
-        If Str = "" Then Exit Do
-        If Len(Str) < Len(SubStr) Then Exit Do
+        If str = "" Then Exit Do
+        If Len(str) < Len(SubStr) Then Exit Do
 
-        If InStr(1, Str, SubStr) = 1 Then
+        If InStr(1, str, SubStr) = 1 Then
             Result = True
         End If
     Loop While False
@@ -1215,11 +1295,11 @@ Private Sub testIsFirstStr()
     Call Check(False, IsFirstStr("123", "1234"))
 End Sub
 
-Public Function IncludeFirstStr(ByVal Str As String, ByVal SubStr As String) As String
-    If IsFirstStr(Str, SubStr) Then
-        IncludeFirstStr = Str
+Public Function IncludeFirstStr(ByVal str As String, ByVal SubStr As String) As String
+    If IsFirstStr(str, SubStr) Then
+        IncludeFirstStr = str
     Else
-        IncludeFirstStr = SubStr + Str
+        IncludeFirstStr = SubStr + str
     End If
 End Function
 
@@ -1230,11 +1310,11 @@ Private Sub testIncludeFirstStr()
     Call Check("2312345", IncludeFirstStr("12345", "23"))
 End Sub
 
-Public Function ExcludeFirstStr(ByVal Str As String, ByVal SubStr As String) As String
-    If IsFirstStr(Str, SubStr) Then
-        ExcludeFirstStr = Mid$(Str, Len(SubStr) + 1)
+Public Function ExcludeFirstStr(ByVal str As String, ByVal SubStr As String) As String
+    If IsFirstStr(str, SubStr) Then
+        ExcludeFirstStr = Mid$(str, Len(SubStr) + 1)
     Else
-        ExcludeFirstStr = Str
+        ExcludeFirstStr = str
     End If
 End Function
 
@@ -1248,14 +1328,14 @@ End Sub
 '----------------------------------------
 '・Last
 '----------------------------------------
-Public Function IsLastStr(ByVal Str As String, ByVal SubStr As String) As Boolean
+Public Function IsLastStr(ByVal str As String, ByVal SubStr As String) As Boolean
     Dim Result As Boolean: Result = False
     Do
         If SubStr = "" Then Exit Do
-        If Str = "" Then Exit Do
-        If Len(Str) < Len(SubStr) Then Exit Do
+        If str = "" Then Exit Do
+        If Len(str) < Len(SubStr) Then Exit Do
 
-        If Mid$(Str, Len(Str) - Len(SubStr) + 1) = SubStr Then
+        If Mid$(str, Len(str) - Len(SubStr) + 1) = SubStr Then
             Result = True
         End If
     Loop While False
@@ -1272,11 +1352,11 @@ Private Sub testIsLastStr()
     Call Check(False, IsLastStr("123", "1234"))
 End Sub
 
-Public Function IncludeLastStr(ByVal Str As String, ByVal SubStr As String) As String
-    If IsLastStr(Str, SubStr) Then
-        IncludeLastStr = Str
+Public Function IncludeLastStr(ByVal str As String, ByVal SubStr As String) As String
+    If IsLastStr(str, SubStr) Then
+        IncludeLastStr = str
     Else
-        IncludeLastStr = Str + SubStr
+        IncludeLastStr = str + SubStr
     End If
 End Function
 
@@ -1287,11 +1367,11 @@ Private Sub testIncludeLastStr()
     Call Check("1234534", IncludeLastStr("12345", "34"))
 End Sub
 
-Public Function ExcludeLastStr(ByVal Str As String, ByVal SubStr As String) As String
-    If IsLastStr(Str, SubStr) Then
-        ExcludeLastStr = Mid$(Str, 1, Len(Str) - Len(SubStr))
+Public Function ExcludeLastStr(ByVal str As String, ByVal SubStr As String) As String
+    If IsLastStr(str, SubStr) Then
+        ExcludeLastStr = Mid$(str, 1, Len(str) - Len(SubStr))
     Else
-        ExcludeLastStr = Str
+        ExcludeLastStr = str
     End If
 End Function
 
@@ -1305,14 +1385,14 @@ End Sub
 '----------------------------------------
 '・Both
 '----------------------------------------
-Public Function IncludeBothEndsStr(ByVal Str As String, ByVal SubStr As String) As String
+Public Function IncludeBothEndsStr(ByVal str As String, ByVal SubStr As String) As String
     IncludeBothEndsStr = _
-        IncludeFirstStr(IncludeLastStr(Str, SubStr), SubStr)
+        IncludeFirstStr(IncludeLastStr(str, SubStr), SubStr)
 End Function
 
-Public Function ExcludeBothEndsStr(ByVal Str As String, ByVal SubStr As String) As String
+Public Function ExcludeBothEndsStr(ByVal str As String, ByVal SubStr As String) As String
     ExcludeBothEndsStr = _
-        ExcludeFirstStr(ExcludeLastStr(Str, SubStr), SubStr)
+        ExcludeFirstStr(ExcludeLastStr(str, SubStr), SubStr)
 End Function
 
 
@@ -1544,16 +1624,16 @@ End Sub
 'End Function
 
 
-Public Function TrimFirstStrs(ByVal Str As String, ByRef TrimStrs() As String) As String
+Public Function TrimFirstStrs(ByVal str As String, ByRef TrimStrs() As String) As String
     Call Assert(IsArray(TrimStrs), "Error:TrimFirstStrs:TrimStrs is not Array.")
-    Dim Result As String: Result = Str
+    Dim Result As String: Result = str
     Do
-        Str = Result
+        str = Result
         Dim I As Long
         For I = LBound(TrimStrs) To UBound(TrimStrs)
             Result = ExcludeFirstStr(Result, TrimStrs(I))
         Next
-    Loop While Result <> Str
+    Loop While Result <> str
     TrimFirstStrs = Result
 End Function
 
@@ -1563,16 +1643,16 @@ Private Sub testTrimFirstStrs()
     Call Check("123 ", TrimFirstStrs("   " + vbTab + "  123 ", ArrayStr(" ", vbTab)))
 End Sub
 
-Public Function TrimLastStrs(ByVal Str As String, ByRef TrimStrs() As String) As String
+Public Function TrimLastStrs(ByVal str As String, ByRef TrimStrs() As String) As String
     Call Assert(IsArray(TrimStrs), "Error:TrimLastStrs:TrimStrs is not Array.")
-    Dim Result As String: Result = Str
+    Dim Result As String: Result = str
     Do
-        Str = Result
+        str = Result
         Dim I As Long
         For I = LBound(TrimStrs) To UBound(TrimStrs)
             Result = ExcludeLastStr(Result, TrimStrs(I))
         Next
-    Loop While Result <> Str
+    Loop While Result <> str
     TrimLastStrs = Result
 End Function
 
@@ -1582,22 +1662,22 @@ Private Sub testTrimLastStrs()
     Call Check(" 123", TrimLastStrs(" 123  " + vbTab + "   ", ArrayStr(" ", vbTab)))
 End Sub
 
-Public Function TrimBothEndsStrs(ByVal Str As String, ByRef TrimStrs() As String) As String
+Public Function TrimBothEndsStrs(ByVal str As String, ByRef TrimStrs() As String) As String
     TrimBothEndsStrs = _
-        TrimFirstStrs(TrimLastStrs(Str, TrimStrs), TrimStrs)
+        TrimFirstStrs(TrimLastStrs(str, TrimStrs), TrimStrs)
 End Function
 
-Public Function TrimFirstSpace(ByVal Str As String) As String
-    TrimFirstSpace = TrimFirstStrs(Str, ArrayStr(" ", vbCr, vbLf, vbTab))
+Public Function TrimFirstSpace(ByVal str As String) As String
+    TrimFirstSpace = TrimFirstStrs(str, ArrayStr(" ", vbCr, vbLf, vbTab))
 End Function
 
-Public Function TrimLastSpace(ByVal Str As String) As String
-    TrimLastSpace = TrimLastStrs(Str, ArrayStr(" ", vbCr, vbLf, vbTab))
+Public Function TrimLastSpace(ByVal str As String) As String
+    TrimLastSpace = TrimLastStrs(str, ArrayStr(" ", vbCr, vbLf, vbTab))
 End Function
 
-Public Function TrimBothEndsSpace(ByVal Str As String) As String
+Public Function TrimBothEndsSpace(ByVal str As String) As String
     TrimBothEndsSpace = _
-        TrimFirstSpace(TrimLastSpace(Str))
+        TrimFirstSpace(TrimLastSpace(str))
 End Function
 
 
@@ -1730,6 +1810,159 @@ Private Sub testStringArrayCombine()
     Values = Split(",,A,B,,,,C,,", ",")
     Call Check("A,B,C", StringCombineArray(",", Values))
 End Sub
+
+
+'----------------------------------------
+'◇Byte指定文字列処理
+'----------------------------------------
+'   ・  SJISに変換しているためUnicode固有文字は非対応
+'       標準のLenB関数はUnicode文字扱いなのでSJIS対応ではない
+'----------------------------------------
+
+'----------------------------------------
+'・Byte数取得
+'----------------------------------------
+Public Function LengthSjisByte(ByVal S As String) As Long
+    LengthSjisByte = LenB(StrConv(S, vbFromUnicode))
+End Function
+
+'----------------------------------------
+'・Byte数で切り出すLeft関数
+'----------------------------------------
+Public Function LeftSjisByte(ByVal S As String, _
+ByVal ByteLength As Long) As String
+    Dim Result As String: Result = ""
+    Do
+        If S = "" Then Exit Do
+        Result = StrConv( _
+            LeftB(StrConv(S, vbFromUnicode), ByteLength) _
+            , vbUnicode)
+    Loop While False
+    LeftSjisByte = Result
+End Function
+
+'----------------------------------------
+'・Byte数で切り出すRight関数
+'----------------------------------------
+Function RightSjisByte(S As String, ByteLength As Long) As String
+    Dim Result As String
+    Result = ""
+    Do
+        If S = "" Then Exit Do
+        Result = StrConv( _
+            RightB(StrConv(S, vbFromUnicode), ByteLength) _
+            , vbUnicode)
+    Loop While False
+    RightSjisByte = Result
+End Function
+
+'----------------------------------------
+'・Byte数で切り出すMid関数
+'----------------------------------------
+Function MidSjisByte(S As String, Start As Long, Optional ByteLength As Long)
+    Dim Result As String
+    Result = ""
+    Do
+        If IsMissing(ByteLength) Then
+            Result = StrConv( _
+                MidB(StrConv(S, vbFromUnicode), Start) _
+                , vbUnicode)
+        Else
+            Result = StrConv( _
+                MidB(StrConv(S, vbFromUnicode), Start, ByteLength) _
+                , vbUnicode)
+        End If
+    Loop While False
+    MidSjisByte = Result
+End Function
+
+
+'----------------------------------------
+'◇文字列比較
+'----------------------------------------
+
+'----------------------------------------
+'・正規表現の一致を確認する
+'----------------------------------------
+'   ・  動作対象は1行テキスト
+'   ・  RegExpオブジェクトは外部から指定可能
+'   ・  Matchオブジェクトは戻り値として利用可能
+'----------------------------------------
+Function MatchRegExp(ByVal Text As String, ByVal MatchWord As String, _
+Optional CaseCompare As CaseCompare = IgnoreCase, _
+Optional RegExp As Object = Nothing, _
+Optional Match As Object = Nothing) As Boolean
+
+On Error GoTo Err:
+    Dim Result As Boolean
+    Result = False
+    Do
+        If (MatchWord = "") Or (Text = "") Then Exit Do
+        
+        '正規表現用オブジェクト用意
+        Dim RegCreateFlag As Boolean
+        RegCreateFlag = False
+        If RegExp Is Nothing Then
+            RegCreateFlag = True
+            Set RegExp = CreateObject("VBScript.RegExp")
+        End If
+        
+        '正規表現マッチ調査
+        RegExp.Pattern = MatchWord
+        RegExp.Global = True
+        RegExp.IgnoreCase = CaseCompare = IgnoreCase
+        Set Match = RegExp.Execute(Text)
+        If 1 <= Match.Count Then
+            Result = True
+        End If
+        
+        If RegCreateFlag Then
+            Set RegExp = Nothing
+        End If
+            
+    Loop While False
+    MatchRegExp = Result
+    Exit Function
+Err:
+    MatchRegExp = False
+End Function
+
+'----------------------------------------
+'◇配列指定処理
+'----------------------------------------
+
+'----------------------------------------
+'・文字列の連続置き換え、配列指定
+'----------------------------------------
+Public Function ReplaceArrayValue(ByVal Value As String, _
+ByRef OldTableArray() As String, NewTableArray() As String) As String
+    Call Assert(ArrayCount(OldTableArray) = ArrayCount(NewTableArray), _
+        "Error:ReplaceArrayValue:OldTableArray's Count is not same NewTableArray's Count")
+
+    Dim Result As String
+    Result = Value
+    Dim I As Long
+    For I = 0 To ArrayCount(OldTableArray) - 1
+        Result = Replace(Result, OldTableArray(I), NewTableArray(I))
+    Next
+    ReplaceArrayValue = Result
+End Function
+
+'----------------------------------------
+'・文字列の連続削除、配列指定
+'----------------------------------------
+Public Function DeleteArrayValue(ByVal Value As String, _
+DeleteTableArray() As String) As String
+    Dim Result As String
+    Result = Value
+    Dim I As Long
+    For I = 0 To ArrayCount(DeleteTableArray) - 1
+        Result = Replace(Result, DeleteTableArray(I), "")
+    Next
+    DeleteArrayValue = Result
+End Function
+
+
 
 '----------------------------------------
 '◆日付時刻処理
@@ -1908,6 +2141,10 @@ End Function
 '----------------------------------------
 
 '----------------------------------------
+'◇配列基本操作
+'----------------------------------------
+
+'----------------------------------------
 '・要素無し配列に対してもエラーの起きないUBound/LBound
 '----------------------------------------
 '   ・  UBoundはArray()で返される要素無しの配列には-1を返すが
@@ -1980,6 +2217,16 @@ Private Sub testArrayAdd()
     Call Check("test.txt", B(3).GetFileName("C:\temp\test.txt"))
 End Sub
 
+'----------------------------------------
+'・配列の要素を重複チェックしてから追加する
+'----------------------------------------
+Public Sub ArrayAddNotDuplicate(ByRef ArrayValue As Variant, ByVal Value As Variant)
+    Call Assert(IsArray(ArrayValue), "Error:ArrayValue is not Array")
+    If ArrayExists(ArrayValue, Value) = False Then
+        Call ArrayAdd(ArrayValue, Value)
+    End If
+End Sub
+
 
 '----------------------------------------
 '・配列の要素を挿入する
@@ -2020,7 +2267,6 @@ Private Sub testArrayInsert()
     Call ArrayInsert(B, 1, fso)
     Call Check("test.txt", B(1).GetFileName("C:\temp\test.txt"))
 End Sub
-
 
 '----------------------------------------
 '・配列の要素を削除する
@@ -2140,11 +2386,16 @@ End Sub
 '・配列内の値を検索してIndexを返す
 '----------------------------------------
 '   ・  LBound(Array)=0でなくても対応。
+'   ・  大小文字比較対応
+'   ・  完全一致/部分一致/ワイルドカード/正規表現対応
 '----------------------------------------
 Public Function ArrayIndexOf(ByRef ArrayValue As Variant, ByVal Value As Variant, _
-Optional StartIndex As Long = -1) As Long
+Optional StartIndex As Long = -1, _
+Optional CaseCompare As CaseCompare = CaseSensitive, _
+Optional MatchType As MatchType = FullMatch) As Long
+
+    Call Assert(IsArray(ArrayValue), "Error:ArrayValue is not Array")
     Dim Result As Long: Result = -1
-    Call Assert(IsArray(ArrayValue), "配列ではありません")
 
     Do
         If ArrayDimension(ArrayValue) <> 1 Then Exit Do
@@ -2159,43 +2410,189 @@ Optional StartIndex As Long = -1) As Long
         End If
 
         Dim I As Long
-        For I = StartIndex To UBound(ArrayValue)
-            If ArrayValue(I) = Value Then
-                Result = I
-                Exit Do
-            End If
-        Next
+        Select Case CaseCompare
+        Case CaseSensitive
+            Select Case MatchType
+            Case FullMatch
+                For I = StartIndex To UBound(ArrayValue)
+                    If ArrayValue(I) = Value Then
+                        Result = I
+                        Exit Do
+                    End If
+                Next
+            Case PartMatch
+                For I = StartIndex To UBound(ArrayValue)
+                    If IsIncludeStr(ArrayValue(I), Value) Then
+                        Result = I
+                        Exit Do
+                    End If
+                Next
+            Case WildCardValue
+                For I = StartIndex To UBound(ArrayValue)
+                    If ArrayValue(I) Like Value Then
+                        Result = I
+                        Exit Do
+                    End If
+                Next
+            Case WildCardArray
+                For I = StartIndex To UBound(ArrayValue)
+                    If Value Like ArrayValue(I) Then
+                        Result = I
+                        Exit Do
+                    End If
+                Next
+            Case RegExpValue
+                For I = StartIndex To UBound(ArrayValue)
+                    If MatchRegExp(ArrayValue(I), Value, CaseSensitive) Then
+                        Result = I
+                        Exit Do
+                    End If
+                Next
+            Case RegExpArray
+                For I = StartIndex To UBound(ArrayValue)
+                    If MatchRegExp(Value, ArrayValue(I), CaseSensitive) Then
+                        Result = I
+                        Exit Do
+                    End If
+                Next
+            End Select
+        Case IgnoreCase
+            Select Case MatchType
+            Case FullMatch
+                For I = StartIndex To UBound(ArrayValue)
+                    If UCase(ArrayValue(I)) = UCase(Value) Then
+                        Result = I
+                        Exit Do
+                    End If
+                Next
+            Case PartMatch
+                For I = StartIndex To UBound(ArrayValue)
+                    If IsIncludeStr(UCase(ArrayValue(I)), UCase(Value)) Then
+                        Result = I
+                        Exit Do
+                    End If
+                Next
+            Case WildCardValue
+                For I = StartIndex To UBound(ArrayValue)
+                    If UCase(ArrayValue(I)) Like UCase(Value) Then
+                        Result = I
+                        Exit Do
+                    End If
+                Next
+            Case WildCardArray
+                For I = StartIndex To UBound(ArrayValue)
+                    If UCase(Value) Like UCase(ArrayValue(I)) Then
+                        Result = I
+                        Exit Do
+                    End If
+                Next
+            Case RegExpValue
+                For I = StartIndex To UBound(ArrayValue)
+                    If MatchRegExp(ArrayValue(I), Value, IgnoreCase) Then
+                        Result = I
+                        Exit Do
+                    End If
+                Next
+            Case RegExpArray
+                For I = StartIndex To UBound(ArrayValue)
+                    If MatchRegExp(Value, ArrayValue(I), IgnoreCase) Then
+                        Result = I
+                        Exit Do
+                    End If
+                Next
+            End Select
+        End Select
 
     Loop While False
     ArrayIndexOf = Result
 End Function
 
 Sub testArrayIndexOf()
-  Dim A As Variant
-  A = Array("B", "C", "D")
-  Call Check(0, ArrayIndexOf(A, "B"))
-  Call Check(1, ArrayIndexOf(A, "C"))
-  Call Check(2, ArrayIndexOf(A, "D"))
-  Call Check(-1, ArrayIndexOf(A, "E"))
+    'FullMatch
+    Dim A As Variant
+    A = Array("B", "C", "D")
+    Call Check(0, ArrayIndexOf(A, "B"))
+    Call Check(1, ArrayIndexOf(A, "C"))
+    Call Check(2, ArrayIndexOf(A, "D"))
+    Call Check(-1, ArrayIndexOf(A, "E"))
+    
+    Call Check(0, ArrayIndexOf(A, "B", 0))
+    Call Check(1, ArrayIndexOf(A, "C", 1))
+    Call Check(2, ArrayIndexOf(A, "D", 2))
+    Call Check(-1, ArrayIndexOf(A, "B", 1))
+    Call Check(-1, ArrayIndexOf(A, "C", 2))
+    Call Check(2, ArrayIndexOf(A, "D", 2))
+    Call Check(-1, ArrayIndexOf(A, "D", 3))
+    
+    'PartMatch IgnoreCase
+    A = Array("ABC", "DEF", "123")
+    Call Check(1, ArrayIndexOf(A, "DE", , CaseSensitive, PartMatch))
+    Call Check(-1, ArrayIndexOf(A, "de", , CaseSensitive, PartMatch))
+    Call Check(1, ArrayIndexOf(A, "de", , IgnoreCase, PartMatch))
+    
+    'Like WildCard Value
+    A = Array("B", "C", "D")
+    Call Check(0, ArrayIndexOf(A, "B", , , WildCardValue))
+    Call Check(1, ArrayIndexOf(A, "C", , , WildCardValue))
+    Call Check(2, ArrayIndexOf(A, "D", , , WildCardValue))
+    Call Check(-1, ArrayIndexOf(A, "E", , , WildCardValue))
+    
+    Call Check(0, ArrayIndexOf(A, "B", 0, , WildCardValue))
+    Call Check(1, ArrayIndexOf(A, "C", 1, , WildCardValue))
+    Call Check(2, ArrayIndexOf(A, "D", 2, , WildCardValue))
+    Call Check(-1, ArrayIndexOf(A, "B", 1, , WildCardValue))
+    Call Check(-1, ArrayIndexOf(A, "C", 2, , WildCardValue))
+    Call Check(-1, ArrayIndexOf(A, "D", 3, , WildCardValue))
+    
+    A = Array("ABC", "DEF", "123")
+    Call Check(0, ArrayIndexOf(A, "A*", , , WildCardValue))
+    Call Check(1, ArrayIndexOf(A, "D*", , , WildCardValue))
+    Call Check(2, ArrayIndexOf(A, "1?3", , , WildCardValue))
+    Call Check(-1, ArrayIndexOf(A, "A?B", , , WildCardValue))
+    
+    Call Check(0, ArrayIndexOf(A, "*C", 0, , WildCardValue))
+    Call Check(1, ArrayIndexOf(A, "?E?", 1, , WildCardValue))
+    Call Check(2, ArrayIndexOf(A, "?23", 2, , WildCardValue))
+    Call Check(-1, ArrayIndexOf(A, "*C", 1, , WildCardValue))
+    Call Check(-1, ArrayIndexOf(A, "?E?", 2, , WildCardValue))
+    Call Check(-1, ArrayIndexOf(A, "?23", 3, , WildCardValue))
 
-  Call Check(0, ArrayIndexOf(A, "B", 0))
-  Call Check(1, ArrayIndexOf(A, "C", 1))
-  Call Check(2, ArrayIndexOf(A, "D", 2))
-  Call Check(-1, ArrayIndexOf(A, "B", 1))
-  Call Check(-1, ArrayIndexOf(A, "C", 2))
-  Call Check(2, ArrayIndexOf(A, "D", 2))
+    'Like WildCard Value IgnoreCase
+    Call Check(-1, ArrayIndexOf(A, "?e?", 1, , WildCardValue))
+    Call Check(1, ArrayIndexOf(A, "?e?", 1, IgnoreCase, WildCardValue))
 
-  Call Check(-1, ArrayIndexOf(A, "D", 3))
+    'RegExp Value
+    A = Array("ABC", "DEF", "123")
+    Call Check(0, ArrayIndexOf(A, ".*C", 0, , RegExpValue))
+    
+    'RegExp Value IgnoreCase
+    Call Check(-1, ArrayIndexOf(A, ".*c", 0, , RegExpValue))
+    Call Check(0, ArrayIndexOf(A, ".*C", 0, , RegExpValue))
 
 End Sub
 
+'----------------------------------------
+'・配列内の値存在チェック
+'----------------------------------------
+Public Function ArrayExists(ByRef ArrayValue As Variant, _
+ByVal Value As Variant, _
+Optional CaseCompare As CaseCompare = CaseSensitive, _
+Optional MatchType As MatchType = FullMatch) As Boolean
+
+    ArrayExists = Not (ArrayIndexOf(ArrayValue, Value, , CaseCompare, MatchType) = -1)
+End Function
+
+
+'----------------------------------------
+'◇配列応用操作
+'----------------------------------------
 
 '----------------------------------------
 '・配列内の値を検索して同一値を削除
 '----------------------------------------
 '   ・  LBound(Array)=0でなくても対応。
 '       重複があればTrue/なければFalse
-Public Function ArrayDeleteSameItem(ArrayValue As Variant, _
+Public Function ArrayDeleteSameItem(ByRef ArrayValue As Variant, _
 Optional StartIndex As Long = -1) As Boolean
     Dim Result As Boolean: Result = False
     Call Assert(IsArray(ArrayValue), "配列ではありません")
@@ -2331,6 +2728,200 @@ Public Function ArrayLong(ParamArray Values()) As Long()
     End If
     ArrayLong = Result
 End Function
+
+
+'----------------------------------------
+'◇配列ソート
+'----------------------------------------
+
+'----------------------------------------
+'・クイックソート
+'----------------------------------------
+'   ・  IndexMin/IndexMaxを指定すると
+'       指定範囲内の値をソートする
+'----------------------------------------
+Public Sub ArraySortQuick(ByRef ArrayValue As Variant, _
+Optional ByVal IndexMin As Long = -1, Optional ByVal IndexMax As Long = -1)
+
+    Call Assert(IsArray(ArrayValue), "Error:ArrayValue is not Array")
+    Call Assert(ArrayDimension(ArrayValue) = 1)
+    
+    '1以下ならソート不可能なのでExitする
+    If ArrayCount(ArrayValue) <= 1 Then Exit Sub
+    
+    IndexMin = IIf(IndexMin = -1, 0, IndexMin)
+    IndexMax = IIf(IndexMax = -1, ArrayCount(ArrayValue) - 1, IndexMax)
+    
+    'IndexMin=IndexMaxならソート不可能なのでExit
+    If IndexMin = IndexMax Then Exit Sub
+    'IndexMin/Maxの指定が変ならエラーにする
+    Call Assert(IndexMin < IndexMax, "Error:IndexMin < IndexMax")
+    
+    Call ArraySortQuickBase(ArrayValue, IndexMin, IndexMax)
+End Sub
+
+'クイックソートのベース関数、再起呼び出しされる
+Sub ArraySortQuickBase(ByRef ArrayValue As Variant, _
+ByVal IndexMin As Long, ByVal IndexMax As Long)
+    
+    Dim IndexCenter As Long
+    Dim Index1 As Long
+    Dim Index2 As Long
+    Dim Value1 As String
+    Dim Value2 As String
+    
+    If IndexMax <= IndexMin Then Exit Sub
+    
+    IndexCenter = (IndexMin + IndexMax) \ 2
+    
+    '中央値をバッファ
+    Value1 = ArrayValue(IndexCenter)
+    '中央値に開始位置要素を代入
+    ArrayValue(IndexCenter) = ArrayValue(IndexMin)
+    
+    Index2 = IndexMin
+    
+    Index1 = IndexMin + 1
+    
+    Do While Index1 <= IndexMax
+        If ArrayValue(Index1) < Value1 Then
+            Index2 = Index2 + 1
+            
+            Value2 = ArrayValue(Index2)
+            ArrayValue(Index2) = ArrayValue(Index1)
+            ArrayValue(Index1) = Value2
+            
+        End If
+        Index1 = Index1 + 1
+    Loop
+    
+    ArrayValue(IndexMin) = ArrayValue(Index2)
+    ArrayValue(Index2) = Value1
+    
+    ' 分割前半を再帰呼び出しでSORT
+    Call ArraySortQuickBase(ArrayValue, IndexMin, Index2 - 1)
+
+    ' 分割後半を再帰呼び出しでSORT
+    Call ArraySortQuickBase(ArrayValue, Index2 + 1, IndexMax)
+End Sub
+
+Sub testArrayQuickSort()
+    Dim Array1(5) As Variant
+    Array1(0) = "105"
+    Array1(1) = "101"
+    Array1(2) = "103"
+    Array1(3) = "102"
+    Array1(4) = "104"
+    Array1(5) = "100"
+    
+    Call Check(Array1(0), "105")
+    Call Check(Array1(1), "101")
+    Call Check(Array1(2), "103")
+    Call Check(Array1(3), "102")
+    Call Check(Array1(4), "104")
+    Call Check(Array1(5), "100")
+    
+    Call ArraySortQuick(Array1, 2, 4)
+    Call Check(Array1(0), "105")
+    Call Check(Array1(1), "101")
+    Call Check(Array1(2), "102")
+    Call Check(Array1(3), "103")
+    Call Check(Array1(4), "104")
+    Call Check(Array1(5), "100")
+    
+    Call ArraySortQuick(Array1, 0, 2)
+    Call Check(Array1(0), "101")
+    Call Check(Array1(1), "102")
+    Call Check(Array1(2), "105")
+    Call Check(Array1(3), "103")
+    Call Check(Array1(4), "104")
+    Call Check(Array1(5), "100")
+    
+    Call ArraySortQuick(Array1)
+    Call Check(Array1(0), "100")
+    Call Check(Array1(1), "101")
+    Call Check(Array1(2), "102")
+    Call Check(Array1(3), "103")
+    Call Check(Array1(4), "104")
+    Call Check(Array1(5), "105")
+End Sub
+
+
+'----------------------------------------
+'・独自並び順ソート
+'----------------------------------------
+'   ・  ソート指定配列の文字列に先頭が一致する順番に
+'       並び替えをするソート
+'   ・  s/m/l/xl/xxlとかそういう並び指定を行う
+'----------------------------------------
+Public Sub ArraySortOrder(ByRef ArrayValue As Variant, _
+ByRef OrderArray() As String)
+
+    Dim DigitCountArrayValue As Long
+    DigitCountArrayValue = Len(CStr(ArrayCount(ArrayValue))) + 1
+    Dim DigitCountOrderArray As Long
+    DigitCountOrderArray = Len(CStr(ArrayCount(OrderArray))) + 1
+
+    Dim I As Long
+    
+    '先頭一致のためのワイルドカード指定
+    For I = 0 To ArrayCount(OrderArray) - 1
+        OrderArray(I) = OrderArray(I) + "*"
+    Next
+    
+    For I = 0 To ArrayCount(ArrayValue) - 1
+        Dim OrderArrayIndex As Long
+        OrderArrayIndex = _
+            ArrayIndexOf(OrderArray, ArrayValue(I), , IgnoreCase, WildCardArray)
+        If OrderArrayIndex = -1 Then
+            ArrayValue(I) = _
+                String(DigitCountOrderArray, "9") + _
+                LongToStrDigitZero(I, DigitCountArrayValue) + _
+                ArrayValue(I)
+        Else
+            ArrayValue(I) = _
+                LongToStrDigitZero(OrderArrayIndex, DigitCountOrderArray) + _
+                LongToStrDigitZero(I, DigitCountArrayValue) + _
+                ArrayValue(I)
+        End If
+    Next
+    Call ArraySortQuick(ArrayValue)
+    
+    For I = 0 To ArrayCount(ArrayValue) - 1
+        ArrayValue(I) = _
+            Mid$(ArrayValue(I), _
+                DigitCountOrderArray + DigitCountArrayValue + 1)
+    Next
+End Sub
+
+Public Sub testArraySortOrder()
+    Dim Array1() As String
+    Array1 = ArrayStr("b", "a", "s", "ss", "xl", "ll", "m")
+    
+    Call ArraySortOrder(Array1, ArrayStr("ss", "s", "m", "l", "ll", "xl"))
+    
+    Call Check(Array1(0), "ss")
+    Call Check(Array1(1), "s")
+    Call Check(Array1(2), "m")
+    Call Check(Array1(3), "ll")
+    Call Check(Array1(4), "xl")
+    Call Check(Array1(5), "b")
+    Call Check(Array1(6), "a")
+    
+    Array1 = ArrayStr("Bサイズ", "Aサイズ", _
+        "Sサイズ", "SSサイズ", "XLサイズ", "LLサイズ", "Mサイズ")
+    
+    Call ArraySortOrder(Array1, ArrayStr("ss", "s", "m", "l", "ll", "xl"))
+    
+    Call Check(Array1(0), "SSサイズ")
+    Call Check(Array1(1), "Sサイズ")
+    Call Check(Array1(2), "Mサイズ")
+    Call Check(Array1(3), "LLサイズ")
+    Call Check(Array1(4), "XLサイズ")
+    Call Check(Array1(5), "Bサイズ")
+    Call Check(Array1(6), "Aサイズ")
+    
+End Sub
 
 '----------------------------------------
 '◆2次元配列
@@ -3408,13 +3999,22 @@ End Sub
 '・進捗表示
 '----------------------------------------
 Public Sub Application_StatusBar_Progress(ByVal Message As String, _
-ByVal StartValue As Long, ByVal Value As Long, ByVal EndValue As Long)
+ByVal StartValue As Long, ByVal Value As Long, ByVal EndValue As Long, _
+Optional ReverseFlag As Boolean = False)
 
-    Application.StatusBar = _
-        Message + ":" + _
-        CStr(Value) + "/" + _
-        CStr(EndValue - StartValue + 1) + ":" + _
-        CStr(Value / (EndValue - StartValue + 1) * 100) + "%"
+    If ReverseFlag = False Then
+        Application.StatusBar = _
+            Message + ":" + _
+            CStr(Value - StartValue + 1) + "/" + _
+            CStr(EndValue - StartValue + 1) + ":" + _
+            CStr(Format((Value - StartValue + 1) / (EndValue - StartValue + 1) * 100, "0.00")) + "%"
+    Else
+        Application.StatusBar = _
+            Message + ":" + _
+            CStr(Value - StartValue + 1) + "/" + _
+            CStr(EndValue - StartValue + 1) + ":" + _
+            CStr(Format(100 - ((Value - StartValue + 1) / (EndValue - StartValue + 1) * 100), "0.00")) + "%"
+    End If
 
 End Sub
 
@@ -3513,7 +4113,7 @@ On Error Resume Next
         DataLastRow = Sheet.UsedRange.Find("*", _
             , xlFormulas, , xlByRows, xlPrevious).Row
     Else
-        DataLastRow = Sheet.Cells(Rows.Count, ColumnNumber).End(xlUp).Row
+        DataLastRow = Sheet.Cells(Sheet.Rows.Count, ColumnNumber).End(xlUp).Row
     End If
 End Function
 
@@ -3690,17 +4290,6 @@ ByRef RangeDest As Range)
 End Sub
 
 '----------------------------------------
-'・書式のコピー
-'----------------------------------------
-Public Sub RangeCopyFormat( _
-ByRef RangeSource As Range, _
-ByRef RangeDest As Range)
-    RangeSource.Copy
-    Call RangeDest.PasteSpecial(Paste:=xlPasteFormats)
-    Call RangeCopyNumberFormat(RangeSource, RangeDest)
-End Sub
-
-'----------------------------------------
 '・値など全てのコピー
 '----------------------------------------
 Public Sub RangeCopyAll( _
@@ -3712,9 +4301,137 @@ ByRef RangeDest As Range)
 End Sub
 
 '----------------------------------------
+'・書式のコピー
+'----------------------------------------
+Public Sub RangeCopyFormat( _
+ByRef RangeSource As Range, _
+ByRef RangeDest As Range)
+    RangeSource.Copy
+    Call RangeDest.PasteSpecial(Paste:=xlPasteFormats)
+    Call RangeCopyNumberFormat(RangeSource, RangeDest)
+End Sub
+
+'----------------------------------------
+'・値のコピー
+'----------------------------------------
+Public Sub RangeCopyValue( _
+ByRef RangeSource As Range, _
+ByRef RangeDest As Range)
+    RangeSource.Copy
+    Call RangeDest.PasteSpecial(Paste:=xlPasteAllUsingSourceTheme)
+    Call RangeCopyNumberFormat(RangeSource, RangeDest)
+End Sub
+
+
+
+'----------------------------------------
+'◇範囲
+'----------------------------------------
+
+'----------------------------------------
+'・範囲の上の1行
+'----------------------------------------
+Public Function RangeUpRow(ByRef SourceRange As Range) As Range
+    Set RangeUpRow = _
+        SourceRange.Resize(1, SourceRange.Columns.Count).Offset(-1, 0)
+End Function
+
+'----------------------------------------
+'・範囲の下の1行
+'----------------------------------------
+Public Function RangeDownRow(ByRef SourceRange As Range) As Range
+    Set RangeDownRow = _
+        SourceRange.Resize(1, SourceRange.Columns.Count).Offset( _
+            SourceRange.Rows.Count, 0)
+End Function
+
+'----------------------------------------
+'◇範囲移動
+'----------------------------------------
+
+'----------------------------------------
+'・範囲を上に1、移動する
+'----------------------------------------
+Public Sub RangeMoveUpRowOne(ByRef SourceRange As Range)
+    '複数の選択範囲には非対応
+    Call Assert(SourceRange.Areas.Count = 1, _
+        "Error:RangeMoveUpRowOne:Areas.Count != 1")
+        
+    Dim EnableEventsBuffer As Boolean
+    EnableEventsBuffer = _
+        Application.EnableEvents
+    Application.EnableEvents = False
+        
+    Dim SelectionFlag As Boolean
+    If Selection.Address = SourceRange.Address Then
+        SelectionFlag = True
+    Else
+        SelectionFlag = False
+    End If
+    
+    '選択範囲の下1セルをあける
+    Call RangeDownRow(SourceRange).Insert(xlDown)
+    
+    '上のセルを下のセルにコピーする
+    Call RangeUpRow(SourceRange).Copy( _
+        Destination:=RangeDownRow(SourceRange))
+    
+    '上のセルを1つ削除
+    Call RangeUpRow(SourceRange).Delete(xlUp)
+    
+    '選択位置を1つ上にする
+    If SelectionFlag Then
+        SourceRange.Select
+    End If
+    
+    Application.EnableEvents = EnableEventsBuffer
+    
+End Sub
+
+Public Sub RangeMoveDownRowOne(ByRef SourceRange As Range)
+    '複数の選択範囲には非対応
+    Call Assert(SourceRange.Areas.Count = 1, _
+        "Error:RangeMoveUpRowOne:Areas.Count != 1")
+        
+    Dim EnableEventsBuffer As Boolean
+    EnableEventsBuffer = _
+        Application.EnableEvents
+    Application.EnableEvents = False
+        
+    Dim SelectionFlag As Boolean
+    If Selection.Address = SourceRange.Address Then
+        SelectionFlag = True
+    Else
+        SelectionFlag = False
+    End If
+        
+    '選択範囲の上1セルをあける
+    Call SourceRange.Resize(1, Selection.Columns.Count).Insert(xlDown)
+    
+    '下のセルを上のセルにコピーする
+    Call RangeDownRow(SourceRange).Copy( _
+        Destination:=RangeUpRow(SourceRange))
+    
+    '下のセルを1つ削除
+    Call RangeDownRow(SourceRange).Delete(xlUp)
+    
+    '選択位置を1つ上にする
+    If SelectionFlag Then
+        SourceRange.Select
+    End If
+
+    Application.EnableEvents = EnableEventsBuffer
+
+End Sub
+
+
+'----------------------------------------
 '◆Excel オブジェクト
 '----------------------------------------
 
+'----------------------------------------
+'◇ワークブック
+'----------------------------------------
 '----------------------------------------
 '・ワークブックの存在確認
 '----------------------------------------
@@ -3764,6 +4481,10 @@ Public Sub testWorkbookExists()
     Call Check(True, WorkbookExists("st_vba*"))
     Call Check(False, WorkbookExists("st_vba.xls"))
 End Sub
+
+'----------------------------------------
+'◇ワークシート
+'----------------------------------------
 
 '----------------------------------------
 '・ワークシートの存在確認
@@ -3867,6 +4588,26 @@ ByVal DocumentText As String)
 End Sub
 
 '----------------------------------------
+'◇チェックボックス
+'----------------------------------------
+'   ・  フォントWindingsのチェックボックス表示の文字列を返す
+'   ・  ChrWの反対はAscW
+'----------------------------------------
+Function Wingdings_Checkbox_Checked() As String
+    Wingdings_Checkbox_Checked = _
+        ChrW(254)
+End Function
+
+Function Wingdings_Checkbox_UnChecked() As String
+    Wingdings_Checkbox_UnChecked = _
+        ChrW(168)
+End Function
+
+'----------------------------------------
+'◇オブジェクト
+'----------------------------------------
+
+'----------------------------------------
 '・ChartObjectの存在確認
 '----------------------------------------
 Public Function ChartObjectExists( _
@@ -3889,6 +4630,29 @@ Private Sub testChartObjectExists()
     Call Check(True, ChartObjectExists("Graph01"))
     Call Check(False, ChartObjectExists("Graph02"))
 End Sub
+
+'----------------------------------------
+'・OLEObjectの存在確認
+'----------------------------------------
+Public Function OLEObjectExists( _
+ByVal OLEObjectName As String, _
+Optional ByVal Sheet As Worksheet = Nothing) As Boolean
+
+    If Sheet Is Nothing Then Set Sheet = ActiveSheet
+
+    Dim Result As Boolean: Result = False
+    Dim OLEObject As OLEObject
+    For Each OLEObject In Sheet.OLEObjects
+        If OLEObject.Name = OLEObjectName Then
+            Result = True
+        End If
+    Next
+    OLEObjectExists = Result
+End Function
+
+'----------------------------------------
+'◇Shape
+'----------------------------------------
 
 '----------------------------------------
 '・Shapesの存在確認
@@ -3914,28 +4678,6 @@ Private Sub testShapeExists()
     Call Check(False, ShapeExists("Graph02"))
 End Sub
 
-'----------------------------------------
-'・OLEObjectの存在確認
-'----------------------------------------
-Public Function OLEObjectExists( _
-ByVal OLEObjectName As String, _
-Optional ByVal Sheet As Worksheet = Nothing) As Boolean
-
-    If Sheet Is Nothing Then Set Sheet = ActiveSheet
-
-    Dim Result As Boolean: Result = False
-    Dim OLEObject As OLEObject
-    For Each OLEObject In Sheet.OLEObjects
-        If OLEObject.Name = OLEObjectName Then
-            Result = True
-        End If
-    Next
-    OLEObjectExists = Result
-End Function
-
-'----------------------------------------
-'◇Shape
-'----------------------------------------
 
 '----------------------------------------
 '・セル範囲に当てはまるように画像ファイルを貼り付ける処理
@@ -4017,6 +4759,7 @@ Public Sub ShapeCompressUseClipboard(ByVal Sheet As Worksheet, ByVal Shape As Sh
     
     Shape.Cut
     
+    Sheet.Activate
 '    Sheet.PasteSpecial Format:="図 (拡張メタファイル)", Link:=False, DisplayAsIcon:=False
     Sheet.PasteSpecial Format:="図 (JPEG)", Link:=False, DisplayAsIcon:=False
     Selection.ShapeRange.Width = RectSize.Width
@@ -4025,6 +4768,38 @@ Public Sub ShapeCompressUseClipboard(ByVal Sheet As Worksheet, ByVal Shape As Sh
     Selection.Top = Point.Y
 End Sub
 
+'----------------------------------------
+'・座標位置に対するセル位置を返す関数
+'----------------------------------------
+'   ・  Shape.TopLeftCell/.BottomRightCell はあるが
+'       中心位置のセルを求める方法はなかったので作成。
+'       速度は速くない。
+'----------------------------------------
+Public Function TopLeftCell(ByRef Sheet As Worksheet, _
+ByVal Top As Long, ByVal Left As Long) As Range
+    Call Assert(0 <= Top, "Error:TopLeftCell:Top < 0")
+    Call Assert(0 <= Left, "Error:TopLeftCell:Left < 0")
+
+    Dim Row As Long
+    Row = 0
+    Do
+        If Top < Sheet.Rows(Row + 1).Top Then Exit Do
+        Row = Row + 1
+    Loop While True
+    
+    Dim Col As Long
+    Col = 0
+    Do
+        If Left < Sheet.Columns(Col + 1).Left Then Exit Do
+        Col = Col + 1
+    Loop While True
+    
+    Set TopLeftCell = Sheet.Cells(Row, Col)
+End Function
+
+Public Sub testTopLeftCell()
+    Call Check(Sheets(1).Cells(1, 1), TopLeftCell(Sheets(1), 0, 0))
+End Sub
 
 
 '----------------------------------------
@@ -4715,137 +5490,6 @@ Sub testComboBox_GetSetStrings(ComboBox1 As ComboBox)
 End Sub
 
 
-'----------------------------------------
-'◆ListView
-'----------------------------------------
-
-'----------------------------------------
-'・ListViewの選択項目個数
-'----------------------------------------
-Public Function ListView_SelectedItemCount(ByVal ListView As ListView) As Long
-    Dim Result As Long: Result = 0
-    Dim I As Long
-    For I = 0 To ListView.ListItems.Count - 1
-        If ListView.ListItems(I + 1).Selected Then
-            Result = Result + 1
-        End If
-    Next
-    ListView_SelectedItemCount = Result
-End Function
-
-'----------------------------------------
-'・ListViewのチェック項目個数
-'----------------------------------------
-Public Function ListView_CheckedItemCount(ByVal ListView As ListView) As Long
-    Dim Result As Long: Result = 0
-    Dim I As Long
-    For I = 0 To ListView.ListItems.Count - 1
-        If ListView.ListItems(I + 1).Checked Then
-            Result = Result + 1
-        End If
-    Next
-    ListView_CheckedItemCount = Result
-End Function
-
-'----------------------------------------
-'・ListView 全て選択
-'----------------------------------------
-Sub ListView_SelectAll(ListView As ListView, _
-SelectValue As Boolean)
-    Dim I As Long
-    For I = 0 To ListView.ListItems.Count - 1
-        ListView.ListItems(I + 1).Selected = SelectValue
-    Next
-End Sub
-
-'----------------------------------------
-'・ListView 全てチェック
-'----------------------------------------
-Sub ListView_CheckAll(ListView As ListView, _
-CheckValue As Boolean)
-    Dim I As Long
-    For I = 0 To ListView.ListItems.Count - 1
-        ListView.ListItems(I + 1).Checked = CheckValue
-    Next
-End Sub
-
-'----------------------------------------
-'・ListView 選択チェック
-'----------------------------------------
-Sub ListView_CheckSelectedItem(ListView As ListView, _
-CheckValue As Boolean)
-    Dim I As Long
-    For I = 0 To ListView.ListItems.Count - 1
-        If ListView.ListItems(I + 1).Selected Then
-            ListView.ListItems(I + 1).Checked = CheckValue
-        End If
-    Next
-End Sub
-
-'----------------------------------------
-'・ListView 選択項目が全てチェックされているかどうか確認
-'----------------------------------------
-Public Function ListView_IsCheckSelectedItem(ByVal ListView As ListView) As Boolean
-    Dim Result As Boolean: Result = True
-    Dim I As Long
-    For I = 0 To ListView.ListItems.Count - 1
-        If ListView.ListItems(I + 1).Selected Then
-            If ListView.ListItems(I + 1).Checked = False Then
-                Result = False
-                Exit For
-            End If
-        End If
-    Next
-    ListView_IsCheckSelectedItem = Result
-End Function
-
-
-'----------------------------------------
-'・複数選択時の同時チェック切り替え
-'----------------------------------------
-'   ・  例:
-'       次のように使うとよい
-'       Private Sub ListView1_ItemCheck(ByVal Item As MSComctlLib.ListItem)
-'           Call ListView_MultiSelectChecked(ListView1, Item)
-'       End Sub
-'----------------------------------------
-Sub ListView_MultiSelectChecked(ListView As ListView, _
-CheckedItem As ListItem)
-    Dim I As Long
-    If CheckedItem.Selected Then
-        'チェックした項目が選択されているなら
-        '他のすべての選択項目もチェックをあわせる
-        For I = 0 To ListView.ListItems.Count - 1
-            If ListView.ListItems(I + 1).Selected Then
-                ListView.ListItems(I + 1).Checked = CheckedItem.Checked
-            End If
-        Next
-    Else
-        'チェックした項目が選択されていないなら
-        '選択を解除して、その項目を選択する
-        For I = 0 To ListView.ListItems.Count - 1
-            ListView.ListItems(I + 1).Selected = False
-        Next
-        CheckedItem.Selected = True
-    End If
-End Sub
-
-'----------------------------------------
-'・キーでサーチするIndexOf
-'----------------------------------------
-Public Function ListView_IndexOfKey(ByVal ListView As ListView, _
-ByVal SearchKey As String, Optional StartIndex As Long = 0) As Long
-    Dim Result As Long: Result = -1
-    Dim I As Long
-    For I = StartIndex To ListView.ListItems.Count - 1
-        If ListView.ListItems(I + 1).Key = SearchKey Then
-            Result = I
-            Exit For
-        End If
-    Next
-    ListView_IndexOfKey = Result
-End Function
-
 
 '----------------------------------------
 '◆アイコン用API操作
@@ -5126,231 +5770,8 @@ Public Sub MouseClick()
 End Sub
 
 '----------------------------------------
-'◆InternetExplorer操作
+'◆Internet系関数
 '----------------------------------------
-
-'----------------------------------------
-'・新規IEオブジェクト生成
-'----------------------------------------
-Function IE_NewObject(Optional ByVal Visible As Boolean = True) As InternetExplorer
-    Set IE_NewObject = New InternetExplorer
-    IE_NewObject.Visible = Visible
-End Function
-
-Sub testIE_NewObject()
-    Dim ie As InternetExplorer
-    Set ie = IE_NewObject
-    Call IE_Navigate(ie, "http://www.yahoo.co.jp/")
-    Call MsgBox("finish")
-    ie.Quit
-End Sub
-
-'----------------------------------------
-'・既存の起動IEの取得
-'----------------------------------------
-'   ・  起動済みIEがあればそれを取得
-'       なければ新規にIEを起動する
-'----------------------------------------
-Function IE_GetObject(Optional ByVal URL As String = "") As InternetExplorer
-    Dim ie As InternetExplorer
-    Set ie = Nothing
-
-    Dim ShellApp As Object
-    Dim Window As Object
-    
-    Set ShellApp = CreateObject("Shell.Application")
-    
-    For Each Window In ShellApp.Windows
-       If IsIncludeStr(Window.Name, "Internet Explorer") Then
-            If (URL = "") Then
-                Set ie = Window
-                Exit For
-            Else
-                If (IsIncludeStr(Window.LocationURL, URL)) Then
-                    Set ie = Window
-                    Exit For
-                End If
-            End If
-        End If
-    Next
-    
-    If ie Is Nothing Then
-        Set ie = IE_NewObject(True)
-    End If
-
-    Set IE_GetObject = ie
-End Function
-
-Sub testIE_GetObject()
-    Dim ie As InternetExplorer
-    Set ie = IE_GetObject("https://www.google.co.jp/")
-    Call IE_Navigate(ie, "http://www.yahoo.co.jp/")
-    Call MsgBox("finish")
-    Call IE_Quit(ie)
-End Sub
-
-'----------------------------------------
-'・IE起動とアドレス表示
-'----------------------------------------
-Sub IE_Navigate(ByVal ie As InternetExplorer, _
-ByVal URL As String, _
-Optional ByRef NavigateCancelFlag As Boolean = False)
-    Call ie.Navigate(URL)
-    Call IE_NavigateWait(ie, 120, 300, NavigateCancelFlag)
-End Sub
-
-'----------------------------------------
-'・IEリフレッシュ
-'----------------------------------------
-'   ・  リフレッシュ時に非表示が表示になってしまう場合が
-'       あるようなので対応
-'----------------------------------------
-Sub IE_Refresh(ByVal ie As InternetExplorer)
-    Dim VisibleBuffer As Boolean
-    VisibleBuffer = ie.Visible
-    Call ie.Refresh
-    ie.Visible = VisibleBuffer
-End Sub
-
-'----------------------------------------
-'・IEナビゲート待機
-'----------------------------------------
-Sub IE_NavigateWait(ByVal ie As InternetExplorer, _
-ByVal RefreshSecond As Long, _
-ByVal TimeOutSecond As Long, _
-Optional ByRef NavigateCancelFlag As Boolean = False)
-
-    'リフレッシュ時間/タイムアウト時間
-    Dim RefreshTime As Date
-    Dim TimeOutTime As Date
-    RefreshTime = Now + TimeSerial(0, 0, RefreshSecond)
-    TimeOutTime = Now + TimeSerial(0, 0, TimeOutSecond)
-
-    Do Until (ie.Busy = False) And (ie.ReadyState = READYSTATE_COMPLETE)
-        'READYSTATE_COMPLETE=4
-        DoEvents
-        Call Sleep(1)
-        If NavigateCancelFlag Then
-            Exit Sub
-        End If
-        If Now > TimeOutTime Then
-            Exit Sub
-        End If
-        If Now > RefreshTime Then
-            'ページの再読み込み(リフレッシュ)
-            Call IE_Refresh(ie)
-            RefreshTime = Now + TimeSerial(0, 0, RefreshSecond)
-        End If
-    Loop
-
-    RefreshTime = Now + TimeSerial(0, 0, RefreshSecond)
-    TimeOutTime = Now + TimeSerial(0, 0, TimeOutSecond)
-
-    Do Until (ie.Document.ReadyState = "complete")
-        DoEvents
-        Call Sleep(1)
-        If NavigateCancelFlag Then
-            Exit Sub
-        End If
-        If Now > TimeOutTime Then
-            Exit Sub
-        End If
-        If Now > RefreshTime Then
-            Call IE_Refresh(ie)
-            RefreshTime = Now + TimeSerial(0, 0, RefreshSecond)
-        End If
-    Loop
-
-End Sub
-
-Sub testIE_NavigateWait()
-
-    Dim ie As InternetExplorer
-    Set ie = IE_NewObject
-    Call IE_Navigate(ie, "https://www.google.co.jp/")
-
-    Set ie = IE_GetObject
-    Call IE_Navigate(ie, "http://www.yahoo.co.jp/")
-    
-    Call MsgBox("finish")
-
-    ie.Quit
-End Sub
-
-'----------------------------------------
-'・IEを閉じる
-'----------------------------------------
-'   ・  IEオブジェクトが見つからない場合でも
-'       エラーを起こさずに終わる
-'----------------------------------------
-Sub IE_Quit(ByVal ie As InternetExplorer)
-On Error Resume Next
-    ie.Quit
-End Sub
-
-'----------------------------------------
-'・IEでJavaScriptを実行する
-'----------------------------------------
-Sub IE_RunJavaScript(ByVal ie As InternetExplorer, ByVal ScriptCode As String)
-    Call ie.Navigate("JavaScript:" + ScriptCode)
-End Sub
-
-Sub testIE_RunJavaScript()
-    Dim ie As InternetExplorer
-    Set ie = IE_GetObject
-    Call IE_Navigate(ie, "http://www.yahoo.co.jp/")
-    
-    '1ページ分スクロール
-    Call IE_RunJavaScript(ie, "scrollTo(0," & ie.Document.body.ScrollHeight & ")")
-
-    Call MsgBox("finish")
-    Call IE_Quit(ie)
-End Sub
-
-'----------------------------------------
-'・IEで条件に一致したエレメントを取得する
-'----------------------------------------
-Public Function IE_GetElementByTagNameClassName(ByVal ie As InternetExplorer, _
-ByVal TagName As String, ByVal ClassNameWildCard As String) As Object
-    Dim Result As Object: Set Result = Nothing
-    Dim E1 As Object
-    For Each E1 In ie.Document.getElementsByTagName(TagName)
-        If E1.ClassName Like ClassNameWildCard Then
-            Set Result = E1
-            Exit For
-        End If
-    Next
-    Set IE_GetElementByTagNameClassName = Result
-End Function
-
-Public Function IE_GetElementByTagNameId(ByVal ie As InternetExplorer, _
-ByVal TagName As String, ByVal IdWildCard As String) As Object
-    Dim Result As Object: Set Result = Nothing
-    Dim E1 As Object
-    For Each E1 In ie.Document.getElementsByTagName(TagName)
-        If E1.ID Like IdWildCard Then
-            Set Result = E1
-            Exit For
-        End If
-    Next
-    Set IE_GetElementByTagNameId = Result
-End Function
-
-Public Function IE_GetElementByTagNameInnerHTML(ByVal ie As InternetExplorer, _
-ByVal TagName As String, ByVal InnerHTMLWildCard As String) As Object
-    Dim Result As Object: Set Result = Nothing
-    Dim E1 As Object
-    For Each E1 In ie.Document.getElementsByTagName(TagName)
-        If E1.InnerHTML Like InnerHTMLWildCard Then
-            Set Result = E1
-            Exit For
-        End If
-    Next
-    Set IE_GetElementByTagNameInnerHTML = Result
-End Function
-
-
-
 '----------------------------------------
 '・URL指定のファイルダウンロード
 '----------------------------------------
@@ -5362,7 +5783,21 @@ Public Function URLDownloadFile(ByVal URL As String, ByVal FilePath As String) A
     URLDownloadFile = (Result = 0)
 End Function
 
-
+'----------------------------------------
+'・日本語文字列のURLエンコード
+'----------------------------------------
+Public Function UrlEncode(ByVal Word As String) As String
+    Dim HtmlFile As Object
+    Dim Element As Object
+    Word = Replace(Word, "\", "\\")
+    Word = Replace(Word, "'", "\'")
+    Set HtmlFile = CreateObject("htmlfile")
+    Set Element = HtmlFile.createElement("span")
+    Call Element.setAttribute("id", "result")
+    Call HtmlFile.appendChild(Element)
+    Call HtmlFile.parentWindow.execScript("document.getElementById('result').innerText = encodeURIComponent('" & Word & "');", "JScript")
+    UrlEncode = Element.InnerText
+End Function
 
 '----------------------------------------
 '◆VBE操作
@@ -5665,4 +6100,34 @@ End Sub
 '・ TagOuterTextの修正
 '・ TagOuterTextList追加
 '・ ReplaceHTMLTag追加
+'◇ ver 2016/03/10
+'・ Wingdings_Checkbox_Checked/UnChecked追加
+'・ urlEncode追加
+'・ ArrayAddNotDuplicate/ArrayExists追加
+'・ ArraySortQuick追加
+'・ RangeUpRow/RangeDownRow追加
+'・ RangeMoveUpRowOne/RangeMoveDownRowOne追加
+'・ LengthSjisByte
+'   /LeftSjisByte/RightSjisByte
+'   /MidSjisByte追加
+'◇ ver 2016/03/13
+'・ urlEncode修正
+'・ TopLeftCell追加
+'・ StrCount追加
+'・ StrToBool追加
+'・ st_vba_Baseから、st_vba_Coreに名称変更
+'・ ListView処理を、st_vba_ListViewに移行
+'・ InternetExplorer処理を、st_vba_IEに移行
+'◇ ver 2016/03/20
+'・ IE_GetElementByTagNameを追加
+'・ ReplaceContinuousSpace追加
+'・ RangeCopyValue追加
+'・ MatchRegExp追加
+'・ ArrayIndexOfに完全一致/部分一致/ワイルドカード/正規表現
+'   の機能を追加。ArrayExistsも追加。
+'◇ ver 2016/03/23
+'・ ArrayIndexOfを改良して
+'   ワイルドカード配列/正規表現配列の機能を追加
+'・ ReplaceArrayValue/DeleteArrayValueを追加
+'・ ArraySortOrderを追加
 '--------------------------------------------------

@@ -41,7 +41,7 @@ Private ParentHeightOrigin As Double
 Sub Initialize(ByRef Control As Object, _
 ByVal HorizonAnchorValue As HorizonAnchorType, _
 ByVal RightOffset As Double, _
-VerticalAnchorValue As VerticalAnchorType, _
+ByVal VerticalAnchorValue As VerticalAnchorType, _
 ByVal BottomOffset As Double)
 
     Set TargetControl = Control
