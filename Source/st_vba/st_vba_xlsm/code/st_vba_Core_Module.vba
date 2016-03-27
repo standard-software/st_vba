@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        http://standard-software.net/
 '--------------------------------------------------
-'Version:       2016/03/23
+'Version:       2016/03/27
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -130,6 +130,14 @@ End Enum
 Public Enum CaseCompare
     CaseSensitive
     IgnoreCase
+End Enum
+
+'----------------------------------------
+'◆配列
+'----------------------------------------
+Public Enum SortOrder
+    Ascending
+    Descending
 End Enum
 
 '----------------------------------------
@@ -1878,7 +1886,7 @@ End Function
 
 
 '----------------------------------------
-'◇文字列比較
+'◇文字列正規表現
 '----------------------------------------
 
 '----------------------------------------
@@ -1927,6 +1935,47 @@ Err:
     MatchRegExp = False
 End Function
 
+
+'----------------------------------------
+'・正規表現での置き換え
+'----------------------------------------
+'   ・  動作対象は1行テキスト
+'   ・  RegExpオブジェクトは外部から指定可能
+'----------------------------------------
+Public Function ReplaceRegExp(ByVal Value As String, ByVal Pattern As String, _
+ByVal NewValue As String, _
+Optional ByVal CaseCompare As CaseCompare = CaseSensitive, _
+Optional RegExp As Object = Nothing) As String
+
+On Error GoTo Err:
+    Dim Result As String: Result = Value
+    Do
+        If (Pattern = "") Or (Value = "") Then Exit Do
+        
+        '正規表現用オブジェクト用意
+        Dim RegCreateFlag As Boolean
+        RegCreateFlag = False
+        If RegExp Is Nothing Then
+            RegCreateFlag = True
+            Set RegExp = CreateObject("VBScript.RegExp")
+        End If
+        
+        '正規表現マッチ調査
+        RegExp.Pattern = Pattern
+        RegExp.IgnoreCase = (CaseCompare = IgnoreCase)
+        RegExp.Global = True
+        
+        Result = RegExp.Replace(Value, NewValue)
+        
+        If RegCreateFlag Then
+            Set RegExp = Nothing
+        End If
+            
+    Loop While False
+Err:
+    ReplaceRegExp = Result
+End Function
+
 '----------------------------------------
 '◇配列指定処理
 '----------------------------------------
@@ -1963,6 +2012,47 @@ DeleteTableArray() As String) As String
 End Function
 
 
+'----------------------------------------
+'◇配列指定(正規表現)処理
+'----------------------------------------
+'----------------------------------------
+'・文字列の連続置き換え、正規表現、配列指定
+'----------------------------------------
+Public Function ReplaceArrayRegExp(ByVal Value As String, _
+ByRef OldTableArray() As String, NewTableArray() As String, _
+Optional ByVal CaseCompare As CaseCompare = CaseSensitive) As String
+    Call Assert(ArrayCount(OldTableArray) = ArrayCount(NewTableArray), _
+        "Error:ReplaceArrayValue:OldTableArray's Count is not same NewTableArray's Count")
+
+    Dim Result As String
+    Result = Value
+    
+    Dim RegExp As Object
+    Set RegExp = CreateObject("VBScript.RegExp")
+    
+    Dim I As Long
+    For I = 0 To ArrayCount(OldTableArray) - 1
+        Result = ReplaceRegExp(Result, OldTableArray(I), NewTableArray(I), CaseCompare, RegExp)
+    Next
+    Set RegExp = Nothing
+    
+    ReplaceArrayRegExp = Result
+End Function
+
+'----------------------------------------
+'・文字列の連続削除、正規表現、配列指定
+'----------------------------------------
+Public Function DeleteArrayRegExp(ByVal Value As String, _
+DeleteTableArray() As String, _
+Optional ByVal CaseCompare As CaseCompare = CaseSensitive) As String
+    Dim Result As String
+    Result = Value
+    Dim I As Long
+    For I = 0 To ArrayCount(DeleteTableArray) - 1
+        Result = ReplaceRegExp(Result, DeleteTableArray(I), "", CaseCompare)
+    Next
+    DeleteArrayRegExp = Result
+End Function
 
 '----------------------------------------
 '◆日付時刻処理
@@ -2149,30 +2239,37 @@ End Function
 '----------------------------------------
 '   ・  UBoundはArray()で返される要素無しの配列には-1を返すが
 '       宣言しただけの動的配列ではエラーになるのでそれを防止する。
+'   ・  Dimension:次元数は、多次元配列の場合その次元での結果を返す
 '----------------------------------------
-Public Function UBoundNoError(ByRef Value As Variant) As Long
+Public Function UBoundNoError(ByRef Value As Variant, _
+Optional Dimension = 1) As Long
 On Error Resume Next
     Call Assert(IsArray(Value), "Error:UBoundNoError:Value is not Array.")
     UBoundNoError = -1
-    UBoundNoError = UBound(Value)
+    UBoundNoError = UBound(Value, Dimension)
 End Function
 
-Public Function LBoundNoError(ByRef Value As Variant) As Long
+Public Function LBoundNoError(ByRef Value As Variant, _
+Optional Dimension = 1) As Long
 On Error Resume Next
     Call Assert(IsArray(Value), "Error:LBoundNoError:Value is not Array.")
     LBoundNoError = 0
-    LBoundNoError = LBound(Value)
+    LBoundNoError = LBound(Value, Dimension)
 End Function
 
 '----------------------------------------
 '・配列の要素数を求める関数
 '----------------------------------------
 '   ・  LBound=0 でも 1 でも対応する。
+'   ・  Dimension:次元数は、多次元配列の場合その次元での結果を返す
 '----------------------------------------
-Public Function ArrayCount(ByRef ArrayValue As Variant) As Long
+Public Function ArrayCount(ByRef ArrayValue As Variant, _
+Optional Dimension = 1) As Long
     Call Assert(IsArray(ArrayValue), "Error:ArrayCount:ArrayValue is not Array.")
 
-    ArrayCount = UBoundNoError(ArrayValue) - LBoundNoError(ArrayValue) + 1
+    ArrayCount = _
+        UBoundNoError(ArrayValue, Dimension) - _
+        LBoundNoError(ArrayValue, Dimension) + 1
     '配列要素がない場合はUBound=-1/LBound=0になるので
     '配列要素数計算は正しく行われる。
 End Function
@@ -2183,6 +2280,18 @@ Private Sub testArrayCount()
     Call Check(0, ArrayCount(Array()))
     Call Check(1, ArrayCount(Split("123", ",")))
     Call Check(2, ArrayCount(Split("1,3", ",")))
+    
+    '二次元配列
+    Dim B(3, 4) As String
+    Call Check(4, ArrayCount(B, 1))
+    Call Check(5, ArrayCount(B, 2))
+    
+    '三次元配列
+    Dim C(5, 6, 7) As String
+    Call Check(6, ArrayCount(C, 1))
+    Call Check(7, ArrayCount(C, 2))
+    Call Check(8, ArrayCount(C, 3))
+    
 End Sub
 
 
@@ -2215,6 +2324,18 @@ Private Sub testArrayAdd()
     Set B(2) = CreateObject("ADODB.Stream")
     Call ArrayAdd(B, fso)
     Call Check("test.txt", B(3).GetFileName("C:\temp\test.txt"))
+    
+    '二次元配列
+    Dim C() As String
+    ReDim Preserve C(3, 4)
+    Call Check(4, ArrayCount(C, 1))
+    Call Check(5, ArrayCount(C, 2))
+    
+    ReDim Preserve C(3, 5)
+    Call Check(4, ArrayCount(C, 1))
+    Call Check(6, ArrayCount(C, 2))
+    
+'    Call SetValue(C(UBound(C)), "abc")
 End Sub
 
 '----------------------------------------
@@ -2561,6 +2682,11 @@ Sub testArrayIndexOf()
     Call Check(-1, ArrayIndexOf(A, "?e?", 1, , WildCardValue))
     Call Check(1, ArrayIndexOf(A, "?e?", 1, IgnoreCase, WildCardValue))
 
+    'Like WildCard Value IgnoreCase 全角
+    A = Array("ＡＢＣ", "ＤＥＦ", "１２３")
+    Call Check(-1, ArrayIndexOf(A, "?ｅ?", 1, , WildCardValue))
+    Call Check(1, ArrayIndexOf(A, "?ｅ?", 1, IgnoreCase, WildCardValue))
+
     'RegExp Value
     A = Array("ABC", "DEF", "123")
     Call Check(0, ArrayIndexOf(A, ".*C", 0, , RegExpValue))
@@ -2741,10 +2867,17 @@ End Function
 '       指定範囲内の値をソートする
 '----------------------------------------
 Public Sub ArraySortQuick(ByRef ArrayValue As Variant, _
+Optional ByVal SortOrder As SortOrder = SortOrder.Ascending, _
 Optional ByVal IndexMin As Long = -1, Optional ByVal IndexMax As Long = -1)
 
     Call Assert(IsArray(ArrayValue), "Error:ArrayValue is not Array")
     Call Assert(ArrayDimension(ArrayValue) = 1)
+    
+    Call Assert(IndexMin <= IndexMax, "Error:IndexMin < IndexMax")
+    Call Assert(InRange(-1, IndexMin, ArrayCount(ArrayValue) - 1), _
+        "Error:ArrayReverse:IndexMin Range is miss.")
+    Call Assert(InRange(-1, IndexMax, ArrayCount(ArrayValue) - 1), _
+        "Error:ArrayReverse:IndexMax Range is miss.")
     
     '1以下ならソート不可能なのでExitする
     If ArrayCount(ArrayValue) <= 1 Then Exit Sub
@@ -2754,14 +2887,13 @@ Optional ByVal IndexMin As Long = -1, Optional ByVal IndexMax As Long = -1)
     
     'IndexMin=IndexMaxならソート不可能なのでExit
     If IndexMin = IndexMax Then Exit Sub
-    'IndexMin/Maxの指定が変ならエラーにする
-    Call Assert(IndexMin < IndexMax, "Error:IndexMin < IndexMax")
     
-    Call ArraySortQuickBase(ArrayValue, IndexMin, IndexMax)
+    Call ArraySortQuickBase(ArrayValue, SortOrder, IndexMin, IndexMax)
 End Sub
 
 'クイックソートのベース関数、再起呼び出しされる
 Sub ArraySortQuickBase(ByRef ArrayValue As Variant, _
+ByVal SortOrder As SortOrder, _
 ByVal IndexMin As Long, ByVal IndexMax As Long)
     
     Dim IndexCenter As Long
@@ -2783,26 +2915,43 @@ ByVal IndexMin As Long, ByVal IndexMax As Long)
     
     Index1 = IndexMin + 1
     
-    Do While Index1 <= IndexMax
-        If ArrayValue(Index1) < Value1 Then
-            Index2 = Index2 + 1
-            
-            Value2 = ArrayValue(Index2)
-            ArrayValue(Index2) = ArrayValue(Index1)
-            ArrayValue(Index1) = Value2
-            
-        End If
-        Index1 = Index1 + 1
-    Loop
+    Select Case SortOrder
+    Case Ascending
+        Do While Index1 <= IndexMax
+            If ArrayValue(Index1) < Value1 Then
+                Index2 = Index2 + 1
+                
+                Value2 = ArrayValue(Index2)
+                ArrayValue(Index2) = ArrayValue(Index1)
+                ArrayValue(Index1) = Value2
+                
+            End If
+            Index1 = Index1 + 1
+        Loop
+    Case Descending
+        Do While Index1 <= IndexMax
+            If Value1 < ArrayValue(Index1) Then
+                Index2 = Index2 + 1
+                
+                Value2 = ArrayValue(Index2)
+                ArrayValue(Index2) = ArrayValue(Index1)
+                ArrayValue(Index1) = Value2
+                
+            End If
+            Index1 = Index1 + 1
+        Loop
+    Case Else
+        Call Assert(False, "Error:ArraySortQuickBase:SortOrder is miss.")
+    End Select
     
     ArrayValue(IndexMin) = ArrayValue(Index2)
     ArrayValue(Index2) = Value1
     
     ' 分割前半を再帰呼び出しでSORT
-    Call ArraySortQuickBase(ArrayValue, IndexMin, Index2 - 1)
+    Call ArraySortQuickBase(ArrayValue, SortOrder, IndexMin, Index2 - 1)
 
     ' 分割後半を再帰呼び出しでSORT
-    Call ArraySortQuickBase(ArrayValue, Index2 + 1, IndexMax)
+    Call ArraySortQuickBase(ArrayValue, SortOrder, Index2 + 1, IndexMax)
 End Sub
 
 Sub testArrayQuickSort()
@@ -2821,7 +2970,8 @@ Sub testArrayQuickSort()
     Call Check(Array1(4), "104")
     Call Check(Array1(5), "100")
     
-    Call ArraySortQuick(Array1, 2, 4)
+    'Ascending
+    Call ArraySortQuick(Array1, SortOrder.Ascending, 2, 4)
     Call Check(Array1(0), "105")
     Call Check(Array1(1), "101")
     Call Check(Array1(2), "102")
@@ -2829,7 +2979,7 @@ Sub testArrayQuickSort()
     Call Check(Array1(4), "104")
     Call Check(Array1(5), "100")
     
-    Call ArraySortQuick(Array1, 0, 2)
+    Call ArraySortQuick(Array1, SortOrder.Ascending, 0, 2)
     Call Check(Array1(0), "101")
     Call Check(Array1(1), "102")
     Call Check(Array1(2), "105")
@@ -2844,44 +2994,154 @@ Sub testArrayQuickSort()
     Call Check(Array1(3), "103")
     Call Check(Array1(4), "104")
     Call Check(Array1(5), "105")
+    
+    'Descending
+    Array1(0) = "105"
+    Array1(1) = "101"
+    Array1(2) = "103"
+    Array1(3) = "102"
+    Array1(4) = "104"
+    Array1(5) = "100"
+    
+    Call ArraySortQuick(Array1, SortOrder.Descending, 2, 4)
+    Call Check(Array1(0), "105")
+    Call Check(Array1(1), "101")
+    Call Check(Array1(2), "104")
+    Call Check(Array1(3), "103")
+    Call Check(Array1(4), "102")
+    Call Check(Array1(5), "100")
+    
+    Call ArraySortQuick(Array1, SortOrder.Descending, 0, 2)
+    Call Check(Array1(0), "105")
+    Call Check(Array1(1), "104")
+    Call Check(Array1(2), "101")
+    Call Check(Array1(3), "103")
+    Call Check(Array1(4), "102")
+    Call Check(Array1(5), "100")
+    
+    Call ArraySortQuick(Array1, SortOrder.Descending)
+    Call Check(Array1(0), "105")
+    Call Check(Array1(1), "104")
+    Call Check(Array1(2), "103")
+    Call Check(Array1(3), "102")
+    Call Check(Array1(4), "101")
+    Call Check(Array1(5), "100")
+End Sub
+
+
+'----------------------------------------
+'・文字列長ソート
+'----------------------------------------
+Public Sub ArraySortStrLength(ByRef ArrayValue As Variant, _
+Optional ByVal SortOrder As SortOrder = SortOrder.Ascending)
+
+    Dim DigitArrayValue As Long
+    DigitArrayValue = Len(CStr(ArrayCount(ArrayValue) - 1))
+    Dim DigitStrLength As Long
+    DigitStrLength = 0
+    Dim MaxLength As Long
+    MaxLength = 0
+
+    Dim I As Long
+    For I = 0 To ArrayCount(ArrayValue) - 1
+        MaxLength = MaxValue(MaxLength, Len(ArrayValue(I)))
+    Next
+    DigitStrLength = Len(CStr(MaxLength))
+    
+    Select Case SortOrder
+    Case Ascending
+        For I = 0 To ArrayCount(ArrayValue) - 1
+            ArrayValue(I) = _
+                LongToStrDigitZero(Len(ArrayValue(I)), DigitStrLength) + _
+                LongToStrDigitZero(I, DigitArrayValue) + _
+                ArrayValue(I)
+        Next
+    Case Descending
+        For I = 0 To ArrayCount(ArrayValue) - 1
+            ArrayValue(I) = _
+                LongToStrDigitZero(MaxLength - Len(ArrayValue(I)), DigitStrLength) + _
+                LongToStrDigitZero(I, DigitArrayValue) + _
+                ArrayValue(I)
+        Next
+    End Select
+    Call ArraySortQuick(ArrayValue)
+    
+    For I = 0 To ArrayCount(ArrayValue) - 1
+        ArrayValue(I) = _
+            Mid$(ArrayValue(I), _
+                DigitStrLength + DigitArrayValue + 1)
+    Next
+End Sub
+
+Sub testArraySortStrLength()
+
+    Dim Array1(5) As Variant
+    Array1(0) = "1"
+    Array1(1) = "12"
+    Array1(2) = "1234"
+    Array1(3) = "123"
+    Array1(4) = "abc"
+    Array1(5) = "a"
+    
+    Call ArraySortStrLength(Array1, Ascending)
+    
+    Call Check(Array1(0), "1")
+    Call Check(Array1(1), "a")
+    Call Check(Array1(2), "12")
+    Call Check(Array1(3), "123")
+    Call Check(Array1(4), "abc")
+    Call Check(Array1(5), "1234")
+    
+    Call ArraySortStrLength(Array1, SortOrder.Descending)
+    
+    Call Check(Array1(0), "1234")
+    Call Check(Array1(1), "123")
+    Call Check(Array1(2), "abc")
+    Call Check(Array1(3), "12")
+    Call Check(Array1(4), "1")
+    Call Check(Array1(5), "a")
 End Sub
 
 
 '----------------------------------------
 '・独自並び順ソート
 '----------------------------------------
-'   ・  ソート指定配列の文字列に先頭が一致する順番に
+'   ・  ソート指定配列の文字列に一致する順番に
 '       並び替えをするソート
 '   ・  s/m/l/xl/xxlとかそういう並び指定を行う
 '----------------------------------------
-Public Sub ArraySortOrder(ByRef ArrayValue As Variant, _
-ByRef OrderArray() As String)
+Public Sub ArraySortCustomOrder(ByRef ArrayValue As Variant, _
+ByRef OrderArrayWildCard() As String, _
+Optional CaseCompare As CaseCompare = CaseCompare.IgnoreCase, _
+Optional NoOrderValuePriority As Boolean = False)
 
-    Dim DigitCountArrayValue As Long
-    DigitCountArrayValue = Len(CStr(ArrayCount(ArrayValue))) + 1
-    Dim DigitCountOrderArray As Long
-    DigitCountOrderArray = Len(CStr(ArrayCount(OrderArray))) + 1
+    Dim DigitArrayValue As Long
+    DigitArrayValue = Len(CStr(ArrayCount(ArrayValue) - 1))
+    Dim DigitOrderArray As Long
+    DigitOrderArray = Len(CStr(ArrayCount(OrderArrayWildCard) + 1))
 
     Dim I As Long
-    
-    '先頭一致のためのワイルドカード指定
-    For I = 0 To ArrayCount(OrderArray) - 1
-        OrderArray(I) = OrderArray(I) + "*"
-    Next
     
     For I = 0 To ArrayCount(ArrayValue) - 1
         Dim OrderArrayIndex As Long
         OrderArrayIndex = _
-            ArrayIndexOf(OrderArray, ArrayValue(I), , IgnoreCase, WildCardArray)
+            ArrayIndexOf(OrderArrayWildCard, ArrayValue(I), , CaseCompare, WildCardArray)
         If OrderArrayIndex = -1 Then
-            ArrayValue(I) = _
-                String(DigitCountOrderArray, "9") + _
-                LongToStrDigitZero(I, DigitCountArrayValue) + _
-                ArrayValue(I)
+            If NoOrderValuePriority = False Then
+                ArrayValue(I) = _
+                    LongToStrDigitZero(ArrayCount(OrderArrayWildCard) + 1, DigitOrderArray) + _
+                    LongToStrDigitZero(I, DigitArrayValue) + _
+                    ArrayValue(I)
+            Else
+                ArrayValue(I) = _
+                    LongToStrDigitZero(0, DigitOrderArray) + _
+                    LongToStrDigitZero(I, DigitArrayValue) + _
+                    ArrayValue(I)
+            End If
         Else
             ArrayValue(I) = _
-                LongToStrDigitZero(OrderArrayIndex, DigitCountOrderArray) + _
-                LongToStrDigitZero(I, DigitCountArrayValue) + _
+                LongToStrDigitZero(OrderArrayIndex + 1, DigitOrderArray) + _
+                LongToStrDigitZero(I, DigitArrayValue) + _
                 ArrayValue(I)
         End If
     Next
@@ -2890,15 +3150,16 @@ ByRef OrderArray() As String)
     For I = 0 To ArrayCount(ArrayValue) - 1
         ArrayValue(I) = _
             Mid$(ArrayValue(I), _
-                DigitCountOrderArray + DigitCountArrayValue + 1)
+                DigitOrderArray + DigitArrayValue + 1)
     Next
 End Sub
 
-Public Sub testArraySortOrder()
+Public Sub testArraySortCustomOrder()
     Dim Array1() As String
+    
     Array1 = ArrayStr("b", "a", "s", "ss", "xl", "ll", "m")
     
-    Call ArraySortOrder(Array1, ArrayStr("ss", "s", "m", "l", "ll", "xl"))
+    Call ArraySortCustomOrder(Array1, ArrayStr("ss*", "s*", "m*", "l*", "ll*", "xl*"))
     
     Call Check(Array1(0), "ss")
     Call Check(Array1(1), "s")
@@ -2911,7 +3172,7 @@ Public Sub testArraySortOrder()
     Array1 = ArrayStr("Bサイズ", "Aサイズ", _
         "Sサイズ", "SSサイズ", "XLサイズ", "LLサイズ", "Mサイズ")
     
-    Call ArraySortOrder(Array1, ArrayStr("ss", "s", "m", "l", "ll", "xl"))
+    Call ArraySortCustomOrder(Array1, ArrayStr("ss*", "s*", "m*", "l*", "ll*", "xl*"))
     
     Call Check(Array1(0), "SSサイズ")
     Call Check(Array1(1), "Sサイズ")
@@ -2921,6 +3182,107 @@ Public Sub testArraySortOrder()
     Call Check(Array1(5), "Bサイズ")
     Call Check(Array1(6), "Aサイズ")
     
+    Array1 = ArrayStr("Bサイズ", "Aサイズ", _
+        "Sサイズ", "SSサイズ", "XLサイズ", "LLサイズ", "Mサイズ")
+    
+    Call ArraySortCustomOrder(Array1, ArrayStr("ss*", "s*", "m*", "l*", "ll*", "xl*"), , True)
+    
+    Call Check(Array1(0), "Bサイズ")
+    Call Check(Array1(1), "Aサイズ")
+    Call Check(Array1(2), "SSサイズ")
+    Call Check(Array1(3), "Sサイズ")
+    Call Check(Array1(4), "Mサイズ")
+    Call Check(Array1(5), "LLサイズ")
+    Call Check(Array1(6), "XLサイズ")
+    
+End Sub
+
+
+'----------------------------------------
+'・配列を逆順にする
+'----------------------------------------
+'   ・  IndexMin/IndexMaxを指定すると
+'       指定範囲内の値を逆順にする
+'----------------------------------------
+Public Sub ArrayReverse(ByRef ArrayValue As Variant, _
+Optional ByVal IndexMin As Long = -1, Optional ByVal IndexMax As Long = -1)
+
+    Call Assert(IsArray(ArrayValue), "Error:ArrayValue is not Array")
+    Call Assert(ArrayDimension(ArrayValue) = 1)
+    
+    'IndexMin/Maxの指定が変ならエラーにする
+    Call Assert(IndexMin <= IndexMax, "Error:IndexMin < IndexMax")
+    Call Assert(InRange(-1, IndexMin, ArrayCount(ArrayValue) - 1), _
+        "Error:ArrayReverse:IndexMin Range is miss.")
+    Call Assert(InRange(-1, IndexMax, ArrayCount(ArrayValue) - 1), _
+        "Error:ArrayReverse:IndexMax Range is miss.")
+    
+    '1以下ならソート不可能なのでExitする
+    If ArrayCount(ArrayValue) <= 1 Then Exit Sub
+    
+    IndexMin = IIf(IndexMin = -1, 0, IndexMin)
+    IndexMax = IIf(IndexMax = -1, ArrayCount(ArrayValue) - 1, IndexMax)
+    
+    'IndexMin=IndexMaxならソート不可能なのでExit
+    If IndexMin = IndexMax Then Exit Sub
+    
+    Dim SortDataCount As Long
+    SortDataCount = IndexMax - IndexMin + 1
+    Dim DigitSortDataCount As Long
+    DigitSortDataCount = Len(SortDataCount)
+    
+    Dim I As Long
+    For I = IndexMin To IndexMax
+        ArrayValue(I) = LongToStrDigitZero(I, DigitSortDataCount) + ArrayValue(I)
+    Next
+    Call ArraySortQuick(ArrayValue, Descending, IndexMin, IndexMax)
+    For I = IndexMin To IndexMax
+        ArrayValue(I) = Mid$(ArrayValue(I), _
+            DigitSortDataCount + 1)
+    Next
+    
+End Sub
+
+Public Sub testArrayReverse()
+    Dim Array1(5) As Variant
+    Array1(0) = "105"
+    Array1(1) = "101"
+    Array1(2) = "103"
+    Array1(3) = "102"
+    Array1(4) = "104"
+    Array1(5) = "100"
+    
+    Call Check(Array1(0), "105")
+    Call Check(Array1(1), "101")
+    Call Check(Array1(2), "103")
+    Call Check(Array1(3), "102")
+    Call Check(Array1(4), "104")
+    Call Check(Array1(5), "100")
+    
+    Call ArrayReverse(Array1, 2, 4)
+    Call Check(Array1(0), "105")
+    Call Check(Array1(1), "101")
+    Call Check(Array1(2), "104")
+    Call Check(Array1(3), "102")
+    Call Check(Array1(4), "103")
+    Call Check(Array1(5), "100")
+    
+    Call ArrayReverse(Array1, 0, 2)
+    Call Check(Array1(0), "104")
+    Call Check(Array1(1), "101")
+    Call Check(Array1(2), "105")
+    Call Check(Array1(3), "102")
+    Call Check(Array1(4), "103")
+    Call Check(Array1(5), "100")
+    
+    Call ArrayReverse(Array1)
+    Call Check(Array1(0), "100")
+    Call Check(Array1(1), "103")
+    Call Check(Array1(2), "102")
+    Call Check(Array1(3), "105")
+    Call Check(Array1(4), "101")
+    Call Check(Array1(5), "104")
+
 End Sub
 
 '----------------------------------------
@@ -2933,11 +3295,11 @@ End Sub
 '   ・  要素がない配列の場合は次元数は0として返される
 '----------------------------------------
 
-Public Function ArrayDimension(ArrayValue As Variant) As Long
+Public Function ArrayDimension(ByRef ArrayValue As Variant) As Long
     Dim Result As Long
     Result = 0
 
-    Call Assert(IsArray(ArrayValue), "配列ではありません")
+    Call Assert(IsArray(ArrayValue), "Error:ArrayValue is not Array")
 
     Dim TempData As Variant
     Dim I As Long
@@ -2953,6 +3315,391 @@ Public Function ArrayDimension(ArrayValue As Variant) As Long
     ArrayDimension = Result
 End Function
 
+Public Sub testArrayDimension()
+        
+    Dim A() As String
+    Call Check(0, ArrayDimension(A))
+    
+    Dim B()
+    B = Array("A", "B", "C")
+    Call Check(1, ArrayDimension(B))
+
+    Dim C() As String
+    C = ArrayStr("A", "B", "C")
+    Call Check(1, ArrayDimension(C))
+    
+    Dim D() As String
+    ReDim Preserve D(3, 4)
+    
+    Call Check(2, ArrayDimension(D))
+End Sub
+
+'----------------------------------------
+'・2次元配列の列数(変更できない)をセットする
+'----------------------------------------
+'   ・  初期状態からのセットになるので
+'       すでにセットされた配列に対して実行するとエラーになる
+'   ・  行要素は最低1つは必要になる
+'----------------------------------------
+Public Sub Array2dSetColumn(ByRef ArrayValue As Variant, _
+ByVal ColumnCount As Long)
+    ReDim Preserve ArrayValue(ColumnCount - 1, 0)
+End Sub
+
+Public Sub testArray2dSetColumn()
+    Dim A() As String
+    Call Array2dSetColumn(A, 5)
+    
+    Call Check(5, ArrayCount(A, 1))
+    Call Check(1, ArrayCount(A, 2))
+    
+'    Call Array2DSetColumn(A, 4)
+    '2回実行するとエラーになる
+    
+End Sub
+
+
+'----------------------------------------
+'・2次元配列の行を設定する
+'----------------------------------------
+'   ・  列数が一致した配列を設定して行の値をセットする
+'   ・  オブジェクト値にも対応
+'----------------------------------------
+Public Sub Array2dSetRowValues(ByRef ArrayValue As Variant, _
+ByVal RowIndex As Long, _
+ByRef Values As Variant)
+    Call Assert(IsArray(ArrayValue), "Error:Array2dSetRowValues:ArrayValue is not Array.")
+    Call Assert(ArrayDimension(ArrayValue) = 2, "Error:Array2dSetRowValues:ArrayValue is not Array2D.")
+    Call Assert(UBound(Values) - LBound(Values) + 1 = ArrayCount(ArrayValue, 1), _
+        "Error:Array2dSetRowValues:Values Count is miss.")
+    Call Assert(InRange(LBound(ArrayValue, 2), RowIndex, UBound(ArrayValue, 2)), _
+        "Error:Array2dSetRowValues:RowIndex range over.")
+        
+    Dim I As Long
+    For I = 0 To ArrayCount(ArrayValue, 1) - 1
+        Call SetValue(ArrayValue(I, RowIndex), Values(I))
+    Next
+End Sub
+
+'----------------------------------------
+'・2次元配列の行を取得する
+'----------------------------------------
+'   ・  オブジェクト値にも対応
+'----------------------------------------
+Public Function Array2dGetRowValues(ByRef ArrayValue As Variant, _
+ByVal RowIndex As Long) As Variant
+    Call Assert(IsArray(ArrayValue), "Error:Array2dSetRowValues:ArrayValue is not Array.")
+    Call Assert(ArrayDimension(ArrayValue) = 2, "Error:Array2dSetRowValues:ArrayValue is not Array2D.")
+    Call Assert(InRange(LBound(ArrayValue, 2), RowIndex, UBound(ArrayValue, 2)), _
+        "Error:Array2dSetRowValues:RowIndex range over.")
+        
+    Dim Result As Variant
+    Result = Array()
+    ReDim Preserve Result(ArrayCount(ArrayValue, 1) - 1)
+    Dim I As Long
+    For I = 0 To ArrayCount(ArrayValue, 1) - 1
+        Result(I) = ArrayValue(I, RowIndex)
+    Next
+    Array2dGetRowValues = Result
+End Function
+
+'----------------------------------------
+'・配列の要素を追加する
+'----------------------------------------
+'   ・  列数が一致した配列を設定して行の値を追加する
+'   ・  オブジェクト値にも対応
+'----------------------------------------
+Public Sub Array2dAdd(ByRef ArrayValue As Variant, _
+ByRef Values As Variant)
+    Call Assert(IsArray(ArrayValue), "Error:Array2dAdd:ArrayValue is not Array.")
+    Call Assert(ArrayDimension(ArrayValue) = 2, "Error:Array2dAdd:ArrayValue is not Array2D.")
+    Call Assert(UBound(Values) - LBound(Values) + 1 = ArrayCount(ArrayValue, 1), _
+        "Error:Array2dAdd:Values Count is miss.")
+
+    ReDim Preserve ArrayValue(ArrayCount(ArrayValue, 1) - 1, ArrayCount(ArrayValue, 2))
+    Call Array2dSetRowValues(ArrayValue, UBound(ArrayValue, 2), Values)
+End Sub
+
+
+'----------------------------------------
+'・配列の要素を挿入する
+'----------------------------------------
+'   ・  オブジェクト値にも対応
+'----------------------------------------
+Public Sub Array2dInsert(ByRef ArrayValue As Variant, _
+ByVal RowIndex As Long, ByVal Values As Variant)
+    Call Assert(IsArray(ArrayValue), "Error:Array2dInsert:ArrayValue is not Array.")
+    Call Assert(ArrayDimension(ArrayValue) = 2, "Error:Array2dInsert:ArrayValue is not Array2D.")
+    Call Assert(UBound(Values) - LBound(Values) + 1 = ArrayCount(ArrayValue, 1), _
+        "Error:Array2dInsert:Values Count is miss.")
+    Call Assert(InRange(LBound(ArrayValue, 2), RowIndex, UBound(ArrayValue, 2)), _
+        "Error:Array2dInsert:RowIndex range over.")
+
+    ReDim Preserve ArrayValue(ArrayCount(ArrayValue, 1) - 1, ArrayCount(ArrayValue, 2))
+    Dim I As Long
+    For I = UBound(ArrayValue, 2) To RowIndex + 1 Step -1
+        Call Array2dSetRowValues(ArrayValue, I, _
+            Array2dGetRowValues(ArrayValue, I - 1))
+    Next
+    Call Array2dSetRowValues(ArrayValue, RowIndex, Values)
+End Sub
+
+'----------------------------------------
+'・配列の要素を削除する
+'----------------------------------------
+'   ・  オブジェクト値にも対応
+'----------------------------------------
+Public Sub Array2dDelete(ByRef ArrayValue As Variant, _
+ByVal RowIndex As Long)
+    Call Assert(IsArray(ArrayValue), "Error:Array2dInsert:ArrayValue is not Array.")
+    Call Assert(ArrayDimension(ArrayValue) = 2, "Error:Array2dInsert:ArrayValue is not Array2D.")
+    Call Assert(InRange(LBound(ArrayValue, 2), RowIndex, UBound(ArrayValue, 2)), _
+        "Error:Array2dInsert:RowIndex range over.")
+
+    Dim I As Long
+    For I = RowIndex + 1 To UBound(ArrayValue, 2)
+        Call Array2dSetRowValues(ArrayValue, I - 1, _
+            Array2dGetRowValues(ArrayValue, I))
+    Next
+    
+    If LBound(ArrayValue, 2) = UBound(ArrayValue, 2) Then
+        Erase ArrayValue
+        '配列の初期化はEraseを使う
+    Else
+        ReDim Preserve ArrayValue(ArrayCount(ArrayValue, 1) - 1, _
+            LBound(ArrayValue, 2) To UBound(ArrayValue, 2) - 1)
+    End If
+End Sub
+
+Public Sub testArray2dBasicFunction()
+    Dim A()
+    Call Check(0, ArrayCount(A, 1))
+    Call Check(0, ArrayCount(A, 2))
+    
+    Call Array2dSetColumn(A, 3)
+    
+    Call Array2dSetRowValues(A, 0, Array("A", "B", "C"))
+    Call Array2dAdd(A, Array("D", "E", "F"))
+    Call Array2dAdd(A, Array("G", "H", "I"))
+    Call Array2dAdd(A, Array("1", "2", "3"))
+
+    Dim B()
+    B = Array2dGetRowValues(A, 0)
+    Call Check("A,B,C", ArrayToString(B, ","))
+    Call Check("D,E,F", ArrayToString(Array2dGetRowValues(A, 1), ","))
+    Call Check("G,H,I", ArrayToString(Array2dGetRowValues(A, 2), ","))
+    Call Check("1,2,3", ArrayToString(Array2dGetRowValues(A, 3), ","))
+    Call Check(3, ArrayCount(A, 1))
+    Call Check(4, ArrayCount(A, 2))
+    
+    Call Array2dInsert(A, 3, B)
+    Call Check("A,B,C", ArrayToString(Array2dGetRowValues(A, 0), ","))
+    Call Check("D,E,F", ArrayToString(Array2dGetRowValues(A, 1), ","))
+    Call Check("G,H,I", ArrayToString(Array2dGetRowValues(A, 2), ","))
+    Call Check("A,B,C", ArrayToString(Array2dGetRowValues(A, 3), ","))
+    Call Check("1,2,3", ArrayToString(Array2dGetRowValues(A, 4), ","))
+    Call Check(3, ArrayCount(A, 1))
+    Call Check(5, ArrayCount(A, 2))
+    
+    Call Array2dDelete(A, 0)
+    Call Check("D,E,F", ArrayToString(Array2dGetRowValues(A, 0), ","))
+    Call Check("G,H,I", ArrayToString(Array2dGetRowValues(A, 1), ","))
+    Call Check("A,B,C", ArrayToString(Array2dGetRowValues(A, 2), ","))
+    Call Check("1,2,3", ArrayToString(Array2dGetRowValues(A, 3), ","))
+    Call Check(3, ArrayCount(A, 1))
+    Call Check(4, ArrayCount(A, 2))
+
+    Call Array2dDelete(A, 3)
+    Call Array2dDelete(A, 1)
+    Call Array2dDelete(A, 0)
+    Call Check("A,B,C", ArrayToString(Array2dGetRowValues(A, 0), ","))
+    Call Check(3, ArrayCount(A, 1))
+    Call Check(1, ArrayCount(A, 2))
+
+    Call Array2dDelete(A, 0)
+    Call Check(0, ArrayCount(A, 1))
+    Call Check(0, ArrayCount(A, 2))
+
+End Sub
+
+
+'----------------------------------------
+'・クイックソート
+'----------------------------------------
+'   ・  IndexMin/IndexMaxを指定すると
+'       指定範囲内の値をソートする
+'----------------------------------------
+Public Sub Array2dSortQuick(ByRef ArrayValue As Variant, _
+ByVal ColumnIndex As Long, _
+Optional ByVal SortOrder As SortOrder = SortOrder.Ascending, _
+Optional ByVal RowIndexMin As Long = -1, Optional ByVal RowIndexMax As Long = -1)
+
+    Call Assert(IsArray(ArrayValue), "Error:ArrayValue is not Array")
+    Call Assert(ArrayDimension(ArrayValue) = 2)
+    
+    Call Assert(RowIndexMin <= RowIndexMax, "Error:IndexMin < IndexMax")
+    Call Assert(InRange(-1, RowIndexMin, ArrayCount(ArrayValue, 2) - 1), _
+        "Error:ArrayReverse:RowIndexMin Range is miss.")
+    Call Assert(InRange(-1, RowIndexMax, ArrayCount(ArrayValue, 2) - 1), _
+        "Error:ArrayReverse:RowIndexMax Range is miss.")
+    
+    '1以下ならソート不可能なのでExitする
+    If ArrayCount(ArrayValue, 2) <= 1 Then Exit Sub
+    
+    RowIndexMin = IIf(RowIndexMin = -1, 0, RowIndexMin)
+    RowIndexMax = IIf(RowIndexMax = -1, ArrayCount(ArrayValue, 2) - 1, RowIndexMax)
+    
+    'IndexMin=IndexMaxならソート不可能なのでExit
+    If RowIndexMin = RowIndexMax Then Exit Sub
+    
+    Call Array2dSortQuickBase(ArrayValue, ColumnIndex, SortOrder, RowIndexMin, RowIndexMax)
+End Sub
+
+'クイックソートのベース関数、再起呼び出しされる
+Sub Array2dSortQuickBase(ByRef ArrayValue As Variant, _
+ByVal ColumnIndex As Long, _
+ByVal SortOrder As SortOrder, _
+ByVal RowIndexMin As Long, ByVal RowIndexMax As Long)
+    
+    Dim RowIndexCenter As Long
+    Dim RowIndex1 As Long
+    Dim RowIndex2 As Long
+    Dim RowValue1 As Variant
+    Dim RowValue2 As Variant
+    
+    If RowIndexMax <= RowIndexMin Then Exit Sub
+    
+    RowIndexCenter = (RowIndexMin + RowIndexMax) \ 2
+    
+    '中央値をバッファ
+    RowValue1 = Array2dGetRowValues(ArrayValue, RowIndexCenter)
+    '中央値に開始位置要素を代入
+    Call Array2dSetRowValues(ArrayValue, RowIndexCenter, _
+        Array2dGetRowValues(ArrayValue, RowIndexMin))
+    
+    RowIndex2 = RowIndexMin
+    
+    RowIndex1 = RowIndexMin + 1
+    
+    Select Case SortOrder
+    Case Ascending
+        Do While RowIndex1 <= RowIndexMax
+            If ArrayValue(ColumnIndex, RowIndex1) < RowValue1(ColumnIndex) Then
+                RowIndex2 = RowIndex2 + 1
+                
+                RowValue2 = Array2dGetRowValues(ArrayValue, RowIndex2)
+                Call Array2dSetRowValues(ArrayValue, RowIndex2, _
+                    Array2dGetRowValues(ArrayValue, RowIndex1))
+                Call Array2dSetRowValues(ArrayValue, RowIndex1, RowValue2)
+            End If
+            RowIndex1 = RowIndex1 + 1
+        Loop
+    Case Descending
+        Do While RowIndex1 <= RowIndexMax
+            If RowValue1(ColumnIndex) < ArrayValue(ColumnIndex, RowIndex1) Then
+                RowIndex2 = RowIndex2 + 1
+                
+                RowValue2 = Array2dGetRowValues(ArrayValue, RowIndex2)
+                Call Array2dSetRowValues(ArrayValue, RowIndex2, _
+                    Array2dGetRowValues(ArrayValue, RowIndex1))
+                Call Array2dSetRowValues(ArrayValue, RowIndex1, RowValue2)
+            End If
+            RowIndex1 = RowIndex1 + 1
+        Loop
+    Case Else
+        Call Assert(False, "Error:Array2dSortQuickBase:SortOrder is miss.")
+    End Select
+    
+    Call Array2dSetRowValues(ArrayValue, RowIndexMin, _
+        Array2dGetRowValues(ArrayValue, RowIndex2))
+    Call Array2dSetRowValues(ArrayValue, RowIndex2, RowValue1)
+    
+    ' 分割前半を再帰呼び出しでSORT
+    Call Array2dSortQuickBase(ArrayValue, ColumnIndex, SortOrder, RowIndexMin, RowIndex2 - 1)
+
+    ' 分割後半を再帰呼び出しでSORT
+    Call Array2dSortQuickBase(ArrayValue, ColumnIndex, SortOrder, RowIndex2 + 1, RowIndexMax)
+End Sub
+
+Sub testArray2dSortQuick()
+    Dim Array1(2, 5) As Variant
+    Array1(0, 0) = "A1"
+    Array1(0, 1) = "A2"
+    Array1(0, 2) = "A3"
+    Array1(0, 3) = "A1"
+    Array1(0, 4) = "A2"
+    Array1(0, 5) = "A3"
+    Array1(1, 0) = "100"
+    Array1(1, 1) = "101"
+    Array1(1, 2) = "102"
+    Array1(1, 3) = "103"
+    Array1(1, 4) = "104"
+    Array1(1, 5) = "105"
+
+    'クイックソートのためのキー項目作成
+    Dim I As Long
+    For I = 0 To ArrayCount(Array1, 2) - 1
+        Array1(2, I) = Array1(0, I) + CStr(Array1(1, I))
+    Next
+
+    Call Check(Array1(0, 0), "A1")
+    Call Check(Array1(0, 1), "A2")
+    Call Check(Array1(0, 2), "A3")
+    Call Check(Array1(0, 3), "A1")
+    Call Check(Array1(0, 4), "A2")
+    Call Check(Array1(0, 5), "A3")
+    Call Check(Array1(1, 0), "100")
+    Call Check(Array1(1, 1), "101")
+    Call Check(Array1(1, 2), "102")
+    Call Check(Array1(1, 3), "103")
+    Call Check(Array1(1, 4), "104")
+    Call Check(Array1(1, 5), "105")
+
+    Call Array2dSortQuick(Array1, 0)
+    Call Check(Array1(0, 0), "A1")
+    Call Check(Array1(0, 1), "A1")
+    Call Check(Array1(0, 2), "A2")
+    Call Check(Array1(0, 3), "A2")
+    Call Check(Array1(0, 4), "A3")
+    Call Check(Array1(0, 5), "A3")
+'    Call Check(Array1(1, 0), "100")
+'    Call Check(Array1(1, 1), "103")
+'    Call Check(Array1(1, 2), "101")
+'    Call Check(Array1(1, 3), "104")
+'    Call Check(Array1(1, 4), "102")
+'    Call Check(Array1(1, 5), "105")
+'クイックソートではキー項目がないと
+'ソートがきれいに行われない。
+
+    Call Array2dSortQuick(Array1, 1)
+    Call Check(Array1(0, 0), "A1")
+    Call Check(Array1(0, 1), "A2")
+    Call Check(Array1(0, 2), "A3")
+    Call Check(Array1(0, 3), "A1")
+    Call Check(Array1(0, 4), "A2")
+    Call Check(Array1(0, 5), "A3")
+    Call Check(Array1(1, 0), "100")
+    Call Check(Array1(1, 1), "101")
+    Call Check(Array1(1, 2), "102")
+    Call Check(Array1(1, 3), "103")
+    Call Check(Array1(1, 4), "104")
+    Call Check(Array1(1, 5), "105")
+
+    Call Array2dSortQuick(Array1, 2)
+    Call Check(Array1(0, 0), "A1")
+    Call Check(Array1(0, 1), "A1")
+    Call Check(Array1(0, 2), "A2")
+    Call Check(Array1(0, 3), "A2")
+    Call Check(Array1(0, 4), "A3")
+    Call Check(Array1(0, 5), "A3")
+    Call Check(Array1(1, 0), "100")
+    Call Check(Array1(1, 1), "103")
+    Call Check(Array1(1, 2), "101")
+    Call Check(Array1(1, 3), "104")
+    Call Check(Array1(1, 4), "102")
+    Call Check(Array1(1, 5), "105")
+    'キー項目に対してソートするときれいな結果になる
+End Sub
 
 '----------------------------------------
 '◆ファイル名処理
@@ -4067,7 +4814,7 @@ End Sub
 
 
 '----------------------------------------
-'◇タイトル行指定処理
+'◇タイトル行/列指定処理
 '----------------------------------------
 
 '----------------------------------------
@@ -4092,6 +4839,31 @@ Optional TitleMatchCount As Long = 1)
         End If
     Next
     ColumnNumberByTitle = Result
+End Function
+
+
+'----------------------------------------
+'・タイトル列の行名から行番号を返す関数
+'----------------------------------------
+'   ・  日本語タイトル行などに対してタイトル文字列で行番号を返す
+'----------------------------------------
+Public Function RowNumberByTitle(ByRef Sheet As Worksheet, _
+ByVal TitleColIndex As Long, _
+ByVal RowTitle As String, _
+Optional TitleMatchCount As Long = 1)
+    Dim Result As Long: Result = 0
+    Dim Counter As Long: Counter = 0
+    Dim I As Long
+    For I = 1 To DataLastRow(Sheet, TitleColIndex)
+        If Sheet.Cells(I, TitleColIndex).Value = RowTitle Then
+            Counter = Counter + 1
+            If Counter = TitleMatchCount Then
+            Result = I
+            Exit For
+        End If
+        End If
+    Next
+    RowNumberByTitle = Result
 End Function
 
 '----------------------------------------
@@ -4750,6 +5522,7 @@ End Function
 '   ・  クリップボードを経由する方法しか無いらしい
 '----------------------------------------
 Public Sub ShapeCompressUseClipboard(ByVal Sheet As Worksheet, ByVal Shape As Shape)
+On Error Resume Next
     Dim Point As Point
     Dim RectSize As RectSize
     Point.X = Shape.Left
@@ -4758,10 +5531,30 @@ Public Sub ShapeCompressUseClipboard(ByVal Sheet As Worksheet, ByVal Shape As Sh
     RectSize.Height = Shape.Height
     
     Shape.Cut
+    If Err.Number <> 0 Then
+        Err.Clear
+        Shape.Cut
+        If Err.Number <> 0 Then
+            Err.Clear
+            Shape.Cut
+        End If
+    End If
     
+    Sheet.Select
     Sheet.Activate
+    
 '    Sheet.PasteSpecial Format:="図 (拡張メタファイル)", Link:=False, DisplayAsIcon:=False
+
     Sheet.PasteSpecial Format:="図 (JPEG)", Link:=False, DisplayAsIcon:=False
+    If Err.Number <> 0 Then
+        Err.Clear
+        Sheet.PasteSpecial Format:="図 (JPEG)", Link:=False, DisplayAsIcon:=False
+        If Err.Number <> 0 Then
+            Err.Clear
+            Sheet.PasteSpecial Format:="図 (JPEG)", Link:=False, DisplayAsIcon:=False
+        End If
+    End If
+    
     Selection.ShapeRange.Width = RectSize.Width
     Selection.ShapeRange.Height = RectSize.Height
     Selection.Left = Point.X
@@ -6130,4 +6923,21 @@ End Sub
 '   ワイルドカード配列/正規表現配列の機能を追加
 '・ ReplaceArrayValue/DeleteArrayValueを追加
 '・ ArraySortOrderを追加
+'◇ ver 2016/03/26
+'・ ArraySortOrderを修正
+'   ArraySortCustomOrderに名称変更
+'・ ReplaceRegExpを追加
+'・ ReplaceArrayRegExpを追加
+'・ DeleteArrayRegExpを追加
+'・ ArraySortQuickにSortOrder機能追加
+'・ ArraySortStrLength追加
+'・ ArrayReverse追加
+'・ ShapeCompressUseClipboard修正
+'・ RowNumberByTitle追加
+'◇ ver 2016/03/27
+'・ 2次元配列系の処理を追加
+'   Array2dSetColumn
+'   /Array2dSetRowValues/Array2dGetRowValues
+'   /Array2dAdd/Array2dInsert/Array2dDelete
+'   /Array2dSortQuick
 '--------------------------------------------------
