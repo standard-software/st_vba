@@ -2708,6 +2708,41 @@ Optional MatchType As MatchType = FullMatch) As Boolean
     ArrayExists = Not (ArrayIndexOf(ArrayValue, Value, , CaseCompare, MatchType) = -1)
 End Function
 
+'----------------------------------------
+'・配列内の値を検索してユニーク(同一値がない)かどうかを判断する
+'----------------------------------------
+Public Function ArrayIsUnique(ByRef ArrayValue As Variant) As Boolean
+    Call Assert(IsArray(ArrayValue), "Error:ArrayIsUnique:ArrayValue is not array")
+    Call Assert(ArrayDimension(ArrayValue) = 1, _
+        "Error:ArrayIsUnique:ArrayValue Dimension is miss")
+    
+    Dim Result As Boolean: Result = True
+    Do
+        If OrValue(ArrayCount(ArrayValue), 0, 1) Then Exit Do
+
+        Dim I As Long
+        Dim J As Long
+        For I = LBound(ArrayValue) To UBound(ArrayValue) - 1
+            For J = I + 1 To UBound(ArrayValue)
+                If ArrayValue(I) = ArrayValue(J) Then
+                    Result = False
+                    Exit Do
+                End If
+            Next
+        Next
+        Loop While False
+    ArrayIsUnique = Result
+End Function
+
+Sub testArrayIsUnique()
+    Dim A As Variant
+    A = Array("B", "C", "D", "A", "B", "C")
+    Call Check(False, ArrayIsUnique(A))
+    
+    A = Array("1", "2", "3", "A", "B", "C")
+    Call Check(True, ArrayIsUnique(A))
+End Sub
+
 
 '----------------------------------------
 '◇配列応用操作
@@ -2721,7 +2756,7 @@ End Function
 Public Function ArrayDeleteSameItem(ByRef ArrayValue As Variant, _
 Optional StartIndex As Long = -1) As Boolean
     Dim Result As Boolean: Result = False
-    Call Assert(IsArray(ArrayValue), "配列ではありません")
+    Call Assert(IsArray(ArrayValue), "Error:ArrayValue is not Array")
     If StartIndex <> -1 Then
         Call Assert(((StartIndex < LBound(ArrayValue)) _
                 And (UBound(ArrayValue) < StartIndex) = False), "Error:ArrayDeleteSameItem:Range Over")
@@ -3523,6 +3558,48 @@ Public Sub testArray2dBasicFunction()
 End Sub
 
 
+
+'----------------------------------------
+'・配列内の値を検索してユニーク(同一値がない)かどうかを判断する
+'----------------------------------------
+Public Function Array2dIsUnique(ByRef ArrayValue As Variant, _
+ByVal ColumnIndex As Long) As Boolean
+    Call Assert(IsArray(ArrayValue), "Error:ArrayIsUnique:ArrayValue is not array")
+    Call Assert(ArrayDimension(ArrayValue) = 2, _
+        "Error:Array2dIsUnique:ArrayValue Dimension is miss")
+    
+    Dim Result As Boolean: Result = True
+    Do
+        If OrValue(ArrayCount(ArrayValue, 2), 0, 1) Then Exit Do
+
+        Dim I As Long
+        Dim J As Long
+        For I = LBound(ArrayValue, 2) To UBound(ArrayValue, 2) - 1
+            For J = I + 1 To UBound(ArrayValue, 2)
+                If ArrayValue(ColumnIndex, I) = ArrayValue(ColumnIndex, J) Then
+                    Result = False
+                    Exit Do
+                End If
+            Next
+        Next
+        Loop While False
+    Array2dIsUnique = Result
+End Function
+
+Sub testArray2dIsUnique()
+    Dim A()
+    Call Array2dSetColumn(A, 3)
+    
+    Call Array2dSetRowValues(A, 0, Array("A", "B", "C"))
+    Call Array2dAdd(A, Array("D", "E", "C"))
+    Call Array2dAdd(A, Array("G", "H", "C"))
+    Call Array2dAdd(A, Array("1", "2", "C"))
+
+    Call Check(True, Array2dIsUnique(A, 0))
+    Call Check(True, Array2dIsUnique(A, 1))
+    Call Check(False, Array2dIsUnique(A, 2))
+End Sub
+
 '----------------------------------------
 '・クイックソート
 '----------------------------------------
@@ -3535,7 +3612,10 @@ Optional ByVal SortOrder As SortOrder = SortOrder.Ascending, _
 Optional ByVal RowIndexMin As Long = -1, Optional ByVal RowIndexMax As Long = -1)
 
     Call Assert(IsArray(ArrayValue), "Error:ArrayValue is not Array")
-    Call Assert(ArrayDimension(ArrayValue) = 2)
+    Call Assert(ArrayDimension(ArrayValue) = 2, _
+        "Error:Array2dSortQuick:ArrayValue Dimension is miss.")
+    Call Assert(InRange(LBound(ArrayValue, 1), ColumnIndex, UBound(ArrayValue, 1)), _
+        "Error:Array2dSortQuick:ColumnIndex is range over.")
     
     Call Assert(RowIndexMin <= RowIndexMax, "Error:IndexMin < IndexMax")
     Call Assert(InRange(-1, RowIndexMin, ArrayCount(ArrayValue, 2) - 1), _
@@ -6935,9 +7015,10 @@ End Sub
 '・ ShapeCompressUseClipboard修正
 '・ RowNumberByTitle追加
 '◇ ver 2016/03/27
+'・ ArrayIsUnique追加
 '・ 2次元配列系の処理を追加
 '   Array2dSetColumn
 '   /Array2dSetRowValues/Array2dGetRowValues
 '   /Array2dAdd/Array2dInsert/Array2dDelete
-'   /Array2dSortQuick
+'   /Array2dSortQuick/Array2dIsUnique
 '--------------------------------------------------
