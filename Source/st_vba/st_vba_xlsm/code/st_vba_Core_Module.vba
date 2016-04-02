@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        http://standard-software.net/
 '--------------------------------------------------
-'Version:       2016/03/27
+'Version:       2016/04/02
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -130,6 +130,11 @@ End Enum
 Public Enum CaseCompare
     CaseSensitive
     IgnoreCase
+End Enum
+
+Public Enum StrAddType
+    FirstAdd
+    LastAdd
 End Enum
 
 '----------------------------------------
@@ -1599,17 +1604,6 @@ End Sub
 
 
 '----------------------------------------
-'・HTMLタグを削除する関数
-'----------------------------------------
- Function ReplaceHTMLTag(ByVal txt As String) As String
- With CreateObject("vbscript.regexp")
-     .Pattern = "<[^>]*>"
-     .Global = True
-     ReplaceHTMLTag = .Replace(txt, "")
- End With
- End Function
-
-'----------------------------------------
 '◇Trim
 '----------------------------------------
 'Public Function TrimFirstChar(ByVal Str As String, ByVal TrimChar As String) As String
@@ -1676,11 +1670,11 @@ Public Function TrimBothEndsStrs(ByVal str As String, ByRef TrimStrs() As String
 End Function
 
 Public Function TrimFirstSpace(ByVal str As String) As String
-    TrimFirstSpace = TrimFirstStrs(str, ArrayStr(" ", vbCr, vbLf, vbTab))
+    TrimFirstSpace = TrimFirstStrs(str, ArrayStr("　", " ", vbCr, vbLf, vbTab))
 End Function
 
 Public Function TrimLastSpace(ByVal str As String) As String
-    TrimLastSpace = TrimLastStrs(str, ArrayStr(" ", vbCr, vbLf, vbTab))
+    TrimLastSpace = TrimLastStrs(str, ArrayStr("　", " ", vbCr, vbLf, vbTab))
 End Function
 
 Public Function TrimBothEndsSpace(ByVal str As String) As String
@@ -1975,6 +1969,33 @@ On Error GoTo Err:
 Err:
     ReplaceRegExp = Result
 End Function
+
+'----------------------------------------
+'・正規表現での削除
+'----------------------------------------
+'   ・  動作対象は1行テキスト
+'   ・  RegExpオブジェクトは外部から指定可能
+'----------------------------------------
+Public Function DeleteRegExp(ByVal Value As String, ByVal Pattern As String, _
+Optional ByVal CaseCompare As CaseCompare = CaseSensitive, _
+Optional RegExp As Object = Nothing) As String
+
+    DeleteRegExp = _
+        ReplaceRegExp(Value, Pattern, "", CaseCompare, RegExp)
+
+End Function
+
+'----------------------------------------
+'・HTMLタグを削除する関数
+'----------------------------------------
+Public Function DeleteHTMLTag(ByVal Value As String) As String
+    DeleteHTMLTag = _
+        DeleteRegExp(Value, "<[^>]*>", IgnoreCase)
+End Function
+
+Public Sub testDeleteHTMLTag()
+    Call Check("abc", DeleteHTMLTag("<b>abc</b>"))
+End Sub
 
 '----------------------------------------
 '◇配列指定処理
@@ -2906,13 +2927,11 @@ Optional ByVal SortOrder As SortOrder = SortOrder.Ascending, _
 Optional ByVal IndexMin As Long = -1, Optional ByVal IndexMax As Long = -1)
 
     Call Assert(IsArray(ArrayValue), "Error:ArrayValue is not Array")
-    Call Assert(ArrayDimension(ArrayValue) = 1)
+    Call Assert(ArrayDimension(ArrayValue) = 1, "Error:ArrayValue Dimension is miss")
     
     Call Assert(IndexMin <= IndexMax, "Error:IndexMin < IndexMax")
-    Call Assert(InRange(-1, IndexMin, ArrayCount(ArrayValue) - 1), _
-        "Error:ArrayReverse:IndexMin Range is miss.")
-    Call Assert(InRange(-1, IndexMax, ArrayCount(ArrayValue) - 1), _
-        "Error:ArrayReverse:IndexMax Range is miss.")
+    Call Assert(InRange(-1, IndexMin, ArrayCount(ArrayValue) - 1), "Error:IndexMin Range is miss")
+    Call Assert(InRange(-1, IndexMax, ArrayCount(ArrayValue) - 1), "Error:IndexMax Range is miss")
     
     '1以下ならソート不可能なのでExitする
     If ArrayCount(ArrayValue) <= 1 Then Exit Sub
@@ -3070,6 +3089,10 @@ End Sub
 Public Sub ArraySortStrLength(ByRef ArrayValue As Variant, _
 Optional ByVal SortOrder As SortOrder = SortOrder.Ascending)
 
+    Call Assert(IsArray(ArrayValue), "Error:ArrayValue is not Array")
+    Call Assert(ArrayDimension(ArrayValue) = 1, "Error:ArrayValue Dimension is miss")
+    Call Assert(OrValue(SortOrder, Ascending, Descending), "Error:SortOrder is miss.")
+
     Dim DigitArrayValue As Long
     DigitArrayValue = Len(CStr(ArrayCount(ArrayValue) - 1))
     Dim DigitStrLength As Long
@@ -3149,6 +3172,9 @@ Public Sub ArraySortCustomOrder(ByRef ArrayValue As Variant, _
 ByRef OrderArrayWildCard() As String, _
 Optional CaseCompare As CaseCompare = CaseCompare.IgnoreCase, _
 Optional NoOrderValuePriority As Boolean = False)
+
+    Call Assert(IsArray(ArrayValue), "Error:ArrayValue is not Array")
+    Call Assert(ArrayDimension(ArrayValue) = 1)
 
     Dim DigitArrayValue As Long
     DigitArrayValue = Len(CStr(ArrayCount(ArrayValue) - 1))
@@ -3370,6 +3396,46 @@ Public Sub testArrayDimension()
 End Sub
 
 '----------------------------------------
+'・2次元配列の列数を取得する
+'----------------------------------------
+Public Function Array2dColumnsCount(ByRef ArrayValue As Variant) As Long
+    Call Assert(IsArray(ArrayValue), "Error:Array2dSetRowValues:ArrayValue is not Array")
+    
+    Dim Result As Long
+    
+    Select Case ArrayDimension(ArrayValue)
+    Case 2
+        Result = ArrayCount(ArrayValue, 1)
+    Case 0
+        '未定義配列
+        Result = 0
+    Case Else
+        Call Assert(False, "Error:Array2dColumnsCount:ArrayValue Dimension is miss")
+    End Select
+    Array2dColumnsCount = Result
+End Function
+
+'----------------------------------------
+'・2次元配列の行数を取得する
+'----------------------------------------
+Public Function Array2dRowsCount(ByRef ArrayValue As Variant) As Long
+    Call Assert(IsArray(ArrayValue), "Error:Array2dSetRowValues:ArrayValue is not Array.")
+    
+    Dim Result As Long
+    
+    Select Case ArrayDimension(ArrayValue)
+    Case 2
+        Result = ArrayCount(ArrayValue, 2)
+    Case 0
+        '未定義配列
+        Result = 0
+    Case Else
+        Call Assert(False, "Error:Array2dRowsCount:ArrayValue Dimension is miss")
+    End Select
+    Array2dRowsCount = Result
+End Function
+
+'----------------------------------------
 '・2次元配列の列数(変更できない)をセットする
 '----------------------------------------
 '   ・  初期状態からのセットになるので
@@ -3405,13 +3471,13 @@ ByVal RowIndex As Long, _
 ByRef Values As Variant)
     Call Assert(IsArray(ArrayValue), "Error:Array2dSetRowValues:ArrayValue is not Array.")
     Call Assert(ArrayDimension(ArrayValue) = 2, "Error:Array2dSetRowValues:ArrayValue is not Array2D.")
-    Call Assert(UBound(Values) - LBound(Values) + 1 = ArrayCount(ArrayValue, 1), _
+    Call Assert(UBound(Values) - LBound(Values) + 1 = Array2dColumnsCount(ArrayValue), _
         "Error:Array2dSetRowValues:Values Count is miss.")
     Call Assert(InRange(LBound(ArrayValue, 2), RowIndex, UBound(ArrayValue, 2)), _
         "Error:Array2dSetRowValues:RowIndex range over.")
         
     Dim I As Long
-    For I = 0 To ArrayCount(ArrayValue, 1) - 1
+    For I = 0 To Array2dColumnsCount(ArrayValue) - 1
         Call SetValue(ArrayValue(I, RowIndex), Values(I))
     Next
 End Sub
@@ -3422,20 +3488,65 @@ End Sub
 '   ・  オブジェクト値にも対応
 '----------------------------------------
 Public Function Array2dGetRowValues(ByRef ArrayValue As Variant, _
-ByVal RowIndex As Long) As Variant
+ByVal RowIndex As Long) As String()
     Call Assert(IsArray(ArrayValue), "Error:Array2dSetRowValues:ArrayValue is not Array.")
     Call Assert(ArrayDimension(ArrayValue) = 2, "Error:Array2dSetRowValues:ArrayValue is not Array2D.")
     Call Assert(InRange(LBound(ArrayValue, 2), RowIndex, UBound(ArrayValue, 2)), _
         "Error:Array2dSetRowValues:RowIndex range over.")
         
-    Dim Result As Variant
-    Result = Array()
-    ReDim Preserve Result(ArrayCount(ArrayValue, 1) - 1)
+    Dim Result() As String
+    Result = ArrayStr()
+    ReDim Preserve Result(Array2dColumnsCount(ArrayValue) - 1)
     Dim I As Long
-    For I = 0 To ArrayCount(ArrayValue, 1) - 1
+    For I = 0 To Array2dColumnsCount(ArrayValue) - 1
         Result(I) = ArrayValue(I, RowIndex)
     Next
     Array2dGetRowValues = Result
+End Function
+
+
+'----------------------------------------
+'・2次元配列の列を設定する
+'----------------------------------------
+'   ・  列数が一致した配列を設定して行の値をセットする
+'   ・  オブジェクト値にも対応
+'----------------------------------------
+Public Sub Array2dSetColumnValues(ByRef ArrayValue As Variant, _
+ByVal ColumnIndex As Long, _
+ByRef Values As Variant)
+    Call Assert(IsArray(ArrayValue), "Error:Array2dSetColumnValues:ArrayValue is not Array.")
+    Call Assert(ArrayDimension(ArrayValue) = 2, "Error:Array2dSetColumnValues:ArrayValue is not Array2D.")
+    Call Assert(UBound(Values) - LBound(Values) + 1 = Array2dRowsCount(ArrayValue), _
+        "Error:Array2dSetColumnValues:Values Count is miss.")
+    Call Assert(InRange(LBound(ArrayValue, 1), ColumnIndex, UBound(ArrayValue, 1)), _
+        "Error:Array2dSetColumnValues:ColumnIndex range over.")
+        
+    Dim I As Long
+    For I = 0 To Array2dRowsCount(ArrayValue) - 1
+        Call SetValue(ArrayValue(ColumnIndex, I), Values(I))
+    Next
+End Sub
+
+'----------------------------------------
+'・2次元配列の列を取得する
+'----------------------------------------
+'   ・  オブジェクト値にも対応
+'----------------------------------------
+Public Function Array2dGetColumnValues(ByRef ArrayValue As Variant, _
+ByVal ColumnIndex As Long) As String()
+    Call Assert(IsArray(ArrayValue), "Error:Array2dGetColumnValues:ArrayValue is not Array.")
+    Call Assert(ArrayDimension(ArrayValue) = 2, "Error:Array2dGetColumnValues:ArrayValue is not Array2D.")
+    Call Assert(InRange(LBound(ArrayValue, 1), ColumnIndex, UBound(ArrayValue, 1)), _
+        "Error:Array2dGetColumnValues:ColumnIndex range over.")
+    
+    Dim Result() As String
+    Result = ArrayStr()
+    ReDim Preserve Result(Array2dRowsCount(ArrayValue) - 1)
+    Dim I As Long
+    For I = 0 To Array2dRowsCount(ArrayValue) - 1
+        Result(I) = ArrayValue(ColumnIndex, I)
+    Next
+    Array2dGetColumnValues = Result
 End Function
 
 '----------------------------------------
@@ -3446,13 +3557,48 @@ End Function
 '----------------------------------------
 Public Sub Array2dAdd(ByRef ArrayValue As Variant, _
 ByRef Values As Variant)
-    Call Assert(IsArray(ArrayValue), "Error:Array2dAdd:ArrayValue is not Array.")
-    Call Assert(ArrayDimension(ArrayValue) = 2, "Error:Array2dAdd:ArrayValue is not Array2D.")
-    Call Assert(UBound(Values) - LBound(Values) + 1 = ArrayCount(ArrayValue, 1), _
-        "Error:Array2dAdd:Values Count is miss.")
+    Call Assert(IsArray(ArrayValue), "Error:Array2dAdd:ArrayValue is not Array")
+    Call Assert(IsArray(Values), "Error:Array2dAdd:Values is not Array")
+    Call Assert(ArrayDimension(Values) = 1, "Error:Array2dAdd:Values Dimension is not 1")
+    
+    Select Case ArrayDimension(ArrayValue)
+    Case 2
+        Call Assert(UBound(Values) - LBound(Values) + 1 = Array2dColumnsCount(ArrayValue), _
+            "Error:Array2dAdd:Values Count is miss.")
+        ReDim Preserve ArrayValue(Array2dColumnsCount(ArrayValue) - 1, Array2dRowsCount(ArrayValue))
+        Call Array2dSetRowValues(ArrayValue, UBound(ArrayValue, 2), Values)
+    Case 0
+        '未定義配列の場合
+        '列数をセットして値を指定する
+        Call Array2dSetColumn(ArrayValue, ArrayCount(Values))
+        Call Array2dSetRowValues(ArrayValue, 0, Values)
+    Case Else
+        Call Assert(False, "Error:Array2dSetRowValues:ArrayValue Dimension is miss")
+    End Select
 
-    ReDim Preserve ArrayValue(ArrayCount(ArrayValue, 1) - 1, ArrayCount(ArrayValue, 2))
-    Call Array2dSetRowValues(ArrayValue, UBound(ArrayValue, 2), Values)
+End Sub
+
+Public Sub testArray2dAdd()
+    Dim A() As String
+    
+    Call Check(0, ArrayCount(A, 1))
+    Call Check(0, ArrayCount(A, 2))
+    
+    Call Array2dSetColumn(A, 3)
+    Call Check(3, ArrayCount(A, 1))
+    Call Check(1, ArrayCount(A, 2))
+    
+    Call Array2dSetRowValues(A, 0, Array("A", "B", "C"))
+    Call Array2dAdd(A, Array("D", "E", "F"))
+    Call Array2dAdd(A, Array("G", "H", "I"))
+    Call Array2dAdd(A, Array("1", "2", "3"))
+    
+    Dim B() As String
+    Call Array2dAdd(B, Array("A", "B", "C"))
+    Call Array2dAdd(B, Array("D", "E", "F"))
+    Call Array2dAdd(B, Array("G", "H", "I"))
+    Call Array2dAdd(B, Array("1", "2", "3"))
+    
 End Sub
 
 
@@ -3465,12 +3611,12 @@ Public Sub Array2dInsert(ByRef ArrayValue As Variant, _
 ByVal RowIndex As Long, ByVal Values As Variant)
     Call Assert(IsArray(ArrayValue), "Error:Array2dInsert:ArrayValue is not Array.")
     Call Assert(ArrayDimension(ArrayValue) = 2, "Error:Array2dInsert:ArrayValue is not Array2D.")
-    Call Assert(UBound(Values) - LBound(Values) + 1 = ArrayCount(ArrayValue, 1), _
+    Call Assert(UBound(Values) - LBound(Values) + 1 = Array2dColumnsCount(ArrayValue), _
         "Error:Array2dInsert:Values Count is miss.")
     Call Assert(InRange(LBound(ArrayValue, 2), RowIndex, UBound(ArrayValue, 2)), _
         "Error:Array2dInsert:RowIndex range over.")
 
-    ReDim Preserve ArrayValue(ArrayCount(ArrayValue, 1) - 1, ArrayCount(ArrayValue, 2))
+    ReDim Preserve ArrayValue(Array2dColumnsCount(ArrayValue) - 1, Array2dRowsCount(ArrayValue))
     Dim I As Long
     For I = UBound(ArrayValue, 2) To RowIndex + 1 Step -1
         Call Array2dSetRowValues(ArrayValue, I, _
@@ -3501,7 +3647,7 @@ ByVal RowIndex As Long)
         Erase ArrayValue
         '配列の初期化はEraseを使う
     Else
-        ReDim Preserve ArrayValue(ArrayCount(ArrayValue, 1) - 1, _
+        ReDim Preserve ArrayValue(Array2dColumnsCount(ArrayValue) - 1, _
             LBound(ArrayValue, 2) To UBound(ArrayValue, 2) - 1)
     End If
 End Sub
@@ -3512,20 +3658,22 @@ Public Sub testArray2dBasicFunction()
     Call Check(0, ArrayCount(A, 2))
     
     Call Array2dSetColumn(A, 3)
+    Call Check(3, ArrayCount(A, 1))
+    Call Check(1, ArrayCount(A, 2))
     
     Call Array2dSetRowValues(A, 0, Array("A", "B", "C"))
     Call Array2dAdd(A, Array("D", "E", "F"))
     Call Array2dAdd(A, Array("G", "H", "I"))
     Call Array2dAdd(A, Array("1", "2", "3"))
 
-    Dim B()
+    Dim B() As String
     B = Array2dGetRowValues(A, 0)
     Call Check("A,B,C", ArrayToString(B, ","))
     Call Check("D,E,F", ArrayToString(Array2dGetRowValues(A, 1), ","))
     Call Check("G,H,I", ArrayToString(Array2dGetRowValues(A, 2), ","))
     Call Check("1,2,3", ArrayToString(Array2dGetRowValues(A, 3), ","))
-    Call Check(3, ArrayCount(A, 1))
-    Call Check(4, ArrayCount(A, 2))
+    Call Check(3, Array2dColumnsCount(A))
+    Call Check(4, Array2dRowsCount(A))
     
     Call Array2dInsert(A, 3, B)
     Call Check("A,B,C", ArrayToString(Array2dGetRowValues(A, 0), ","))
@@ -3533,31 +3681,29 @@ Public Sub testArray2dBasicFunction()
     Call Check("G,H,I", ArrayToString(Array2dGetRowValues(A, 2), ","))
     Call Check("A,B,C", ArrayToString(Array2dGetRowValues(A, 3), ","))
     Call Check("1,2,3", ArrayToString(Array2dGetRowValues(A, 4), ","))
-    Call Check(3, ArrayCount(A, 1))
-    Call Check(5, ArrayCount(A, 2))
+    Call Check(3, Array2dColumnsCount(A))
+    Call Check(5, Array2dRowsCount(A))
     
     Call Array2dDelete(A, 0)
     Call Check("D,E,F", ArrayToString(Array2dGetRowValues(A, 0), ","))
     Call Check("G,H,I", ArrayToString(Array2dGetRowValues(A, 1), ","))
     Call Check("A,B,C", ArrayToString(Array2dGetRowValues(A, 2), ","))
     Call Check("1,2,3", ArrayToString(Array2dGetRowValues(A, 3), ","))
-    Call Check(3, ArrayCount(A, 1))
-    Call Check(4, ArrayCount(A, 2))
+    Call Check(3, Array2dColumnsCount(A))
+    Call Check(4, Array2dRowsCount(A))
 
     Call Array2dDelete(A, 3)
     Call Array2dDelete(A, 1)
     Call Array2dDelete(A, 0)
     Call Check("A,B,C", ArrayToString(Array2dGetRowValues(A, 0), ","))
-    Call Check(3, ArrayCount(A, 1))
-    Call Check(1, ArrayCount(A, 2))
+    Call Check(3, Array2dColumnsCount(A))
+    Call Check(1, Array2dRowsCount(A))
 
     Call Array2dDelete(A, 0)
-    Call Check(0, ArrayCount(A, 1))
-    Call Check(0, ArrayCount(A, 2))
+    Call Check(0, Array2dColumnsCount(A))
+    Call Check(0, Array2dRowsCount(A))
 
 End Sub
-
-
 
 '----------------------------------------
 '・配列内の値を検索してユニーク(同一値がない)かどうかを判断する
@@ -3570,7 +3716,7 @@ ByVal ColumnIndex As Long) As Boolean
     
     Dim Result As Boolean: Result = True
     Do
-        If OrValue(ArrayCount(ArrayValue, 2), 0, 1) Then Exit Do
+        If OrValue(Array2dRowsCount(ArrayValue), 0, 1) Then Exit Do
 
         Dim I As Long
         Dim J As Long
@@ -3618,16 +3764,16 @@ Optional ByVal RowIndexMin As Long = -1, Optional ByVal RowIndexMax As Long = -1
         "Error:Array2dSortQuick:ColumnIndex is range over.")
     
     Call Assert(RowIndexMin <= RowIndexMax, "Error:IndexMin < IndexMax")
-    Call Assert(InRange(-1, RowIndexMin, ArrayCount(ArrayValue, 2) - 1), _
+    Call Assert(InRange(-1, RowIndexMin, Array2dRowsCount(ArrayValue) - 1), _
         "Error:ArrayReverse:RowIndexMin Range is miss.")
-    Call Assert(InRange(-1, RowIndexMax, ArrayCount(ArrayValue, 2) - 1), _
+    Call Assert(InRange(-1, RowIndexMax, Array2dRowsCount(ArrayValue) - 1), _
         "Error:ArrayReverse:RowIndexMax Range is miss.")
     
     '1以下ならソート不可能なのでExitする
-    If ArrayCount(ArrayValue, 2) <= 1 Then Exit Sub
+    If Array2dRowsCount(ArrayValue) <= 1 Then Exit Sub
     
     RowIndexMin = IIf(RowIndexMin = -1, 0, RowIndexMin)
-    RowIndexMax = IIf(RowIndexMax = -1, ArrayCount(ArrayValue, 2) - 1, RowIndexMax)
+    RowIndexMax = IIf(RowIndexMax = -1, Array2dRowsCount(ArrayValue) - 1, RowIndexMax)
     
     'IndexMin=IndexMaxならソート不可能なのでExit
     If RowIndexMin = RowIndexMax Then Exit Sub
@@ -3718,7 +3864,7 @@ Sub testArray2dSortQuick()
 
     'クイックソートのためのキー項目作成
     Dim I As Long
-    For I = 0 To ArrayCount(Array1, 2) - 1
+    For I = 0 To Array2dRowsCount(Array1) - 1
         Array1(2, I) = Array1(0, I) + CStr(Array1(1, I))
     Next
 
@@ -3779,6 +3925,320 @@ Sub testArray2dSortQuick()
     Call Check(Array1(1, 4), "102")
     Call Check(Array1(1, 5), "105")
     'キー項目に対してソートするときれいな結果になる
+End Sub
+
+'----------------------------------------
+'・文字列長ソート
+'----------------------------------------
+Public Sub Array2dSortStrLength(ByRef ArrayValue As Variant, _
+ByVal ColumnIndex As Long, _
+Optional ByVal SortOrder As SortOrder = SortOrder.Ascending)
+
+    Call Assert(IsArray(ArrayValue), "Error:ArrayValue is not Array")
+    Call Assert(ArrayDimension(ArrayValue) = 2, _
+        "Error:Array2dSortStrLength:ArrayValue Dimension is miss.")
+    Call Assert(InRange(LBound(ArrayValue, 1), ColumnIndex, UBound(ArrayValue, 1)), _
+        "Error:Array2dSortStrLength:ColumnIndex is range over.")
+
+    Dim DigitArrayRowsCount As Long
+    Dim DigitStrLength As Long
+    
+    Dim Delimiter As String
+    Delimiter = ""
+
+    'ソートキー文字列の追加
+    Call Array2dSortStrLengthSetKeyValue(ArrayValue, ColumnIndex, _
+        ColumnIndex, FirstAdd, Delimiter, True, DigitStrLength, DigitArrayRowsCount, SortOrder)
+
+    Call Array2dSortQuick(ArrayValue, ColumnIndex, Ascending)
+    
+    'ソートキー文字列の削除
+    Dim I As Long
+    For I = 0 To Array2dRowsCount(ArrayValue) - 1
+        ArrayValue(ColumnIndex, I) = _
+            Mid$(ArrayValue(ColumnIndex, I), _
+                DigitStrLength + DigitArrayRowsCount + Len(Delimiter) + 1)
+    Next
+
+End Sub
+
+Public Sub Array2dSortStrLengthSetKeyValue(ByRef ArrayValue As Variant, _
+ByVal ColumnIndex As Long, _
+ByVal KeyColumnIndex As Long, _
+ByVal KeyAddType As StrAddType, _
+ByVal KeyDelimiter As String, _
+ByVal OutputArrayRows As Boolean, _
+ByRef Out_DigitStrLength As Long, _
+ByRef Out_DigitArrayRowsCount As Long, _
+ByVal SortOrder As SortOrder)
+
+    Call Assert(IsArray(ArrayValue), "Error:ArrayValue is not Array")
+    Call Assert(ArrayDimension(ArrayValue) = 2, "Error:ArrayValue Dimension is miss")
+    Call Assert(InRange(LBound(ArrayValue, 1), ColumnIndex, UBound(ArrayValue, 1)), "Error:ColumnIndex is range over.")
+    Call Assert(OrValue(SortOrder, Ascending, Descending), "Error:SortOrder is miss.")
+    Call Assert(OrValue(KeyAddType, FirstAdd, LastAdd), "Error:KeyAddType is miss.")
+
+    Out_DigitArrayRowsCount = Len(CStr(Array2dRowsCount(ArrayValue) - 1))
+    Out_DigitStrLength = 0
+    Dim MaxLength As Long
+    MaxLength = 0
+    
+    Dim I As Long
+    For I = 0 To Array2dRowsCount(ArrayValue) - 1
+        MaxLength = MaxValue(MaxLength, Len(ArrayValue(ColumnIndex, I)))
+    Next
+    Out_DigitStrLength = Len(CStr(MaxLength))
+    
+    Select Case SortOrder
+    Case Ascending
+        Select Case KeyAddType
+        Case FirstAdd
+            For I = 0 To Array2dRowsCount(ArrayValue) - 1
+                ArrayValue(KeyColumnIndex, I) = _
+                    LongToStrDigitZero(Len(ArrayValue(ColumnIndex, I)), Out_DigitStrLength) + _
+                    IIF(OutputArrayRows, LongToStrDigitZero(I, Out_DigitArrayRowsCount), "") + _
+                    KeyDelimiter + _
+                    ArrayValue(KeyColumnIndex, I)
+            Next
+        Case LastAdd
+            For I = 0 To Array2dRowsCount(ArrayValue) - 1
+                ArrayValue(KeyColumnIndex, I) = _
+                    ArrayValue(KeyColumnIndex, I) + _
+                    KeyDelimiter + _
+                    LongToStrDigitZero(Len(ArrayValue(ColumnIndex, I)), Out_DigitStrLength) + _
+                    IIF(OutputArrayRows, LongToStrDigitZero(I, Out_DigitArrayRowsCount), "")
+            Next
+        End Select
+    Case Descending
+        Select Case KeyAddType
+        Case FirstAdd
+            For I = 0 To Array2dRowsCount(ArrayValue) - 1
+                ArrayValue(KeyColumnIndex, I) = _
+                    LongToStrDigitZero(MaxLength - Len(ArrayValue(ColumnIndex, I)), Out_DigitStrLength) + _
+                    IIF(OutputArrayRows, LongToStrDigitZero(I, Out_DigitArrayRowsCount), "") + _
+                    KeyDelimiter + _
+                    ArrayValue(KeyColumnIndex, I)
+            Next
+        Case LastAdd
+            For I = 0 To Array2dRowsCount(ArrayValue) - 1
+                ArrayValue(KeyColumnIndex, I) = _
+                    ArrayValue(KeyColumnIndex, I) + _
+                    KeyDelimiter + _
+                    LongToStrDigitZero(MaxLength - Len(ArrayValue(ColumnIndex, I)), Out_DigitStrLength) + _
+                    IIF(OutputArrayRows, LongToStrDigitZero(I, Out_DigitArrayRowsCount), "")
+            Next
+        End Select
+    End Select
+End Sub
+
+Public Sub testArray2dSortStrLength()
+    Dim A()
+    
+    Call Array2dAdd(A, Array("A", "B", "C", "123"))
+    Call Array2dAdd(A, Array("D", "E", "F", "12"))
+    Call Array2dAdd(A, Array("G", "H", "I", "1"))
+    Call Array2dAdd(A, Array("1", "2", "3", "1"))
+    Call Array2dAdd(A, Array("4", "5", "6", "22"))
+    Call Array2dAdd(A, Array("7", "8", "9", "333"))
+
+    Call Array2dSortStrLength(A, 3, Ascending)
+    
+    Call Check("G,H,I,1", ArrayToString(Array2dGetRowValues(A, 0), ","))
+    Call Check("1,2,3,1", ArrayToString(Array2dGetRowValues(A, 1), ","))
+    Call Check("D,E,F,12", ArrayToString(Array2dGetRowValues(A, 2), ","))
+    Call Check("4,5,6,22", ArrayToString(Array2dGetRowValues(A, 3), ","))
+    Call Check("A,B,C,123", ArrayToString(Array2dGetRowValues(A, 4), ","))
+    Call Check("7,8,9,333", ArrayToString(Array2dGetRowValues(A, 5), ","))
+    
+    Erase A
+    Call Array2dAdd(A, Array("A", "B", "C", "123"))
+    Call Array2dAdd(A, Array("D", "E", "F", "12"))
+    Call Array2dAdd(A, Array("G", "H", "I", "1"))
+    Call Array2dAdd(A, Array("1", "2", "3", "1"))
+    Call Array2dAdd(A, Array("4", "5", "6", "22"))
+    Call Array2dAdd(A, Array("7", "8", "9", "333"))
+
+    Call Array2dSortStrLength(A, 3, Descending)
+    Call Check("A,B,C,123", ArrayToString(Array2dGetRowValues(A, 0), ","))
+    Call Check("7,8,9,333", ArrayToString(Array2dGetRowValues(A, 1), ","))
+    Call Check("D,E,F,12", ArrayToString(Array2dGetRowValues(A, 2), ","))
+    Call Check("4,5,6,22", ArrayToString(Array2dGetRowValues(A, 3), ","))
+    Call Check("G,H,I,1", ArrayToString(Array2dGetRowValues(A, 4), ","))
+    Call Check("1,2,3,1", ArrayToString(Array2dGetRowValues(A, 5), ","))
+
+End Sub
+
+'----------------------------------------
+'・独自並び順ソート
+'----------------------------------------
+'   ・  ソート指定配列の文字列に一致する順番に
+'       並び替えをするソート
+'   ・  s/m/l/xl/xxlとかそういう並び指定を行う
+'----------------------------------------
+Public Sub Array2dSortCustomOrder(ByRef ArrayValue As Variant, _
+ByVal ColumnIndex As Long, _
+ByRef OrderArrayWildCard() As String, _
+Optional CaseCompare As CaseCompare = CaseCompare.IgnoreCase, _
+Optional NoOrderValuePriority As Boolean = False)
+
+    Call Assert(IsArray(ArrayValue), "Error:ArrayValue is not Array")
+    Call Assert(ArrayDimension(ArrayValue) = 2, _
+        "Error:Array2dSortStrLength:ArrayValue Dimension is miss.")
+    Call Assert(InRange(LBound(ArrayValue, 1), ColumnIndex, UBound(ArrayValue, 1)), _
+        "Error:Array2dSortStrLength:ColumnIndex is range over.")
+
+    Dim DigitArrayRowsCount As Long
+    Dim DigitOrderCount As Long
+    
+    Dim Delimiter As String
+    Delimiter = ""
+
+    'ソートキー文字列の追加
+    Call Array2dSortCustomOrderSetKeyValue(ArrayValue, ColumnIndex, _
+        ColumnIndex, FirstAdd, Delimiter, True, DigitOrderCount, DigitArrayRowsCount, _
+        OrderArrayWildCard, CaseCompare, NoOrderValuePriority)
+
+    Call Array2dSortQuick(ArrayValue, ColumnIndex, Ascending)
+    
+    'ソートキー文字列の削除
+    Dim I As Long
+    For I = 0 To Array2dRowsCount(ArrayValue) - 1
+        ArrayValue(ColumnIndex, I) = _
+            Mid$(ArrayValue(ColumnIndex, I), _
+                DigitOrderCount + DigitArrayRowsCount + Len(Delimiter) + 1)
+    Next
+
+End Sub
+
+Public Sub Array2dSortCustomOrderSetKeyValue(ByRef ArrayValue As Variant, _
+ByVal ColumnIndex As Long, _
+ByVal KeyColumnIndex As Long, _
+ByVal KeyAddType As StrAddType, _
+ByVal KeyDelimiter As String, _
+ByVal OutputArrayRows As Boolean, _
+ByRef Out_DigitOrderCount As Long, _
+ByRef Out_DigitArrayRowsCount As Long, _
+ByRef OrderArrayWildCard() As String, _
+Optional CaseCompare As CaseCompare = CaseCompare.IgnoreCase, _
+Optional NoOrderValuePriority As Boolean = False)
+
+    Call Assert(IsArray(ArrayValue), "Error:ArrayValue is not Array")
+    Call Assert(ArrayDimension(ArrayValue) = 2, _
+        "Error:Array2dSortCustomOrderSetKeyValue:ArrayValue Dimension is miss.")
+    Call Assert(InRange(LBound(ArrayValue, 1), ColumnIndex, UBound(ArrayValue, 1)), _
+        "Error:Array2dSortCustomOrderSetKeyValue:ColumnIndex is range over.")
+    Call Assert(OrValue(KeyAddType, FirstAdd, LastAdd), _
+        "Error:Array2dSortCustomOrderSetKeyValue:KeyAddType is miss.")
+
+    Out_DigitArrayRowsCount = Len(CStr(Array2dRowsCount(ArrayValue) - 1))
+    Out_DigitOrderCount = Len(CStr(ArrayCount(OrderArrayWildCard) + 1))
+
+    Dim I As Long
+    Dim OrderArrayIndex As Long
+    
+    Select Case KeyAddType
+    Case FirstAdd
+        For I = 0 To Array2dRowsCount(ArrayValue) - 1
+            OrderArrayIndex = _
+                ArrayIndexOf(OrderArrayWildCard, ArrayValue(ColumnIndex, I), , CaseCompare, WildCardArray)
+            If OrderArrayIndex = -1 Then
+                If NoOrderValuePriority = False Then
+                    ArrayValue(KeyColumnIndex, I) = _
+                        LongToStrDigitZero(ArrayCount(OrderArrayWildCard) + 1, Out_DigitOrderCount) + _
+                        IIf(OutputArrayRows, LongToStrDigitZero(I, Out_DigitArrayRowsCount), "") + _
+                        KeyDelimiter + _
+                        ArrayValue(KeyColumnIndex, I)
+                Else
+                    ArrayValue(KeyColumnIndex, I) = _
+                        LongToStrDigitZero(0, Out_DigitOrderCount) + _
+                        IIf(OutputArrayRows, LongToStrDigitZero(I, Out_DigitArrayRowsCount), "") + _
+                        KeyDelimiter + _
+                        ArrayValue(KeyColumnIndex, I)
+                End If
+            Else
+                ArrayValue(KeyColumnIndex, I) = _
+                    LongToStrDigitZero(OrderArrayIndex + 1, Out_DigitOrderCount) + _
+                    IIf(OutputArrayRows, LongToStrDigitZero(I, Out_DigitArrayRowsCount), "") + _
+                    KeyDelimiter + _
+                    ArrayValue(KeyColumnIndex, I)
+            End If
+        Next
+    Case LastAdd
+        For I = 0 To Array2dRowsCount(ArrayValue) - 1
+            OrderArrayIndex = _
+                ArrayIndexOf(OrderArrayWildCard, ArrayValue(ColumnIndex, I), , CaseCompare, WildCardArray)
+            If OrderArrayIndex = -1 Then
+                If NoOrderValuePriority = False Then
+                    ArrayValue(KeyColumnIndex, I) = _
+                        ArrayValue(KeyColumnIndex, I) + _
+                        KeyDelimiter + _
+                        LongToStrDigitZero(ArrayCount(OrderArrayWildCard) + 1, Out_DigitOrderCount) + _
+                        IIf(OutputArrayRows, LongToStrDigitZero(I, Out_DigitArrayRowsCount), "")
+                Else
+                    ArrayValue(KeyColumnIndex, I) = _
+                        ArrayValue(KeyColumnIndex, I) + _
+                        KeyDelimiter + _
+                        LongToStrDigitZero(0, Out_DigitOrderCount) + _
+                        IIf(OutputArrayRows, LongToStrDigitZero(I, Out_DigitArrayRowsCount), "")
+                End If
+            Else
+                ArrayValue(KeyColumnIndex, I) = _
+                    ArrayValue(KeyColumnIndex, I) + _
+                    KeyDelimiter + _
+                    LongToStrDigitZero(OrderArrayIndex + 1, Out_DigitOrderCount) + _
+                    IIf(OutputArrayRows, LongToStrDigitZero(I, Out_DigitArrayRowsCount), "")
+            End If
+        Next
+    End Select
+
+End Sub
+
+
+Public Sub testArray2dSortCustomOrder()
+    Dim A()
+    
+    Call Array2dAdd(A, Array("01", "02", "03", "b"))
+    Call Array2dAdd(A, Array("04", "05", "06", "a"))
+    Call Array2dAdd(A, Array("07", "08", "09", "s"))
+    Call Array2dAdd(A, Array("11", "12", "13", "ss"))
+    Call Array2dAdd(A, Array("14", "15", "16", "l"))
+    Call Array2dAdd(A, Array("17", "18", "19", "ll"))
+    Call Array2dAdd(A, Array("21", "22", "23", "m"))
+
+    Call Array2dSortCustomOrder(A, 3, _
+        ArrayStr("ss*", "s*", "m*", "l*", "ll*"), CaseSensitive, False)
+    
+    Call Check("11,12,13,ss", ArrayToString(Array2dGetRowValues(A, 0), ","))
+    Call Check("07,08,09,s", ArrayToString(Array2dGetRowValues(A, 1), ","))
+    Call Check("21,22,23,m", ArrayToString(Array2dGetRowValues(A, 2), ","))
+    Call Check("14,15,16,l", ArrayToString(Array2dGetRowValues(A, 3), ","))
+    Call Check("17,18,19,ll", ArrayToString(Array2dGetRowValues(A, 4), ","))
+    Call Check("01,02,03,b", ArrayToString(Array2dGetRowValues(A, 5), ","))
+    Call Check("04,05,06,a", ArrayToString(Array2dGetRowValues(A, 6), ","))
+    
+    Erase A
+    
+    Call Array2dAdd(A, Array("01", "02", "03", "b"))
+    Call Array2dAdd(A, Array("04", "05", "06", "a"))
+    Call Array2dAdd(A, Array("07", "08", "09", "s"))
+    Call Array2dAdd(A, Array("11", "12", "13", "ss"))
+    Call Array2dAdd(A, Array("14", "15", "16", "l"))
+    Call Array2dAdd(A, Array("17", "18", "19", "ll"))
+    Call Array2dAdd(A, Array("21", "22", "23", "m"))
+
+    Call Array2dSortCustomOrder(A, 3, _
+        ArrayStr("ss*", "s*", "m*", "l*", "ll*"), CaseSensitive, True)
+    
+    Call Check("01,02,03,b", ArrayToString(Array2dGetRowValues(A, 0), ","))
+    Call Check("04,05,06,a", ArrayToString(Array2dGetRowValues(A, 1), ","))
+    Call Check("11,12,13,ss", ArrayToString(Array2dGetRowValues(A, 2), ","))
+    Call Check("07,08,09,s", ArrayToString(Array2dGetRowValues(A, 3), ","))
+    Call Check("21,22,23,m", ArrayToString(Array2dGetRowValues(A, 4), ","))
+    Call Check("14,15,16,l", ArrayToString(Array2dGetRowValues(A, 5), ","))
+    Call Check("17,18,19,ll", ArrayToString(Array2dGetRowValues(A, 6), ","))
+    
+    
+
 End Sub
 
 '----------------------------------------
@@ -7021,4 +7481,24 @@ End Sub
 '   /Array2dSetRowValues/Array2dGetRowValues
 '   /Array2dAdd/Array2dInsert/Array2dDelete
 '   /Array2dSortQuick/Array2dIsUnique
+'◇ ver 2016/03/28
+'・ Array2dAddを修正
+'◇ ver 2016/03/29
+'・ DeleteRegExp追加
+'・ ReplaceHTMLTag>>DeleteHTMLTag名前変更と修正
+'・ st_vba_IE.IE_GetElementの処理を修正
+'   引数をieからElement=ie.Documentに変更
+'   IE_GetElementByTagNameName追加
+'◇ ver 2016/03/30
+'・ Array2dSetRowValues/Array2dGetRowValues 追加
+'・ Array2dRowsCount/Array2dColumnsCount 追加
+'◇ ver 2016/03/31
+'・ Array2dColumnsCount/Array2dRowsCount 追加
+'・ Array2dColumnsCount/Array2dRowsCount 追加
+'・ Array2dSetColumnValues/Array2dGetColumnValues 追加
+'・ Array2dSortStrLength/Array2dSortStrLengthSetKeyValue 追加
+'・ Array2dSortCustomOrder/Array2dSortCustomOrderSetKeyValue 追加
+'・ ArraySort系処理のAssertとメッセージ修正
+'◇ ver 2016/04/02
+'・ Array2dSort系の処理修正
 '--------------------------------------------------

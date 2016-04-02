@@ -186,22 +186,24 @@ End Sub
 '----------------------------------------
 '・IEで条件に一致したエレメントを取得する
 '----------------------------------------
-Public Function IE_GetElementByTagName(ByVal ie As InternetExplorer, _
+'   ・  Elementには ie.Document を指定するとよい
+'----------------------------------------
+Public Function IE_GetElementByTagName(ByVal Element As Object, _
 ByVal TagName As String) As Object
     Dim Result As Object: Set Result = Nothing
     Dim E1 As Object
-    For Each E1 In ie.Document.getElementsByTagName(TagName)
+    For Each E1 In Element.GetElementsByTagName(TagName)
         Set Result = E1
         Exit For
     Next
     Set IE_GetElementByTagName = Result
 End Function
 
-Public Function IE_GetElementByTagNameClassName(ByVal ie As InternetExplorer, _
+Public Function IE_GetElementByTagNameClassName(ByVal Element As Object, _
 ByVal TagName As String, ByVal ClassNameWildCard As String) As Object
     Dim Result As Object: Set Result = Nothing
     Dim E1 As Object
-    For Each E1 In ie.Document.getElementsByTagName(TagName)
+    For Each E1 In Element.GetElementsByTagName(TagName)
         If E1.ClassName Like ClassNameWildCard Then
             Set Result = E1
             Exit For
@@ -210,11 +212,11 @@ ByVal TagName As String, ByVal ClassNameWildCard As String) As Object
     Set IE_GetElementByTagNameClassName = Result
 End Function
 
-Public Function IE_GetElementByTagNameId(ByVal ie As InternetExplorer, _
+Public Function IE_GetElementByTagNameId(ByVal Element As Object, _
 ByVal TagName As String, ByVal IdWildCard As String) As Object
     Dim Result As Object: Set Result = Nothing
     Dim E1 As Object
-    For Each E1 In ie.Document.getElementsByTagName(TagName)
+    For Each E1 In Element.GetElementsByTagName(TagName)
         If E1.ID Like IdWildCard Then
             Set Result = E1
             Exit For
@@ -223,11 +225,24 @@ ByVal TagName As String, ByVal IdWildCard As String) As Object
     Set IE_GetElementByTagNameId = Result
 End Function
 
-Public Function IE_GetElementByTagNameInnerHTML(ByVal ie As InternetExplorer, _
+Public Function IE_GetElementByTagNameName(ByVal Element As Object, _
+ByVal TagName As String, ByVal NameWildCard As String) As Object
+    Dim Result As Object: Set Result = Nothing
+    Dim E1 As Object
+    For Each E1 In Element.GetElementsByTagName(TagName)
+        If E1.Name Like NameWildCard Then
+            Set Result = E1
+            Exit For
+        End If
+    Next
+    Set IE_GetElementByTagNameName = Result
+End Function
+
+Public Function IE_GetElementByTagNameInnerHTML(ByVal Element As Object, _
 ByVal TagName As String, ByVal InnerHTMLWildCard As String) As Object
     Dim Result As Object: Set Result = Nothing
     Dim E1 As Object
-    For Each E1 In ie.Document.getElementsByTagName(TagName)
+    For Each E1 In Element.GetElementsByTagName(TagName)
         If E1.InnerHTML Like InnerHTMLWildCard Then
             Set Result = E1
             Exit For
