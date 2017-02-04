@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        http://standard-software.net/
 '--------------------------------------------------
-'Version:       2016/04/02
+'Version:       2017/02/05
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -4551,14 +4551,15 @@ End Function
 '----------------------------------------
 '   ・  作成されたらTrueを返す
 '----------------------------------------
-Public Function FileCreateWait(ByVal FilePath As String) As Boolean
-    FileCreateWait = False
+Public Function FileExistsWait(ByVal FilePath As String, _
+Optional ByVal ExistsFlag As Boolean = True) As Boolean
+    FileExistsWait = False
     Dim I As Long: I = 0
-    Do While (fso.FileExists(FilePath) = False)
+    Do While (fso.FileExists(FilePath) = not ExistsFlag)
         I = I + 1
         If I = 10 Then Exit Function
     Loop
-    FileCreateWait = True
+    FileExistsWait = True
 End Function
 
 
@@ -7067,7 +7068,7 @@ ByVal AppID As String)
             AppID)
 
         'ショートカットファイルのリンク先変更
-        If FileCreateWait(ShortcutFilePath) Then
+        If FileExistsWait(ShortcutFilePath) Then
             Call CreateShortcutFile(ShortcutFilePath, _
                 LinkTargetFilePath, _
                 IconFilePath, Description)
@@ -7501,6 +7502,11 @@ End Sub
 '・ ArraySort系処理のAssertとメッセージ修正
 '◇ ver 2016/04/02
 '・ Array2dSort系の処理修正
+'◇ ver 2017/02/05
+'・ FileCreateWaitをFileExistWaitに変更し
+'   ファイルの存在の有無を待つように機能追加
 '--------------------------------------------------
+
+
 
 
