@@ -1229,19 +1229,19 @@ End Function
 '       AAAÇ©ÇÁAAÇêîÇ¶ÇÈÇ∆2Çï‘Ç∑
 '----------------------------------------
 Public Function StrCount(str As String, SubStr As String) As Long
-  Dim Result As Long
-  Result = 0
-  Dim Index As Long
-  Index = 0
-  Do
-    Index = InStr(Index + 1, str, SubStr)
-    If Index = 0 Then
-      Exit Do
-    Else
-      Result = Result + 1
-    End If
-  Loop
-  StrCount = Result
+    Dim Result As Long
+    Result = 0
+    Dim Index As Long
+    Index = 0
+    Do
+        Index = InStr(Index + 1, str, SubStr)
+        If Index = 0 Then
+            Exit Do
+        Else
+            Result = Result + 1
+        End If
+    Loop
+    StrCount = Result
 End Function
 
 Sub testStrCount()
@@ -3996,7 +3996,7 @@ ByVal SortOrder As SortOrder)
             For I = 0 To Array2dRowsCount(ArrayValue) - 1
                 ArrayValue(KeyColumnIndex, I) = _
                     LongToStrDigitZero(Len(ArrayValue(ColumnIndex, I)), Out_DigitStrLength) + _
-                    IIF(OutputArrayRows, LongToStrDigitZero(I, Out_DigitArrayRowsCount), "") + _
+                    IIf(OutputArrayRows, LongToStrDigitZero(I, Out_DigitArrayRowsCount), "") + _
                     KeyDelimiter + _
                     ArrayValue(KeyColumnIndex, I)
             Next
@@ -4006,7 +4006,7 @@ ByVal SortOrder As SortOrder)
                     ArrayValue(KeyColumnIndex, I) + _
                     KeyDelimiter + _
                     LongToStrDigitZero(Len(ArrayValue(ColumnIndex, I)), Out_DigitStrLength) + _
-                    IIF(OutputArrayRows, LongToStrDigitZero(I, Out_DigitArrayRowsCount), "")
+                    IIf(OutputArrayRows, LongToStrDigitZero(I, Out_DigitArrayRowsCount), "")
             Next
         End Select
     Case Descending
@@ -4015,7 +4015,7 @@ ByVal SortOrder As SortOrder)
             For I = 0 To Array2dRowsCount(ArrayValue) - 1
                 ArrayValue(KeyColumnIndex, I) = _
                     LongToStrDigitZero(MaxLength - Len(ArrayValue(ColumnIndex, I)), Out_DigitStrLength) + _
-                    IIF(OutputArrayRows, LongToStrDigitZero(I, Out_DigitArrayRowsCount), "") + _
+                    IIf(OutputArrayRows, LongToStrDigitZero(I, Out_DigitArrayRowsCount), "") + _
                     KeyDelimiter + _
                     ArrayValue(KeyColumnIndex, I)
             Next
@@ -4025,7 +4025,7 @@ ByVal SortOrder As SortOrder)
                     ArrayValue(KeyColumnIndex, I) + _
                     KeyDelimiter + _
                     LongToStrDigitZero(MaxLength - Len(ArrayValue(ColumnIndex, I)), Out_DigitStrLength) + _
-                    IIF(OutputArrayRows, LongToStrDigitZero(I, Out_DigitArrayRowsCount), "")
+                    IIf(OutputArrayRows, LongToStrDigitZero(I, Out_DigitArrayRowsCount), "")
             Next
         End Select
     End Select
@@ -7502,3 +7502,5 @@ End Sub
 'Åû ver 2016/04/02
 'ÅE Array2dSortånÇÃèàóùèCê≥
 '--------------------------------------------------
+
+
