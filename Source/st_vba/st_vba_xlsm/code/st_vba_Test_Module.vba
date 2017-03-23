@@ -5,4 +5,6 @@ Sub testMain()
     Call testFirstStrLastDelim
     Call testLastStrFirstDelim
     Call testLastStrLastDelim
+    
+    Call testTagInnerText
 End Sub
