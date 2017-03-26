@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        https://www.facebook.com/stndardsoftware/
 '--------------------------------------------------
-'Version:       2017/03/21
+'Version:       2017/03/25
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -4539,6 +4539,8 @@ End Function
 '----------------------------------------
 '・ドライブパス"C:"を取り出す関数
 '----------------------------------------
+'   ・  [C:]という文字列が取得できる
+'----------------------------------------
 Public Function GetDrivePath(ByVal Path As String) As String
     GetDrivePath = IncludeLastStr( _
         FirstStrFirstDelim(Path, ":"), ":")
@@ -4548,8 +4550,8 @@ End Function
 '・ドライブパスが含まれているかどうか確認する関数
 '[:]が2文字目以降にあるかどうかで判定
 '----------------------------------------
-Public Function IsDrivePath(ByVal Path As String) As String
-    Dim Result As String
+Public Function IsDrivePath(ByVal Path As String) As Boolean
+    Dim Result As Boolean
     Result = (OrValue(InStr(Path, ":"), 2, 3))
     IsDrivePath = Result
 End Function
@@ -4557,8 +4559,8 @@ End Function
 '----------------------------------------
 '・ネットワークドライブかどうか確認する関数
 '----------------------------------------
-Public Function IsNetworkPath(ByVal Path As String) As String
-    Dim Result As String: Result = False
+Public Function IsNetworkPath(ByVal Path As String) As Boolean
+    Dim Result As Boolean: Result = False
     If IsFirstStr(Path, "\\") Then
         If 3 <= Len(Path) Then
             Result = True
@@ -4767,6 +4769,43 @@ End Function
 '----------------------------------------
 '・相対パスから絶対パス取得
 '----------------------------------------
+'   ・  ドライブパスとネットワークパスの場合をわけて
+'       ドライブパスの場合は ChDrive と ChDir を組み合わせて
+'       実装していたが、そんな必要もなく
+'       Shellオブジェクトを使う方が楽に設定できる。
+'----------------------------------------
+'旧バージョンコード
+'Public Function AbsolutePath(ByVal BasePath As String, _
+'ByVal RelativePath As String) As String
+'    Dim CurDirBuffer As String
+'    CurDirBuffer = CurDir
+'
+'    Call Assert(fso.FolderExists(BasePath) Or fso.FileExists(BasePath), _
+'        "Error:AbsolutePath")
+'
+'    If IsDrivePath(BasePath) Then
+'        'カレントドライブ/ディレクトリをBasePathに合わせる
+'        Call ChDrive(ExcludeLastStr(GetDrivePath(BasePath), ":"))
+'        Call ChDir(BasePath)
+'    ElseIf IsNetworkPath(BasePath) Then
+'        Shell.CurrentDirectory = BasePath
+'    Else
+'        Call Assert(False, "Error:AbsolutePath")
+'    End If
+'
+'    '相対パスRelativePathでカレントディレクトリを設定する
+'    AbsolutePath = fso.GetAbsolutePathName(RelativePath)
+'
+'    'バッファしていた値でカレントドライブ/ディレクトリを設定する
+'    If IsDrivePath(CurDirBuffer) Then
+'        Call ChDrive(ExcludeLastStr(GetDrivePath(CurDirBuffer), ":"))
+'        Call ChDir(CurDirBuffer)
+'    ElseIf IsNetworkPath(CurDirBuffer) Then
+'        Shell.CurrentDirectory = CurDirBuffer
+'    End If
+'
+'End Function
+
 Public Function AbsolutePath(ByVal BasePath As String, _
 ByVal RelativePath As String) As String
     Dim CurDirBuffer As String
@@ -4774,24 +4813,26 @@ ByVal RelativePath As String) As String
 
     Call Assert(fso.FolderExists(BasePath) Or fso.FileExists(BasePath), _
         "Error:AbsolutePath")
-    Call Assert(IsDrivePath(BasePath), "Error:AbsolutePath")
+        
+    Call Assert(IsDrivePath(BasePath) Or IsNetworkPath(BasePath), _
+        "Error:AbsolutePath")
 
-    'カレントドライブ/ディレクトリをBasePathに合わせる
-    Call ChDrive(ExcludeLastStr(BasePath, ":\"))
-    Call ChDir(BasePath)
-
-    '相対パスRelativePathでカレントディレクトリを設定する
-
+    Shell.CurrentDirectory = BasePath
     AbsolutePath = fso.GetAbsolutePathName(RelativePath)
-
-    'バッファしていた値でカレントドライブ/ディレクトリを設定する
-    Call ChDrive(ExcludeLastStr(CurDirBuffer, ":\"))
-    Call ChDir(CurDirBuffer)
+    Shell.CurrentDirectory = CurDirBuffer
+    
 End Function
 
 Private Sub testAbsolutePath()
+    Shell.CurrentDirectory = "C:\Program Files"
+
     Call Check("C:\Program Files", AbsolutePath("C:\", ".\Program Files"))
     Call Check("C:\", AbsolutePath("C:\Program Files", "..\"))
+    Call Check("C:\Windows", AbsolutePath("C:\", ".\Program Files\..\Windows"))
+
+    'ネットワークパスの場合、大小文字が一致しない時がある
+    Call Check(LCase("\\vmware-host\Shared Folders\この Mac 上の satoshi_yamamoto\MyFolder\MyData"), _
+        LCase(AbsolutePath("\\vmware-host\Shared Folders\この Mac 上の satoshi_yamamoto\MyFolder", ".\MyData")))
 
     '"C:\Program Files (x86)\Microsoft Office\root\Office16\EXCEL.EXE"
     Call Check("C:\Program Files (x86)\Google\Chrome", AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "..\..\..\Google\Chrome"))
@@ -4800,6 +4841,20 @@ Private Sub testAbsolutePath()
     Call Check("C:\Program Files (x86)\abc\def", AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "..\..\..\abc\def"))
     
     '先頭にピリオドがなくても指定できる
+    Call Check("C:\Program Files (x86)\Microsoft Office\root\Office16\abc\def", _
+        AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "abc\def"))
+
+
+    
+    Shell.CurrentDirectory = "\\vmware-host\Shared Folders"
+    
+    Call Check("C:\Program Files", AbsolutePath("C:\", ".\Program Files"))
+    Call Check("C:\", AbsolutePath("C:\Program Files", "..\"))
+    Call Check("C:\Windows", AbsolutePath("C:\", ".\Program Files\..\Windows"))
+    Call Check(LCase("\\vmware-host\Shared Folders\この Mac 上の satoshi_yamamoto\MyFolder\MyData"), _
+        LCase(AbsolutePath("\\vmware-host\Shared Folders\この Mac 上の satoshi_yamamoto\MyFolder", ".\MyData")))
+    Call Check("C:\Program Files (x86)\Google\Chrome", AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "..\..\..\Google\Chrome"))
+    Call Check("C:\Program Files (x86)\abc\def", AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "..\..\..\abc\def"))
     Call Check("C:\Program Files (x86)\Microsoft Office\root\Office16\abc\def", _
         AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "abc\def"))
 
@@ -5795,6 +5850,16 @@ End Function
 '----------------------------------------
 '◆シェル起動
 '----------------------------------------
+
+'----------------------------------------
+'・ コマンド実行
+'----------------------------------------
+'   ・  %ComSpec% /c は
+'       いろんなところで推奨されているけど
+'       Exeが長いネットワークパスにあるときは動かない場面があった
+'       なので、DOSコマンドではなく実行ファイルを指定して動かすのなら
+'       直接、Shell.Run(Command, のようにしたほうがいいかも
+'----------------------------------------
 Public Sub CommandExecute(Command As String)
     Dim Result As String: Result = ""
 
@@ -5808,6 +5873,9 @@ Private Sub testCommandExecute()
     Call CommandExecute("ping")
 End Sub
 
+'----------------------------------------
+'・ コマンド実行後の結果取得
+'----------------------------------------
 Public Function CommandExecuteReturn(Command As String, _
 Optional ByVal EncodeName As String = "Shift_JIS") As String
     Dim Result As String: Result = ""
@@ -6466,6 +6534,36 @@ ByVal Book As Workbook) As String
 End Function
 
 '----------------------------------------
+'・ワークブックを確認ダイアログなど無しで保存する
+'----------------------------------------
+'   ・  旧形式(XLS)の拡張子に自動対応
+'----------------------------------------
+Public Sub Book_SaveAs( _
+ByVal Book As Workbook, _
+ByVal FilePath As String)
+
+    If Val(Application.Version) < 12 Then
+        '以前のバージョンならそのまま保存
+        Call Book.SaveAs(FilePath)
+    Else
+        '現在のバージョンの場合、拡張子XLS なら古い形式で保存
+        If LCase(GetExtensionIncludePeriod(FilePath)) = ".xls" Then
+        
+            '旧バージョンの確認ダイアログのようなものを出させない
+            
+            Dim Application_DisplayAlerts_Flag As Boolean
+            Application_DisplayAlerts_Flag = Application.DisplayAlerts
+            Application.DisplayAlerts = False
+            Call Book.SaveAs(FilePath, XlFileFormat.xlExcel8)
+            Application.DisplayAlerts = Application_DisplayAlerts_Flag
+        Else
+            Call Book.SaveAs(FilePath)
+        End If
+    End If
+
+End Sub
+
+'----------------------------------------
 '・ワークブックを確認ダイアログなど無しで閉じる
 '----------------------------------------
 Public Sub Book_CloseSilence(ByVal Book As Workbook)
@@ -6485,8 +6583,6 @@ Public Sub Book_BeforeClose_Save( _
 ByVal Book As Workbook)
     Call Book.Save
 End Sub
-
-
 
 '----------------------------------------
 '・ワークシートの存在確認
@@ -6892,6 +6988,247 @@ End Function
 Public Sub testTopLeftCell()
     Call Check(Sheets(1).Cells(1, 1), TopLeftCell(Sheets(1), 0, 0))
 End Sub
+
+
+'----------------------------------------
+'◇ ファイル選択ダイアログ
+'----------------------------------------
+
+'----------------------------------------
+'・ ファイル選択ダイアログ
+'----------------------------------------
+'   ・  ダイアログのタイトルには「参照」と表示される
+'   ・  Application.FileDialog(msoFileDialogFilePicker)
+'       をラッピング
+'   ・  Filtersは
+'           "Excelブック|*.xls; *.xlsx; *.xlsm"
+'           "Textファイル|*.txt"
+'       という形式にする。
+'       [*.txt;]という形式にはしないこと。エラーになる。
+'   ・  戻り値は改行区切りのフルパス
+'       キャンセルが押された場合には空文字が返る
+'----------------------------------------
+Public Function FileDialog_FilePicker(ByVal FilePath As String, _
+ByVal OptionInitialView As MsoFileDialogView, _
+ByVal OptionAllowMultiSelect As Boolean, _
+ParamArray Filters())
+
+    Dim Result As String: Result = ""
+
+    Dim Dialog As FileDialog
+    Set Dialog = Application.FileDialog(msoFileDialogFilePicker)
+    
+    Call Dialog.Filters.Clear
+    Dim I As Long
+    For I = LBound(Filters) To UBound(Filters)
+        Call Dialog.Filters.Add( _
+            FirstStrFirstDelim(Filters(I), "|"), _
+            LastStrFirstDelim(Filters(I), "|"), I + 1)
+            
+'        Call Dialog.Filters.Add("Excelブック", "*.xls; *.xlsx; *.xlsm", 1)
+'        Call Dialog.Filters.Add("Textファイル", "*.txt", 1)
+    Next
+        
+    Dialog.InitialFileName = FilePath
+    Dialog.InitialView = OptionInitialView
+    Dialog.AllowMultiSelect = OptionAllowMultiSelect
+    If Dialog.Show = True Then
+
+        For I = 1 To Dialog.SelectedItems.Count
+            Result = StringCombine(vbCrLf, Result, Dialog.SelectedItems(I))
+        Next
+
+    End If
+    
+    FileDialog_FilePicker = Result
+End Function
+
+Public Sub testFileDialog_FilePicker()
+    Dim Result As String
+    Result = FileDialog_FilePicker(Book_FullPath(ThisWorkbook), _
+        msoFileDialogViewDetails, True)
+    Call MsgBox(Result)
+    
+    Result = FileDialog_FilePicker(Book_FullPath(ThisWorkbook), _
+        msoFileDialogViewDetails, False, _
+        "Excelブック|*.xls; *.xlsx; *.xlsm", _
+        "Textファイル|*.txt")
+    Call MsgBox(Result)
+    
+    Result = FileDialog_FilePicker("", _
+        msoFileDialogViewDetails, True)
+    Call MsgBox(Result)
+End Sub
+
+
+'----------------------------------------
+'・ ファイルオープンダイアログ
+'----------------------------------------
+'   ・  ダイアログのタイトルには「ファイルを開く」と表示される
+'   ・  Application.FileDialog(msoFileDialogOpen)
+'       をラッピング
+'   ・  Filtersは
+'           "Excelブック|*.xls; *.xlsx; *.xlsm"
+'           "Textファイル|*.txt"
+'       という形式にする。
+'       [*.txt;]という形式にはしないこと。エラーになる。
+'   ・  戻り値は改行区切りのフルパス
+'       キャンセルが押された場合には空文字が返る
+'----------------------------------------
+Public Function FileDialog_Open(ByVal FilePath As String, _
+ByVal OptionInitialView As MsoFileDialogView, _
+ByVal OptionAllowMultiSelect As Boolean, _
+ParamArray Filters())
+
+    Dim Result As String: Result = ""
+
+    Dim Dialog As FileDialog
+    Set Dialog = Application.FileDialog(msoFileDialogOpen)
+    
+    Call Dialog.Filters.Clear
+    Dim I As Long
+    For I = LBound(Filters) To UBound(Filters)
+        Call Dialog.Filters.Add( _
+            FirstStrFirstDelim(Filters(I), "|"), _
+            LastStrFirstDelim(Filters(I), "|"), I + 1)
+            
+'        Call Dialog.Filters.Add("Excelブック", "*.xls; *.xlsx; *.xlsm", 1)
+'        Call Dialog.Filters.Add("Textファイル", "*.txt", 1)
+    Next
+        
+    Dialog.InitialFileName = FilePath
+    Dialog.InitialView = OptionInitialView
+    Dialog.AllowMultiSelect = OptionAllowMultiSelect
+    If Dialog.Show = True Then
+
+        For I = 1 To Dialog.SelectedItems.Count
+            Result = StringCombine(vbCrLf, Result, Dialog.SelectedItems(I))
+        Next
+
+    End If
+    
+    FileDialog_Open = Result
+End Function
+
+Public Sub testFileDialog_Open()
+    Dim Result As String
+    Result = FileDialog_Open(Book_FullPath(ThisWorkbook), _
+        msoFileDialogViewDetails, True)
+    Call MsgBox(Result)
+    
+    Result = FileDialog_Open(Book_FullPath(ThisWorkbook), _
+        msoFileDialogViewDetails, False, _
+        "Excelブック|*.xls; *.xlsx; *.xlsm", _
+        "Textファイル|*.txt")
+    Call MsgBox(Result)
+    
+    Result = FileDialog_Open("", _
+        msoFileDialogViewDetails, True)
+    Call MsgBox(Result)
+End Sub
+
+'----------------------------------------
+'・ 名前を付けて保存ダイアログ
+'----------------------------------------
+'   ・  ダイアログのタイトルには「名前を付けて保存」と表示される
+'   ・  Application.FileDialog(msoFileDialogSaveAs)
+'       をラッピング
+'   ・  Filterは指定できない。Excel標準の保存形式で固定。
+'   ・  複数選択もできない。(しても単独選択のみ)
+'   ・  戻り値はフルパス
+'       キャンセルが押された場合には空文字が返る
+'----------------------------------------
+Public Function FileDialog_SaveAs(ByVal FilePath As String, _
+ByVal OptionInitialView As MsoFileDialogView)
+
+    Dim Result As String: Result = ""
+
+    Dim Dialog As FileDialog
+    Set Dialog = Application.FileDialog(msoFileDialogSaveAs)
+    
+    Dialog.InitialFileName = FilePath
+    Dialog.InitialView = OptionInitialView
+    If Dialog.Show = True Then
+        Dim I As Long
+        For I = 1 To Dialog.SelectedItems.Count
+            Result = StringCombine(vbCrLf, Result, Dialog.SelectedItems(I))
+        Next
+
+    End If
+    
+    FileDialog_SaveAs = Result
+End Function
+
+Public Sub testFileDialog_SaveAs()
+    Dim Result As String
+    Result = FileDialog_SaveAs(Book_FullPath(ThisWorkbook), _
+        msoFileDialogViewDetails)
+    Call MsgBox(Result)
+    
+    Result = FileDialog_SaveAs(Book_FullPath(ThisWorkbook), _
+        msoFileDialogViewDetails)
+    Call MsgBox(Result)
+    
+    Result = FileDialog_SaveAs("", _
+        msoFileDialogViewDetails)
+    Call MsgBox(Result)
+End Sub
+
+
+'----------------------------------------
+'・ フォルダ選択ダイアログ
+'----------------------------------------
+'   ・  ダイアログのタイトルには「参照」と表示される
+'   ・  Application.FileDialog(msoFileDialogFolderPicker)
+'       をラッピング
+'   ・  Filterは指定できない。
+'   ・  複数選択もできない。(しても単独選択のみ)
+'   ・  戻り値はフルパス
+'       キャンセルが押された場合には空文字が返る
+'   ・  InitialFileName はフォルダ選択としてはいまいちな動作。
+'       指定したフォルダが開くが
+'       そのままOKを押しても、
+'       そのフォルダ内に同名フォルダが無いとなる
+'       回避不可能な不具合と思える
+'----------------------------------------
+Public Function FileDialog_FolderPicker(ByVal FolderPath As String, _
+ByVal OptionInitialView As MsoFileDialogView)
+
+    Dim Result As String: Result = ""
+
+    Dim Dialog As FileDialog
+    Set Dialog = Application.FileDialog(msoFileDialogFolderPicker)
+    
+    Dim I As Long
+        
+    Dialog.InitialFileName = FolderPath
+    Dialog.InitialView = OptionInitialView
+    If Dialog.Show = True Then
+
+        For I = 1 To Dialog.SelectedItems.Count
+            Result = StringCombine(vbCrLf, Result, Dialog.SelectedItems(I))
+        Next
+
+    End If
+    
+    FileDialog_FolderPicker = Result
+End Function
+
+Public Sub testFileDialog_FolderPicker()
+    Dim Result As String
+    Result = FileDialog_FolderPicker(ThisWorkbook.Path, _
+        msoFileDialogViewDetails)
+    Call MsgBox(Result)
+    
+    Result = FileDialog_FolderPicker(ThisWorkbook.Path, _
+        msoFileDialogViewDetails)
+    Call MsgBox(Result)
+    
+    Result = FileDialog_FolderPicker("", _
+        msoFileDialogViewDetails)
+    Call MsgBox(Result)
+End Sub
+
 
 
 '----------------------------------------
@@ -8295,6 +8632,11 @@ End Function
 '・ Format_Date_UseOnlyYMDHNS 追加
 '◇ ver 2017/03/23
 '・ RandomValue を追加
+'◇ ver 2017/03/25
+'・ IsDrivePath / IsNetworkPath の不具合を修正
+'・ AbsolutePathのネットワークパス対応
+'   テストの確立
+'・ Book_SaveAs の追加
+'・ FileDialog_FilePicker / FileDialog_Open
+'   / FileDialog_SaveAs / FileDialog_FolderPicker 追加
 '--------------------------------------------------
-
-
