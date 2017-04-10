@@ -123,8 +123,17 @@ End Sub
 '   ÅE  VBE(VBEditor)ÇÃëÄçÏÇ…ïKóv
 '----------------------------------------
 Sub ReferenceAdd_VBAExtensibility(Book As Workbook)
+
+#If VBA7 And Win64 Then
+    '64bitî≈Windows
+    Call Book.VBProject.References.AddFromFile( _
+        "C:\Program Files (x86)\Common Files\Microsoft Shared\VBA\VBA6\VBE6EXT.OLB")
+#Else
+    '32bitî≈Windows
     Call Book.VBProject.References.AddFromFile( _
         "C:\Program Files\Common Files\microsoft shared\VBA\VBA6\VBE6EXT.OLB")
+#End If
+
 End Sub
 
 Sub Run_ReferenceAdd_VBAExtensibility()

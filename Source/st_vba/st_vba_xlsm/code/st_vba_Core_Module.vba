@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        https://www.facebook.com/stndardsoftware/
 '--------------------------------------------------
-'Version:       2017/03/25
+'Version:       2017/04/07
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -1588,14 +1588,27 @@ Public Sub testTagInnerText()
     Call Check("456", TagInnerText("456", "<123>", "<789>"))
     Call Check("", TagInnerText("000<123><789>000", "<123>", "<789>"))
     
-    Call Check("123", TagInnerText("<123>123<789> <123>456<789> <123>789<789>", "<123>", "<789>"))
     Dim Text As String
     Text = "<123>123<789> <123>456<789> <123>789<789>"
+    Call Check("123", TagInnerText(Text, "<123>", "<789>"))
     Call Check("<123>123", TagInnerText(Text, "<456>", "<789>"))
     Call Check("", TagInnerText(Text, "<456>", "<123>"))
     Call Check(Text, TagInnerText(Text, "<321>", "<456>"))
     
 End Sub
+
+'----------------------------------------
+'・タグの内部文字列、後方検索版
+'----------------------------------------
+Public Function TagInnerTextLast(ByVal Text As String, _
+    ByVal StartTag As String, ByVal EndTag As String) As String
+
+    Dim Result As String
+    Result = LastStrLastDelim(Text, StartTag)
+    Result = FirstStrLastDelim(Result, EndTag)
+    TagInnerTextLast = Result
+End Function
+
 
 '----------------------------------------
 '・タグを含んだ内部文字列
@@ -2128,6 +2141,87 @@ Optional ByVal CaseCompare As CaseCompare = CaseSensitive) As String
     Next
     DeleteArrayRegExp = Result
 End Function
+
+
+'----------------------------------------
+'◇ 文字コード処理
+'----------------------------------------
+
+'----------------------------------------
+'・ 文字列のShiftJIS以外の文字抽出
+'----------------------------------------
+'   ・  全てShiftJISに変換可能なら空文字が返る
+'----------------------------------------
+Public Function String_GetOutShiftJIS(ByVal Value As String) As String
+    Dim Result As String: Result = ""
+    Dim Character As String
+    Dim I As Integer
+    For I = 1 To Len(Value)
+        Character = Mid(Value, I, 1)
+        If StrConv(StrConv(Character, vbFromUnicode), vbUnicode) <> Character Then
+            Result = Result + Character
+        End If
+    Next I
+    String_GetOutShiftJIS = Result
+End Function
+
+Public Sub test_String_GetOutShiftJIS()
+    Call Check("", String_GetOutShiftJIS("テスト"))
+    Call Check(ChrW(&H33A5), String_GetOutShiftJIS("あいうえお" + ChrW(&H33A5)))
+End Sub
+
+
+'----------------------------------------
+'・ 文字列のShiftJISの外字抽出
+'----------------------------------------
+'   ・  SJISには外字として
+'       ＮＥＣ選定特文字
+'       ＩＢＭ拡張文字
+'       というものがあり、それを抽出する
+'   ・  １．ＮＥＣ選定特文字
+'           開始：まる数字の１「いち」（34624）
+'　　　　　 終了：直角三角形「でるた」(34713)
+'
+'       ※  実際には、合併集合「しゅうごう」(34716)までだが
+'           別の文字コードが優先される。
+'　　　　　 下記のNo.３がそれ、
+'
+'　　   ２．ＩＢＭ拡張文字
+'　　　　　 開始：ローマ数字の小文字の１「いち」（64064）
+'　　　　　 終了：黒に似た漢字「ＩＭＥのコード一覧で表示して下さい。」（64587）
+'
+'　　   ３．ＮＥＣ選定特文字で１の範囲外
+'　　　　　 (1)Ｕに似た記号「しゅうごう」（33214）
+'　　　　　 (2)Ｕを逆さにした記号「しゅうごう」（33215）
+'　　　　　 (3)点３つ「なぜならば」(33254)
+'----------------------------------------
+Public Function String_GetMachineDependentCharacter(ByVal Value As String) As String
+    Dim Result As String
+    Result = ""
+    Dim CharIntValue As Integer
+    Dim I As Integer
+    For I = 1 To Len(Value)
+        CharIntValue = Asc(Mid(Value, I, 1))
+        If ((Asc(Chr(34624)) <= CharIntValue) And (CharIntValue <= Asc(Chr(34713)))) _
+        Or ((Asc(Chr(64064)) <= CharIntValue) And (CharIntValue <= Asc(Chr(64587)))) _
+        Or (CharIntValue = Asc(Chr(33214))) _
+        Or (CharIntValue = Asc(Chr(33215))) _
+        Or (CharIntValue = Asc(Chr(33254))) Then
+            Result = Result & Chr(CharIntValue)
+        End If
+    Next I
+    String_GetMachineDependentCharacter = Result
+End Function
+
+Public Sub test_String_GetMachineDependentCharacter()
+    Call Check("", String_GetMachineDependentCharacter("高橋"))
+    Call Check("髙", String_GetMachineDependentCharacter("髙橋"))
+    Call Check("", String_GetMachineDependentCharacter("山崎"))
+    Call Check("﨑", String_GetMachineDependentCharacter("山﨑"))
+    Call Check("", String_GetMachineDependentCharacter(""))
+    Call Check("髙", String_GetMachineDependentCharacter("髙橋"))
+End Sub
+
 
 '----------------------------------------
 '◆日付時刻処理
@@ -4523,6 +4617,10 @@ End Function
 '----------------------------------------
 
 '----------------------------------------
+'◇ 終端パス区切り
+'----------------------------------------
+
+'----------------------------------------
 '・終端にパス区切りを追加する関数
 '----------------------------------------
 Public Function IncludeLastPathDelim(ByVal Path As String) As String
@@ -4535,6 +4633,10 @@ End Function
 Public Function ExcludeLastPathDelim(ByVal Path As String) As String
     ExcludeLastPathDelim = ExcludeLastStr(Path, Application.PathSeparator)
 End Function
+
+'----------------------------------------
+'◇ ドライブパス、ネットワークパス
+'----------------------------------------
 
 '----------------------------------------
 '・ドライブパス"C:"を取り出す関数
@@ -4571,6 +4673,73 @@ End Function
 
 
 '----------------------------------------
+'◇ ファイル名に許容できない文字
+'----------------------------------------
+
+'----------------------------------------
+'・ ファイル名に許容できない文字が含まれているかどうか調べる
+'----------------------------------------
+'   ・  ファイル名として許容できない文字は次の通り
+'       \/:*?"<>|
+'----------------------------------------
+
+Public Function FilePath_IsIncludeFileNameOutString(ByVal FileName As String) As Boolean
+    Dim Result As Boolean: Result = False
+    Result = Result Or IsIncludeStr(FileName, "\")
+    Result = Result Or IsIncludeStr(FileName, "/")
+    Result = Result Or IsIncludeStr(FileName, ":")
+    Result = Result Or IsIncludeStr(FileName, "*")
+    Result = Result Or IsIncludeStr(FileName, "?")
+    Result = Result Or IsIncludeStr(FileName, """")
+    Result = Result Or IsIncludeStr(FileName, "<")
+    Result = Result Or IsIncludeStr(FileName, ">")
+    Result = Result Or IsIncludeStr(FileName, "|")
+    
+    FilePath_IsIncludeFileNameOutString = Result
+End Function
+
+Public Sub test_FilePath_IsIncludeFileNameOutString()
+    Call Check(False, FilePath_IsIncludeFileNameOutString("testtest.txt"))
+    Call Check(True, FilePath_IsIncludeFileNameOutString("test\test.txt"))
+    Call Check(True, FilePath_IsIncludeFileNameOutString("test|test.txt"))
+    Call Check(True, FilePath_IsIncludeFileNameOutString("t:esttest.txt"))
+    Call Check(True, FilePath_IsIncludeFileNameOutString("test<test>.txt"))
+    Call Check(True, FilePath_IsIncludeFileNameOutString("test""test.txt"))
+End Sub
+
+'----------------------------------------
+'・ ファイル名に許容できない文字が含まれていたら文字列置き換え
+'----------------------------------------
+'   ・  ファイル名として許容できない文字は次の通り
+'       \/:*?"<>|
+'----------------------------------------
+
+Public Function FilePath_ReplaceFileNameOutString( _
+ByVal FileName As String, _
+Optional ByVal ReplaceStr As String = "") As String
+
+    Dim Result As String: Result = ""
+    Result = ReplaceArrayValue(FileName, _
+        ArrayStr("\", "/", ":", "*", "?", """", "<", ">", "|"), _
+        ArrayStr(ReplaceStr, ReplaceStr, ReplaceStr, ReplaceStr, ReplaceStr, ReplaceStr, ReplaceStr, ReplaceStr, ReplaceStr))
+        
+    FilePath_ReplaceFileNameOutString = Result
+End Function
+
+Public Sub test_FilePath_ReplaceFileNameOutString()
+    Call Check("testtest.txt", FilePath_ReplaceFileNameOutString("testtest.txt"))
+    Call Check("testtest.txt", FilePath_ReplaceFileNameOutString("test\test.txt"))
+    Call Check("testtest.txt", FilePath_ReplaceFileNameOutString("test|test.txt"))
+    Call Check("testtest.txt", FilePath_ReplaceFileNameOutString("t:esttest.txt"))
+    Call Check("testtest.txt", FilePath_ReplaceFileNameOutString("test<test>.txt"))
+    Call Check("testtest.txt", FilePath_ReplaceFileNameOutString("test""test.txt"))
+End Sub
+
+
+'----------------------------------------
+'◇ 空白を含むファイルパス
+'----------------------------------------
+'----------------------------------------
 '・空白を含むファイルパスをダブルクウォートで囲む
 '----------------------------------------
 Public Function InSpacePlusDoubleQuote(ByVal Path As String) As String
@@ -4583,6 +4752,9 @@ Public Function InSpacePlusDoubleQuote(ByVal Path As String) As String
     InSpacePlusDoubleQuote = Result
 End Function
 
+'----------------------------------------
+'◇ 拡張子の変更
+'----------------------------------------
 
 '----------------------------------------
 '・拡張子の取得
@@ -4615,30 +4787,40 @@ End Sub
 '----------------------------------------
 '・拡張子の変更
 '----------------------------------------
-'   ・  NewExtには先頭ピリオドがあってもなくてもよい
+'   ・  NewExtに空文字を指定すると拡張子なしになる
+'   ・  NewExtにはピリオドは必須
 '----------------------------------------
 Public Function ChangeFileExtension(ByVal Path As String, _
 ByVal NewExt As String) As String
     Dim Result As String: Result = ""
     Result = _
-        IncludeLastStr( _
-            ExcludeLastStr( _
-                Path, GetExtensionIncludePeriod(Path)), _
-            IncludeFirstStr(NewExt, "."))
+        ExcludeLastStr( _
+            Path, GetExtensionIncludePeriod(Path)) _
+        + NewExt
     ChangeFileExtension = Result
 End Function
 
 Private Sub testChangeFileExtension()
     Call Check("C:\temp\text.csv", _
         ChangeFileExtension("C:\temp\text.txt", ".csv"))
-    Call Check("C:\temp\text.csv", _
+        
+    Call Check("C:\temp\textcsv", _
         ChangeFileExtension("C:\temp\text", "csv"))
-    Call Check("C:\temp\text.csv", _
-        ChangeFileExtension("C:\temp\text.", ".csv"))
+        
+    Call Check("C:\temp\text_csv", _
+        ChangeFileExtension("C:\temp\text.", "_csv"))
+        
+    Call Check("C:\temp\text", _
+        ChangeFileExtension("C:\temp\text.", ""))
+        
 End Sub
 
 '----------------------------------------
-'・パスの結合
+'◇ パスの結合
+'----------------------------------------
+
+'----------------------------------------
+'・ パスの結合
 '----------------------------------------
 Public Function PathCombine(ParamArray Values()) As String
     'パラメータ配列を他のパラメータ配列に渡す事はできないので
@@ -4672,6 +4854,7 @@ Private Sub testPathCombine()
     Call Check("\C:\work\bbb\a.txt\", PathCombine("\C:\work\", "\bbb\", "\a.txt\"))
 
 End Sub
+
 
 '----------------------------------------
 '◆ファイルフォルダパス取得
@@ -4774,42 +4957,10 @@ End Function
 '       実装していたが、そんな必要もなく
 '       Shellオブジェクトを使う方が楽に設定できる。
 '----------------------------------------
-'旧バージョンコード
-'Public Function AbsolutePath(ByVal BasePath As String, _
-'ByVal RelativePath As String) As String
-'    Dim CurDirBuffer As String
-'    CurDirBuffer = CurDir
-'
-'    Call Assert(fso.FolderExists(BasePath) Or fso.FileExists(BasePath), _
-'        "Error:AbsolutePath")
-'
-'    If IsDrivePath(BasePath) Then
-'        'カレントドライブ/ディレクトリをBasePathに合わせる
-'        Call ChDrive(ExcludeLastStr(GetDrivePath(BasePath), ":"))
-'        Call ChDir(BasePath)
-'    ElseIf IsNetworkPath(BasePath) Then
-'        Shell.CurrentDirectory = BasePath
-'    Else
-'        Call Assert(False, "Error:AbsolutePath")
-'    End If
-'
-'    '相対パスRelativePathでカレントディレクトリを設定する
-'    AbsolutePath = fso.GetAbsolutePathName(RelativePath)
-'
-'    'バッファしていた値でカレントドライブ/ディレクトリを設定する
-'    If IsDrivePath(CurDirBuffer) Then
-'        Call ChDrive(ExcludeLastStr(GetDrivePath(CurDirBuffer), ":"))
-'        Call ChDir(CurDirBuffer)
-'    ElseIf IsNetworkPath(CurDirBuffer) Then
-'        Shell.CurrentDirectory = CurDirBuffer
-'    End If
-'
-'End Function
-
 Public Function AbsolutePath(ByVal BasePath As String, _
 ByVal RelativePath As String) As String
     Dim CurDirBuffer As String
-    CurDirBuffer = CurDir
+    CurDirBuffer = Shell.CurrentDirectory
 
     Call Assert(fso.FolderExists(BasePath) Or fso.FileExists(BasePath), _
         "Error:AbsolutePath")
@@ -4818,7 +4969,8 @@ ByVal RelativePath As String) As String
         "Error:AbsolutePath")
 
     Shell.CurrentDirectory = BasePath
-    AbsolutePath = fso.GetAbsolutePathName(RelativePath)
+    AbsolutePath = TrimLastSpace(fso.GetAbsolutePathName(RelativePath))
+    '終端に改行コードが含まれる場合があるので削除する
     Shell.CurrentDirectory = CurDirBuffer
     
 End Function
@@ -4932,13 +5084,8 @@ End Function
 '----------------------------------------
 Public Sub Folder_DeleteIfNoFile( _
 ByVal FolderPath As String)
-    Dim FileList() As String
-    FileList = Split(FilePathListTopFolder(FolderPath), vbCrLf)
-    
-    Dim FolderList() As String
-    FolderList = Split(FolderPathListTopFolder(FolderPath), vbCrLf)
 
-    If (ArrayCount(FileList) = 0) And (ArrayCount(FolderList) = 0) Then
+    If Folder_HasSubItem(FolderPath) = False Then
         Call fso.DeleteFolder(FolderPath)
     End If
 
@@ -4965,6 +5112,61 @@ Optional BaseFolderPath As String = "")
     Loop While True
 
 End Sub
+
+
+'----------------------------------------
+'◇子項目関連処理
+'----------------------------------------
+
+'----------------------------------------
+'・ 指定したフォルダのファイルや下位フォルダの有無を調べる関数
+'----------------------------------------
+Public Function Folder_HasSubItem( _
+ByVal FolderPath As String) As Boolean
+
+    Dim Result As Boolean: Result = True
+    Call Assert(fso.FolderExists(FolderPath), "Error:Folder_HasSubItem")
+    
+    If FilePathListTopFolder(FolderPath) = "" Then
+        If FolderPathListTopFolder(FolderPath) = "" Then
+            Result = False
+        End If
+    End If
+    
+    Folder_HasSubItem = Result
+End Function
+
+'----------------------------------------
+'・ 指定したフォルダにファイルや下位フォルダがある場合は削除する関数
+'----------------------------------------
+'   ・  戻り値、成功=True/失敗=False
+'----------------------------------------
+Public Function Folder_DeleteSubItem( _
+ByVal FolderPath As String) As Boolean
+
+On Error GoTo ErrorLabel
+    Call Assert(fso.FolderExists(FolderPath), "Error:Folder_HasSubItem")
+    
+    Dim I As Long
+    
+    Dim FileList() As String
+    FileList = Split(FilePathListTopFolder(FolderPath), vbCrLf)
+    For I = 0 To ArrayCount(FileList) - 1
+        Call fso.DeleteFile(FileList(I))
+    Next
+    
+    Dim FolderList() As String
+    FolderList = Split(FolderPathListTopFolder(FolderPath), vbCrLf)
+
+    For I = 0 To ArrayCount(FolderList) - 1
+        Call fso.DeleteFolder(FolderList(I), True)
+    Next
+    
+    Folder_DeleteSubItem = True
+    Exit Function
+ErrorLabel:
+    Folder_DeleteSubItem = False
+End Function
 
 
 '----------------------------------------
@@ -5004,8 +5206,6 @@ ByVal FolderPath As String)
     Loop Until fso.FolderExists(FolderPath)
     'フォルダが作成できるまでループ
 End Sub
-
-
 
 '----------------------------------------
 '◆ファイルフォルダ列挙
@@ -5428,11 +5628,11 @@ End Function
 '           エンコード          指定文字
 '           ShiftJIS            SHIFT_JIS
 '           UTF-16LE BOM有/無   UNICODEFFFE/UNICODE/UTF-16/UTF-16LE
-'                           BOMの有無に関わらず読込可能
+'                               BOMの有無に関わらず読込可能
 '           UTF-16BE _BOM_ON    UNICODEFEFF
 '           UTF-16BE _BOM_OFF   UTF-16BE
 '           UTF-8 BOM有/無      UTF-8/UTF-8N
-'                           BOMの有無に関わらず読込可能
+'                               BOMの有無に関わらず読込可能
 '           JIS                 ISO-2022-JP
 '           EUC-JP              EUC-JP
 '           UTF-7               UTF-7
@@ -5527,16 +5727,22 @@ End Sub
 '           EUC-JP
 '           UTF-7
 '       このうち、変わった挙動をするのは UTF-16LE と UFT-8
+'
 '       UTF-16LEは、読み込み時に指定すると
 '       テキストファイルが UTF-16LE のBOMありなし関わらず読み込み可能
-'       これはいいのだが、書き込み時に UTF-16LE を指定しても
-'       BOMありとして書き込まれてしまうので
+'       これは特に問題にはならないのだが
+'       書き込み時に UTF-16LE を指定しても
+'       BOMありとして書き込まれてしまう。
+'       つまり、UTF-16LEは UNICODEFFFE/UNICODE/UTF-16 と同じ機能になる
+'       それでは機能不足なので、String_SaveToFile ではBOMを除外する処理をしている。
+'
+'       UFT-8は、常にBOMありとして書き込まれる。
+'       BOM無しのUTF-8なんて世の中に存在しない方がいいのだが
+'       そうはいっても、UTF-8BOM無しで出力したい場合もあるので
+'       ADODB.Stream はBOM無しUTF-8を許容しないのだが
+'       UFT-8N という文字列によって
+'       UTF-8のBOMなしの文字として表現して、
 '       String_SaveToFile ではBOMを除外する処理をしている。
-'       UFT-8は、常にBOMありとして書き込まれるので
-'       (もちろんそのほうがいい
-'        BOM無しのUTF-8なんて世の中に存在しない方がいいのだが)
-'       ADODB.Stream は許容しないのだが UFT-8N という文字列によって
-'       UTF-8のBOMなしの文字として表現している。
 '----------------------------------------
 Public Function GetEncodingTypeJpCharCode( _
 ByVal EncodingTypeName As String) As EncodingTypeJpCharCode
@@ -6527,11 +6733,16 @@ End Function
 '----------------------------------------
 Public Function Book_FullPath( _
 ByVal Book As Workbook) As String
-    Book_FullPath = _
-        PathCombine( _
-            Book.Path, _
-            Book.Name)
+'    Book_FullPath = _
+'        PathCombine( _
+'            Book.Path, _
+'            Book.Name)
+    Book_FullPath = Book.FullName
 End Function
+
+Public Sub test_Book_FullPath()
+    Call Check(ThisWorkbook.FullName, Book_FullPath(ThisWorkbook))
+End Sub
 
 '----------------------------------------
 '・ワークブックを確認ダイアログなど無しで保存する
@@ -6871,7 +7082,7 @@ Public Function GetShapeFromImageFile(ByVal Sheet As Worksheet, _
 
     Dim Shape As Shape
     Set Shape = Sheet.Shapes.AddPicture( _
-        Filename:=ImageFilePath, LinkToFile:=False, _
+        FileName:=ImageFilePath, LinkToFile:=False, _
         SaveWithDocument:=True, _
         Left:=Rect.Left, _
         Top:=Rect.Top, _
@@ -8639,4 +8850,21 @@ End Function
 '・ Book_SaveAs の追加
 '・ FileDialog_FilePicker / FileDialog_Open
 '   / FileDialog_SaveAs / FileDialog_FolderPicker 追加
+'◇ ver 2017/04/01
+'・ st_vba_CSetting 追加
+'・ AbsolutePathを修正
+'・ String_GetOutShiftJIS
+'   /String_GetMachineDependentCharacter 追加
+'◇ ver 2017/04/02
+'・ TagInnerTextLast 追加
+'・ Folder_HasSubItem / Folder_DeleteSubItem 追加
+'・ Folder_DeleteIfNoFile 修正
+'◇ ver 2017/04/03
+'・ ChangeFileExtension 修正
+'◇ ver 2017/04/05
+'・ st_vba_SetReference ReferenceAdd_VBAExtensibility を
+'   64bit版Windowsでも動くように対応した
+'・ Book_FullPath の修正
+'◇ ver 2017/04/06
+'・ FilePath_IsIncludeFileNameOutString / FilePath_ReplaceFileNameOutString 追加
 '--------------------------------------------------
