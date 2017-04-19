@@ -1,3 +1,14 @@
+'--------------------------------------------------
+'st_vba
+'--------------------------------------------------
+'ModuleName:    WaitForm Module
+'ObjectName:    st_vba_WaitForm_UserForm.vba
+'--------------------------------------------------
+'Version:       2017/04/16
+'--------------------------------------------------
+'   ・  処理を待たせるときにこのFormを使って
+'       キャンセルボタンを表示して進捗表示する
+'--------------------------------------------------
 Option Explicit
 
 Private FormProperty As New st_vba_FormProperty
@@ -65,22 +76,39 @@ End Sub
 '◇ループ表示処理
 '------------------------------
 
+'------------------------------
+'・ ループ表示の制御
+'------------------------------
+'   ・  ループ中、1000回の中で10回に1回とかだけ
+'       Result = True にして、外部でDoEventsを行う
+'   ・  PassLoopCount=1にすると毎回DoEvents
+'       PassLoopCount=5にすると5回に1回DoEvents
+'   ・  StartLimitを設定すると初期のループ回数だけ毎回DoEvent
+'------------------------------
+
 Public Function Update_ProgressInfo( _
-ByVal PassLoopCount As Long, _
 ByVal Message As String, _
+ByVal PassLoopCount As Long, _
 ByVal Value As Long, _
-ByVal StartValue As Long, ByVal EndValue As Long) As Boolean
+ByVal StartValue As Long, ByVal EndValue As Long, _
+Optional ByVal StartLimit As Long = 1) As Boolean
 
     Dim Result As Boolean: Result = False
-    If ((Value - StartValue + 1) = 1) Or (((Value - StartValue + 1) Mod PassLoopCount) = 0) Then
+    
+    If ((Value - StartValue + 1) = 1) Then Result = True
+    If ((Value - StartValue + 1) <= StartLimit) Then Result = True
+    If (((Value - StartValue + 1) Mod PassLoopCount) = 0) Then Result = True
+    
+    If Result Then
         Me.Label1.Caption = _
-            ProgressText(Message + vbCrLf, vbCrLf, StartValue, Value, EndValue)
+            ProgressText(Message, vbCrLf, StartValue, Value, EndValue, , False)
         If Me.Visible = False Then Me.Show
-        Call Application_StatusBar_Progress(Message, StartValue, Value, EndValue)
-        Result = True
+        Call Application_StatusBar_Progress(Message, "|", StartValue, Value, EndValue)
     End If
+    
     Update_ProgressInfo = Result
 End Function
+
 
 '------------------------------
 '・ 使い方
@@ -117,8 +145,9 @@ End Function
 '
 '        For I = StartIndex To EndIndex
 '        Do
-'            If WaitForm.Update_ProgressInfo(10, _
+'            If WaitForm.Update_ProgressInfo( _
 '                "処理A:", _
+'                10,
 '                Row_WriteIndex, _
 '                StartIndex, _
 '                EndIndex) Then

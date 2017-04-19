@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        https://www.facebook.com/stndardsoftware/
 '--------------------------------------------------
-'Version:       2017/04/07
+'Version:       2017/04/16
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -1294,27 +1294,6 @@ Sub testStrCount()
     Call Check(2, StrCount("AAA", "AA"))
 End Sub
 
-
-'----------------------------------------
-'・連続スペースを単独スペースに変換
-'----------------------------------------
-Public Function ReplaceContinuousSpace(ByVal Value As String, _
-Optional Space As String = " ") As String
-    Call Assert(Space <> "", "Error:ReplaceContinuousSpace:Space is Empty.")
-
-    Dim Result As String
-    Result = Value
-    Do While IsIncludeStr(Result, Space + Space)
-        Result = Replace(Result, Space + Space, Space)
-    Loop
-    ReplaceContinuousSpace = Result
-End Function
-
-Public Sub testReplaceContinuousSpace()
-    Call Check(" A B C ", ReplaceContinuousSpace("  A  B   C "))
-
-End Sub
-
 '----------------------------------------
 '・IsInclude
 '----------------------------------------
@@ -1322,6 +1301,7 @@ Public Function IsIncludeStr(ByVal str As String, ByVal SubStr As String)
     IsIncludeStr = _
         (1 <= InStr(str, SubStr))
 End Function
+
 
 '----------------------------------------
 '◇First / Last
@@ -1564,8 +1544,124 @@ Public Sub testLastStrLastDelim()
     Call Check("", LastStrLastDelim(",123,", ","))
 End Sub
 
+
 '----------------------------------------
-'◇Tag処理
+'◇Trim
+'----------------------------------------
+'Public Function TrimFirstChar(ByVal Str As String, ByVal TrimChar As String) As String
+'    Do While IsFirstStr(Str, TrimChar)
+'        Str = ExcludeFirstStr(Str, TrimChar)
+'    Loop
+'    TrimFirstChar = Str
+'End Function
+'
+'Public Function TrimLastChar(ByVal Str As String, ByVal TrimChar As String) As String
+'    Do While IsLastStr(Str, TrimChar)
+'        Str = ExcludeLastStr(Str, TrimChar)
+'    Loop
+'    TrimLastChar = Str
+'End Function
+'
+'Public Function TrimBothEndsChar(ByVal Str As String, ByVal TrimChar As String) As String
+'    TrimBothEndsChar = _
+'        TrimFirstChar(TrimLastChar(Str, TrimChar), TrimChar)
+'End Function
+
+
+Public Function TrimFirstStrs(ByVal str As String, ByRef TrimStrs() As String) As String
+    Call Assert(IsArray(TrimStrs), "Error:TrimFirstStrs:TrimStrs is not Array.")
+    Dim Result As String: Result = str
+    Do
+        str = Result
+        Dim I As Long
+        For I = LBound(TrimStrs) To UBound(TrimStrs)
+            Result = ExcludeFirstStr(Result, TrimStrs(I))
+        Next
+    Loop While Result <> str
+    TrimFirstStrs = Result
+End Function
+
+Private Sub testTrimFirstStrs()
+    Call Check("123 ", TrimFirstStrs("   123 ", ArrayStr(" ")))
+    Call Check(vbTab + "  123 ", TrimFirstStrs("   " + vbTab + "  123 ", ArrayStr(" ")))
+    Call Check("123 ", TrimFirstStrs("   " + vbTab + "  123 ", ArrayStr(" ", vbTab)))
+End Sub
+
+Public Function TrimLastStrs(ByVal str As String, ByRef TrimStrs() As String) As String
+    Call Assert(IsArray(TrimStrs), "Error:TrimLastStrs:TrimStrs is not Array.")
+    Dim Result As String: Result = str
+    Do
+        str = Result
+        Dim I As Long
+        For I = LBound(TrimStrs) To UBound(TrimStrs)
+            Result = ExcludeLastStr(Result, TrimStrs(I))
+        Next
+    Loop While Result <> str
+    TrimLastStrs = Result
+End Function
+
+Private Sub testTrimLastStrs()
+    Call Check(" 123", TrimLastStrs(" 123   ", ArrayStr(" ")))
+    Call Check(" 123  " + vbTab, TrimLastStrs(" 123  " + vbTab + "   ", ArrayStr(" ")))
+    Call Check(" 123", TrimLastStrs(" 123  " + vbTab + "   ", ArrayStr(" ", vbTab)))
+End Sub
+
+Public Function TrimBothEndsStrs(ByVal str As String, ByRef TrimStrs() As String) As String
+    TrimBothEndsStrs = _
+        TrimFirstStrs(TrimLastStrs(str, TrimStrs), TrimStrs)
+End Function
+
+Public Function TrimFirstSpace(ByVal str As String) As String
+    TrimFirstSpace = TrimFirstStrs(str, ArrayStr("　", " ", vbCr, vbLf, vbTab))
+End Function
+
+Public Function TrimLastSpace(ByVal str As String) As String
+    TrimLastSpace = TrimLastStrs(str, ArrayStr("　", " ", vbCr, vbLf, vbTab))
+End Function
+
+Public Function TrimBothEndsSpace(ByVal str As String) As String
+    TrimBothEndsSpace = _
+        TrimFirstSpace(TrimLastSpace(str))
+End Function
+
+'----------------------------------------
+'◇置き換え処理
+'----------------------------------------
+'----------------------------------------
+'・連続スペースを単独スペースに変換
+'----------------------------------------
+Public Function ReplaceContinuousSpace(ByVal Value As String, _
+Optional Space As String = " ") As String
+    Call Assert(Space <> "", "Error:ReplaceContinuousSpace:Space is Empty.")
+
+    Dim Result As String
+    Result = Value
+    Do While IsIncludeStr(Result, Space + Space)
+        Result = Replace(Result, Space + Space, Space)
+    Loop
+    ReplaceContinuousSpace = Result
+End Function
+
+Public Sub testReplaceContinuousSpace()
+    Call Check(" A B C ", ReplaceContinuousSpace("  A  B   C "))
+
+End Sub
+
+'----------------------------------------
+'・ HTML特殊文字の変換
+'----------------------------------------
+'   ・  HTML特殊文字は非常に多くあるみたいなので
+'       全て対応はしないけど、主なものを変換できる関数
+'----------------------------------------
+Public Function String_HTMLtoText(ByVal Value As String) As String
+    String_HTMLtoText = ReplaceArrayValue(Value, _
+        ArrayStr("&amp;", "&gt;", "&lt;", "&nbsp;"), _
+        ArrayStr("&", ">", "<", " "))
+End Function
+
+
+'----------------------------------------
+'◇タグ処理
 '----------------------------------------
 
 '----------------------------------------
@@ -1669,85 +1765,75 @@ Public Sub testTagOuterTextList()
             "http://", ".jpg"))
 End Sub
 
-
 '----------------------------------------
-'◇Trim
-'----------------------------------------
-'Public Function TrimFirstChar(ByVal Str As String, ByVal TrimChar As String) As String
-'    Do While IsFirstStr(Str, TrimChar)
-'        Str = ExcludeFirstStr(Str, TrimChar)
-'    Loop
-'    TrimFirstChar = Str
-'End Function
-'
-'Public Function TrimLastChar(ByVal Str As String, ByVal TrimChar As String) As String
-'    Do While IsLastStr(Str, TrimChar)
-'        Str = ExcludeLastStr(Str, TrimChar)
-'    Loop
-'    TrimLastChar = Str
-'End Function
-'
-'Public Function TrimBothEndsChar(ByVal Str As String, ByVal TrimChar As String) As String
-'    TrimBothEndsChar = _
-'        TrimFirstChar(TrimLastChar(Str, TrimChar), TrimChar)
-'End Function
-
-
-Public Function TrimFirstStrs(ByVal str As String, ByRef TrimStrs() As String) As String
-    Call Assert(IsArray(TrimStrs), "Error:TrimFirstStrs:TrimStrs is not Array.")
-    Dim Result As String: Result = str
+'・ 任意のタグを削除する関数
+'---------------------------------------
+'   ・  HTMLタグ削除や
+'       特定のタグだけ削除、という処理が行える
+'---------------------------------------
+Public Function String_TagDelete(ByVal Text As String, _
+ByVal StartTag As String, ByVal EndTag As String) As String
+    Dim Result As String
+    
+    Result = Text
     Do
-        str = Result
-        Dim I As Long
-        For I = LBound(TrimStrs) To UBound(TrimStrs)
-            Result = ExcludeFirstStr(Result, TrimStrs(I))
-        Next
-    Loop While Result <> str
-    TrimFirstStrs = Result
+        If IsIncludeStr(Text, StartTag) = False Then Exit Do
+        Result = FirstStrFirstDelim(Text, StartTag)
+        Result = Result + LastStrFirstDelim(Text, EndTag)
+        Text = Result
+    Loop While True
+    
+    String_TagDelete = Result
 End Function
 
-Private Sub testTrimFirstStrs()
-    Call Check("123 ", TrimFirstStrs("   123 ", ArrayStr(" ")))
-    Call Check(vbTab + "  123 ", TrimFirstStrs("   " + vbTab + "  123 ", ArrayStr(" ")))
-    Call Check("123 ", TrimFirstStrs("   " + vbTab + "  123 ", ArrayStr(" ", vbTab)))
+Public Sub test_String_TagDelete()
+    Call Check("123", String_TagDelete("123<a>456</a>", "<a>", "</a>"))
+    Call Check("456", String_TagDelete("<a>123</a>456", "<a>", "</a>"))
+    Call Check("", String_TagDelete("<a>123</a><a>456</a>", "<a>", "</a>"))
+    Call Check("123456", String_TagDelete("123456", "<a>", "</a>"))
+
+    Call Check("123456", String_TagDelete("<a>123</a><a>456</a>", "<", ">"))
+
 End Sub
 
-Public Function TrimLastStrs(ByVal str As String, ByRef TrimStrs() As String) As String
-    Call Assert(IsArray(TrimStrs), "Error:TrimLastStrs:TrimStrs is not Array.")
-    Dim Result As String: Result = str
-    Do
-        str = Result
-        Dim I As Long
-        For I = LBound(TrimStrs) To UBound(TrimStrs)
-            Result = ExcludeLastStr(Result, TrimStrs(I))
-        Next
-    Loop While Result <> str
-    TrimLastStrs = Result
+
+'----------------------------------------
+'◇文字列リスト処理
+'----------------------------------------
+
+'----------------------------------------
+'・ 文字列から空白行だけの行を削除する
+'----------------------------------------
+Public Function String_DeleteSpaceLine(ByVal Value As String) As String
+    Dim Lines() As String
+    Lines = Split(Replace(Replace(Value, vbCrLf, vbLf), vbCr, vbLf), vbLf)
+    Dim Line As String
+    
+    Dim I As Long
+    For I = ArrayCount(Lines) - 1 To 0 Step -1
+        If TrimBothEndsSpace(Lines(I)) = "" Then
+            Call ArrayDelete(Lines, I)
+        End If
+    Next
+    String_DeleteSpaceLine = ArrayToString(Lines, vbCrLf)
 End Function
 
-Private Sub testTrimLastStrs()
-    Call Check(" 123", TrimLastStrs(" 123   ", ArrayStr(" ")))
-    Call Check(" 123  " + vbTab, TrimLastStrs(" 123  " + vbTab + "   ", ArrayStr(" ")))
-    Call Check(" 123", TrimLastStrs(" 123  " + vbTab + "   ", ArrayStr(" ", vbTab)))
-End Sub
-
-Public Function TrimBothEndsStrs(ByVal str As String, ByRef TrimStrs() As String) As String
-    TrimBothEndsStrs = _
-        TrimFirstStrs(TrimLastStrs(str, TrimStrs), TrimStrs)
+'----------------------------------------
+'・ 文字列から行ごとにTrimを行う
+'----------------------------------------
+Public Function String_LineTrim(ByVal Value As String) As String
+    Dim Lines() As String
+    Lines = Split(Replace(Replace(Value, vbCrLf, vbLf), vbCr, vbLf), vbLf)
+    Dim Line As String
+    
+    Dim I As Long
+    For I = ArrayCount(Lines) - 1 To 0 Step -1
+        Lines(I) = TrimBothEndsSpace(Lines(I))
+    Next
+    String_LineTrim = ArrayToString(Lines, vbCrLf)
 End Function
 
-Public Function TrimFirstSpace(ByVal str As String) As String
-    TrimFirstSpace = TrimFirstStrs(str, ArrayStr("　", " ", vbCr, vbLf, vbTab))
-End Function
 
-Public Function TrimLastSpace(ByVal str As String) As String
-    TrimLastSpace = TrimLastStrs(str, ArrayStr("　", " ", vbCr, vbLf, vbTab))
-End Function
-
-Public Function TrimBothEndsSpace(ByVal str As String) As String
-    TrimBothEndsSpace = _
-        TrimFirstSpace(TrimLastSpace(str))
-End Function
 
 
 '----------------------------------------
@@ -2514,13 +2600,44 @@ Private Sub testArrayCount()
 
 End Sub
 
+'----------------------------------------
+'・配列を拡張する
+'----------------------------------------
+'   ・  固定配列は対応しない
+'----------------------------------------
+Public Sub SetArrayCount(ByRef ArrayValue As Variant, ByVal Count As Long)
+    Call Assert(IsArray(ArrayValue), "Error:ArrayAdd:ArrayValue is not Array.")
+
+    If ArrayCount(ArrayValue) < Count Then
+        ReDim Preserve ArrayValue(Count - 1)
+    ElseIf Count < ArrayCount(ArrayValue) Then
+        ReDim Preserve ArrayValue(Count - 1)
+    Else
+    End If
+End Sub
+
+Public Sub testSetArrayCount()
+    Dim A()
+    A = Array("A", "B", "C")
+    Call Check(3, ArrayCount(A))
+
+    Call SetArrayCount(A, 5)
+    Call Check(5, ArrayCount(A))
+    A(3) = "D"
+    A(4) = "E"
+    
+    Call Check("A,B,C,D,E", ArrayToString(A, ","))
+
+    Call SetArrayCount(A, 2)
+    Call Check("A,B", ArrayToString(A, ","))
+
+End Sub
 
 '----------------------------------------
 '・配列の要素を追加する
 '----------------------------------------
 '   ・  オブジェクト値にも対応
-'   ・  ReDim Preserveによって
-'       LBound(Array)=0になってしまう
+'   ・  固定配列は対応しない
 '----------------------------------------
 Public Sub ArrayAdd(ByRef ArrayValue As Variant, ByVal Value As Variant)
     Call Assert(IsArray(ArrayValue), "Error:ArrayAdd:ArrayValue is not Array.")
@@ -2537,6 +2654,7 @@ Private Sub testArrayAdd()
     Call Check(4, ArrayCount(A))
     Call Check("D", A(3))
 
+    'オブジェクト値にも対応
     Dim B()
     ReDim B(2)
     Set B(0) = CreateObject("VBScript.RegExp")
@@ -2566,6 +2684,45 @@ Public Sub ArrayAddNotDuplicate(ByRef ArrayValue As Variant, ByVal Value As Vari
     If ArrayExists(ArrayValue, Value) = False Then
         Call ArrayAdd(ArrayValue, Value)
     End If
+End Sub
+
+'----------------------------------------
+'・配列に配列を追加する
+'----------------------------------------
+Public Sub ArrayAddArray(ByRef ArrayValue As Variant, ByVal AddArrayValue As Variant)
+    Call Assert(IsArray(ArrayValue), "Error:ArrayAdd:ArrayValue is not Array.")
+    Call Assert(IsArray(AddArrayValue), "Error:ArrayAddArray:AddArrayValue is not Array.")
+
+    Dim ArrayValue_Count As Long
+    ArrayValue_Count = ArrayCount(ArrayValue)
+    ReDim Preserve ArrayValue(ArrayValue_Count + ArrayCount(AddArrayValue) - 1)
+    Dim I As Long
+    For I = 0 To ArrayCount(AddArrayValue) - 1
+        Call SetValue(ArrayValue(ArrayValue_Count + I), AddArrayValue(I))
+    Next
+End Sub
+
+Private Sub testArrayAddArray()
+    Dim A1()
+    A1 = Array("A", "B", "C")
+    Dim A2()
+    A2 = Array("D", "E")
+
+    Call ArrayAddArray(A1, A2)
+    Call Check(5, ArrayCount(A1))
+    Call Check("D", A1(3))
+    Call Check("E", A1(4))
+
+    '空配列に対しても使える
+    Dim B1()
+    Dim B2()
+    B2 = Array("1", "2")
+    Call ArrayAddArray(B1, B2)
+    Call Check(2, ArrayCount(B1))
+    Call Check("1", B1(0))
+    Call Check("2", B1(1))
+
+    
 End Sub
 
 
@@ -6156,11 +6313,12 @@ End Sub
 '・進捗表示
 '----------------------------------------
 Public Sub Application_StatusBar_Progress(ByVal Message As String, _
+ByVal Delimiter As String, _
 ByVal StartValue As Long, ByVal Value As Long, ByVal EndValue As Long, _
 Optional ReverseFlag As Boolean = False)
 
     Application.StatusBar = ProgressText( _
-        Message + "|", "|", _
+        Message, Delimiter, _
         StartValue, Value, EndValue, _
         ReverseFlag)
 
@@ -6169,20 +6327,28 @@ End Sub
 Public Function ProgressText( _
 ByVal Message As String, ByVal Delimiter As String, _
 ByVal StartValue As Long, ByVal Value As Long, ByVal EndValue As Long, _
-Optional ReverseFlag As Boolean = False)
+Optional ReverseFlag As Boolean = False, _
+Optional PercentVisible As Boolean = True)
     Dim Result As String
     If ReverseFlag = False Then
         Result = _
-            Message + _
+            Message + Delimiter + _
             CStr(Value - StartValue + 1) + "/" + _
-            CStr(EndValue - StartValue + 1) + Delimiter + _
+            CStr(EndValue - StartValue + 1)
+        If PercentVisible Then
+            Result = Result + Delimiter + _
             CStr(Format((Value - StartValue + 1) / (EndValue - StartValue + 1) * 100, "0.00")) + "%"
+        End If
+            
     Else
         Result = _
-            Message + _
+            Message + Delimiter + _
             CStr(Value - StartValue + 1) + "/" + _
-            CStr(EndValue - StartValue + 1) + Delimiter + _
+            CStr(EndValue - StartValue + 1)
+        If PercentVisible Then
+            Result = Result + Delimiter + _
             CStr(Format(100 - ((Value - StartValue + 1) / (EndValue - StartValue + 1) * 100), "0.00")) + "%"
+    End If
     End If
     ProgressText = Result
 End Function
@@ -6288,6 +6454,30 @@ Optional TitleMatchCount As Long = 1)
     Next
     Sheet_RowNumberByTitle = Result
 End Function
+
+'----------------------------------------
+'・タイトル列の行名から行番号を返す関数
+'----------------------------------------
+'   ・  Sheet_RowNumberByTitle に グループ名を追加した
+'----------------------------------------
+Public Function Sheet_RowNumberByGroupTitle(ByVal Sheet As Worksheet, _
+ByVal GroupColIndex As Long, _
+ByVal TitleColIndex As Long, _
+ByVal GroupName As String, _
+ByVal RowTitleWildCard As String)
+    Dim Result As Long: Result = 0
+    Dim I As Long
+    For I = 1 To Sheet_DataLastRow(Sheet, TitleColIndex)
+        If Sheet.Cells(I, GroupColIndex).Value = GroupName Then
+            If Sheet.Cells(I, TitleColIndex).Value Like RowTitleWildCard Then
+                Result = I
+                Exit For
+            End If
+        End If
+    Next
+    Sheet_RowNumberByGroupTitle = Result
+End Function
+
 
 '----------------------------------------
 '◇最終行/列
@@ -6757,7 +6947,7 @@ ByVal FilePath As String)
         '以前のバージョンならそのまま保存
         Call Book.SaveAs(FilePath)
     Else
-        '現在のバージョンの場合、拡張子XLS なら古い形式で保存
+        '拡張子XLS なら古い形式で保存
         If LCase(GetExtensionIncludePeriod(FilePath)) = ".xls" Then
         
             '旧バージョンの確認ダイアログのようなものを出させない
@@ -6964,6 +7154,70 @@ ByVal Row As Long, ByVal Col As Long, _
 ByVal Increment As Long)
     Sheet.Cells(Row, Col).Value = Sheet.Cells(Row, Col).Value + Increment
 End Sub
+
+'----------------------------------------
+'・ シートの特定の列をチェックボックスのUIにする
+'----------------------------------------
+'   ・  ダブルクリックするとON/OFFが切り替えられる列になる
+'   ・  タイトル列をダブルクリックすると全行がON/OFF切り替わる
+'   ・  使い方は次の通り
+'           Private Sub Worksheet_BeforeDoubleClick(ByVal Target As Range, Cancel As Boolean)
+'               Cancel = Sheet_CheckBoxColumn(Me, Target, Col__A, Col__D, 2)
+'           End Sub
+'       Col__Aは対象列
+'       Col__Dはデータの有無をチェックする列
+'       2は、タイトル行、2+1以上がデータ列になる
+'----------------------------------------
+Public Function Sheet_CheckBoxColumn(ByVal Sheet As Worksheet, _
+ByVal Target As Range, _
+ByVal Col_CheckBox As Long, _
+ByVal Col_Data As Long, _
+ByVal Row_Title As Long) As Boolean
+
+
+    Dim Result As Boolean: Result = False
+    
+    If Target.Column <> Col_CheckBox Then Exit Function
+    If Target.Columns.Count <> 1 Then Exit Function
+    If Target.Rows.Count <> 1 Then Exit Function
+    
+    If Target.Row = Row_Title Then
+
+        '全てONされているかどうかを調べて
+        '全てONにしたり、OFFにしたりする制御
+        Dim AllOnFlag As Boolean
+        AllOnFlag = True
+        Dim I As Long
+        For I = Row_Title + 1 To Sheet_DataLastRow(Sheet)
+            If Sheet.Cells(I, Col_Data).Value <> "" Then
+                If Sheet.Cells(I, Col_CheckBox).Value <> "ON" Then
+                    AllOnFlag = False
+                End If
+            End If
+        Next
+        For I = Row_Title + 1 To Sheet_DataLastRow(Sheet)
+            If Sheet.Cells(I, Col_Data).Value = "" Then
+                Sheet.Cells(I, Col_CheckBox).Value = ""
+            Else
+                Sheet.Cells(I, Col_CheckBox).Value = IIf(AllOnFlag, "OFF", "ON")
+            End If
+        Next
+        
+        Result = True
+    ElseIf Row_Title + 1 <= Target.Row Then
+    
+        If Target.Value = "" Then
+            Target.Value = "ON"
+        ElseIf Target.Value = "ON" Then
+            Target.Value = "OFF"
+        ElseIf Target.Value = "OFF" Then
+            Target.Value = ""
+        End If
+        Result = True
+    End If
+    
+    Sheet_CheckBoxColumn = Result
+End Function
 
 '----------------------------------------
 '◇チェックボックス
@@ -7200,6 +7454,36 @@ Public Sub testTopLeftCell()
     Call Check(Sheets(1).Cells(1, 1), TopLeftCell(Sheets(1), 0, 0))
 End Sub
 
+'----------------------------------------
+'・ 指定範囲(Range)にあるShapeを削除する
+'----------------------------------------
+'   ・  Shapeは中心がRangeに含まれている事で判断する
+'----------------------------------------
+Public Sub Range_DeleteShape( _
+ByVal Sheet As Worksheet, _
+ByVal Range As Range)
+
+    Dim ShapeRange As Range
+    Dim Shape As Shape
+    For Each Shape In Sheet.Shapes
+    Do
+        Shape.Placement = xlMove
+        Dim Point As Point
+        Point.X = Shape.Left + (Shape.Width / 2)
+        Point.Y = Shape.Top + (Shape.Height / 2)
+        Set ShapeRange = TopLeftCell(Sheet, Point.Y, Point.X)
+        'Shapeの中心が位置するセルを求める
+
+        If InRange(Range.Top, ShapeRange.Top, Range.Top + Range.Rows.Count - 1) Then
+            If InRange(Range.Left, ShapeRange.Left, Range.Left + Range.Columns.Count - 1) Then
+                Shape.Delete
+            End If
+        End If
+        
+    Loop While False
+    Next
+    
+End Sub
 
 '----------------------------------------
 '◇ ファイル選択ダイアログ
@@ -8867,4 +9151,12 @@ End Function
 '・ Book_FullPath の修正
 '◇ ver 2017/04/06
 '・ FilePath_IsIncludeFileNameOutString / FilePath_ReplaceFileNameOutString 追加
+'◇ ver 2017/04/16
+'・ SetArrayCount / ArrayAddArray 追加
+'・ Application_StatusBar_Progress / ProgressText 修正
+'・ String_DeleteSpaceLine / String_LineTrim 
+'   / String_TagDelete / String_HTMLtoText 追加
+'・ Sheet_RowNumberByTitle 追加
+'・ Range_DeleteShape 追加
+'・ Sheet_CheckBoxColumn 追加
 '--------------------------------------------------
