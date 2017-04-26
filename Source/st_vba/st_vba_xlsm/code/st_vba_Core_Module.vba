@@ -3705,6 +3705,11 @@ End Sub
 '----------------------------------------
 '◆2次元配列
 '----------------------------------------
+'   ・  2次元配列のDimension
+'       Dimension=1:列
+'       Dimension=2:行
+'   ・  動的配列は列固定、行可変になる
+'----------------------------------------
 
 '----------------------------------------
 '・次元数を取得する
@@ -9154,7 +9159,7 @@ End Function
 '◇ ver 2017/04/16
 '・ SetArrayCount / ArrayAddArray 追加
 '・ Application_StatusBar_Progress / ProgressText 修正
-'・ String_DeleteSpaceLine / String_LineTrim 
+'・ String_DeleteSpaceLine / String_LineTrim
 '   / String_TagDelete / String_HTMLtoText 追加
 '・ Sheet_RowNumberByTitle 追加
 '・ Range_DeleteShape 追加
