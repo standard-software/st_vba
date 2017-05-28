@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        https://www.facebook.com/stndardsoftware/
 '--------------------------------------------------
-'Version:       2017/04/16
+'Version:       2017/05/04
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -152,11 +152,11 @@ End Enum
 '◇列指定
 '----------------------------------------
 
-Public Const Col__A = 1, Col__B = 2, Col__C = 3, Col__D = 4, Col__E = 5, Col__F = 6
-Public Const Col__G = 7, Col__H = 8, Col__I = 9, Col__J = 10, Col__K = 11, Col__L = 12
-Public Const Col__M = 13, Col__N = 14, Col__O = 15, Col__P = 16, Col__Q = 17, Col__R = 18
-Public Const Col__S = 19, Col__T = 20, Col__U = 21, Col__V = 22, Col__W = 23, Col__X = 24
-Public Const Col__Y = 25, Col__Z = 26
+Public Const Col_A = 1, Col_B = 2, Col_C = 3, Col_D = 4, Col_E = 5, Col_F = 6
+Public Const Col_G = 7, Col_H = 8, Col_I = 9, Col_J = 10, Col_K = 11, Col_L = 12
+Public Const Col_M = 13, Col_N = 14, Col_O = 15, Col_P = 16, Col_Q = 17, Col_R = 18
+Public Const Col_S = 19, Col_T = 20, Col_U = 21, Col_V = 22, Col_W = 23, Col_X = 24
+Public Const Col_Y = 25, Col_Z = 26
 Public Const Col_AA = 27, Col_AB = 28, Col_AC = 29, Col_AD = 30, Col_AE = 31, Col_AF = 32
 Public Const Col_AG = 33, Col_AH = 34, Col_AI = 35, Col_AJ = 36, Col_AK = 37, Col_AL = 38
 Public Const Col_AM = 39, Col_AN = 40, Col_AO = 41, Col_AP = 42, Col_AQ = 43, Col_AR = 44
@@ -4749,7 +4749,7 @@ Optional NoOrderValuePriority As Boolean = False)
     Range = Array2D
 End Sub
 
-Private Function Array2dTranspose(ByRef ArrayValue As Variant) As Variant
+Public Function Array2dTranspose(ByRef ArrayValue As Variant) As Variant
 
     Call Assert(IsArray(ArrayValue), "Error:ArrayValue is not Array")
     Call Assert(ArrayDimension(ArrayValue) = 2, _
@@ -6423,7 +6423,7 @@ Optional TitleMatchCount As Long = 1)
     Dim Result As Long: Result = 0
     Dim Counter As Long: Counter = 0
     Dim I As Long
-    For I = Col__A To Sheet_DataLastColumn(Sheet, TitleRowIndex)
+    For I = Col_A To Sheet_DataLastColumn(Sheet, TitleRowIndex)
         If Sheet.Cells(TitleRowIndex, I).Value Like ColumnTitleWildCard Then
             Counter = Counter + 1
             If Counter = TitleMatchCount Then
@@ -7167,10 +7167,10 @@ End Sub
 '   ・  タイトル列をダブルクリックすると全行がON/OFF切り替わる
 '   ・  使い方は次の通り
 '           Private Sub Worksheet_BeforeDoubleClick(ByVal Target As Range, Cancel As Boolean)
-'               Cancel = Sheet_CheckBoxColumn(Me, Target, Col__A, Col__D, 2)
+'               Cancel = Sheet_CheckBoxColumn(Me, Target, Col_A, Col_D, 2)
 '           End Sub
-'       Col__Aは対象列
-'       Col__Dはデータの有無をチェックする列
+'       Col_Aは対象列
+'       Col_Dはデータの有無をチェックする列
 '       2は、タイトル行、2+1以上がデータ列になる
 '----------------------------------------
 Public Function Sheet_CheckBoxColumn(ByVal Sheet As Worksheet, _
@@ -9164,4 +9164,8 @@ End Function
 '・ Sheet_RowNumberByTitle 追加
 '・ Range_DeleteShape 追加
 '・ Sheet_CheckBoxColumn 追加
+'◇ ver 2017/05/04
+'・ Col__A→Col_A 等、修正
 '--------------------------------------------------
+
+
