@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        https://www.facebook.com/stndardsoftware/
 '--------------------------------------------------
-'Version:       2017/05/04
+'Version:       2017/06/11
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -52,7 +52,7 @@
 '       64bit Windows / 32bit Excel
 '           C:\Windows\SysWOW64\mscomctl.ocx
 '       64bit Windows / 64bit Excel
-'           仕様不可
+'           使用不可
 '--------------------------------------------------
 '・ Microsoft Windows Common Controls 6.0 (SP6)
 '       64bit Windows / 32bit Excel
@@ -383,6 +383,21 @@ Public Declare PtrSafe Function WritePrivateProfileString _
 Public Declare PtrSafe Function GetAsyncKeyState _
     Lib "User32.dll" (ByVal vKey As Long) As Long
 
+Private Declare PtrSafe Sub keybd_event _
+    Lib "user32" ( _
+    ByVal bVk As Byte, _
+    ByVal bScan As Byte, _
+    ByVal dwFlags As Long, _
+    ByVal dwExtraInfo As Long)
+
+Private Declare PtrSafe Function GetKeyboardState _
+    Lib "user32" ( _
+    pbKeyState As Byte) As Long
+
+Public Const VK_NUMLOCK = &H90   '「NumLock」キー
+Public Const KEYEVENTF_EXTENDEDKEY = &H1 'キーを押す
+Public Const KEYEVENTF_KEYUP = &H2   'キーを放す
+
 '----------------------------------------
 '◆マウス
 '----------------------------------------
@@ -567,11 +582,12 @@ End Type
 '----------------------------------------
 '・Sleep
 '----------------------------------------
-#If VBA7 And Win64 Then
-    Public Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal ms As LongPtr)
-#Else
-    Public Declare Sub Sleep Lib "kernel32" (ByVal ms As Long)
-#End If
+'#If VBA7 And Win64 Then
+'    Public Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal ms As LongPtr)
+'#Else
+'    Public Declare Sub Sleep Lib "kernel32" (ByVal ms As Long)
+'#End If
+Public Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal ms As LongPtr)
 
 '----------------------------------------
 '◆タスクバーボタン登録
@@ -8680,6 +8696,26 @@ ByVal AppID As String)
 End Sub
 
 '----------------------------------------
+'◆キーボード操作
+'----------------------------------------
+
+Sub NumLockOn()
+  Dim NumLockState As Boolean
+  Dim keys(0 To 255) As Byte
+
+  Call GetKeyboardState(keys(0))
+  NumLockState = keys(VK_NUMLOCK)
+       
+  '「NumLock」キーがオフの場合はオンにする。
+  If NumLockState <> True Then
+    'キーを押す
+    Call keybd_event(VK_NUMLOCK, &H45, KEYEVENTF_EXTENDEDKEY Or 0, 0)
+    'キーを放す
+    Call keybd_event(VK_NUMLOCK, &H45, KEYEVENTF_EXTENDEDKEY Or KEYEVENTF_KEYUP, 0)
+  End If
+End Sub
+
+'----------------------------------------
 '◆マウス操作
 '----------------------------------------
 
@@ -9166,6 +9202,7 @@ End Function
 '・ Sheet_CheckBoxColumn 追加
 '◇ ver 2017/05/04
 '・ Col__A→Col_A 等、修正
+'◇ ver 2017/06/11
+'・ keybd_event / GetKeyboardState API 追加
+'・ NumLockOn 追加
 '--------------------------------------------------
-
-
