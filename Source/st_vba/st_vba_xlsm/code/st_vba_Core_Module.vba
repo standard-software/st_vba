@@ -115,6 +115,11 @@ Public fso As New FileSystemObject
 Public Shell As New WshShell
 
 '----------------------------------------
+'◆数値
+'----------------------------------------
+Public Const Max_Long = 2147483647
+
+'----------------------------------------
 '◆文字列比較
 '----------------------------------------
 Public Enum MatchType
@@ -833,7 +838,7 @@ End Sub
 Public Function IsLong(Value As String) As Boolean
     Dim Result As Boolean: Result = False
     If IsNumeric(Value) Then
-        If CInt(Value) = CDbl(Value) Then
+        If CLng(Value) = CDbl(Value) Then
             Result = True
         End If
     End If
@@ -8889,6 +8894,9 @@ End Function
 '◇ ver 2017/06/11
 '・ keybd_event / GetKeyboardState API 追加
 '・ NumLockOn 追加
+'◇ ver 2017/07/01
+'・ Long最大値の定義
+'・ IsLong不具合修正
 '◇ ver 2017/07/02
 '・ ADODB.StreamがExcel2016 64bit環境で不具合があり
 '   環境依存かもしれないが問題を解決できなかったためにコードを分離

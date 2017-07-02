@@ -82,7 +82,7 @@ Sub IE_Navigate(ByVal ie As InternetExplorer, _
 ByVal URL As String, _
 Optional ByRef NavigateCancelFlag As Boolean = False)
     Call ie.Navigate(URL)
-    Call IE_NavigateWait(ie, 120, 300, NavigateCancelFlag)
+    Call IE_NavigateWait(IE, 30, 60, NavigateCancelFlag)
 End Sub
 
 '----------------------------------------
@@ -105,6 +105,8 @@ Sub IE_NavigateWait(ByVal ie As InternetExplorer, _
 ByVal RefreshSecond As Long, _
 ByVal TimeOutSecond As Long, _
 Optional ByRef NavigateCancelFlag As Boolean = False)
+
+On Error GoTo Error
 
     'リフレッシュ時間/タイムアウト時間
     Dim RefreshTime As Date
@@ -146,6 +148,8 @@ Optional ByRef NavigateCancelFlag As Boolean = False)
             RefreshTime = Now + TimeSerial(0, 0, RefreshSecond)
         End If
     Loop
+
+Error:
 
 End Sub
 
