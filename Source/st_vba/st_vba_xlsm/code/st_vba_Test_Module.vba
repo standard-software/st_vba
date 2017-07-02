@@ -7,4 +7,7 @@ Sub testMain()
     Call testLastStrLastDelim
     
     Call testTagInnerText
+    
+    Call testString_SaveToFile
+    Call testString_LoadFromFile
 End Sub

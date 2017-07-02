@@ -14,7 +14,7 @@ Public Option1 As String
 Public Sub Initialize(ByVal Sheet As Worksheet)
     
     Option1 = Sheet.Cells( _
-        Sheet_RowNumberByTitle(Sheet, Col__A, "Option1"), Col__B).Value
+        Sheet_RowNumberByTitle(Sheet, Col_A, "Option1"), Col_B).Value
 
 End Sub
 

@@ -79,11 +79,11 @@ End Property
 '—ñî•ñ
 '----------------------------------------
 Public Property Get Col_First() As Long
-    Col_First = Col__A
+    Col_First = Col_A
 End Property
         
 Public Property Get Col_Second() As Long
-    Col_Second = Col__B
+    Col_Second = Col_B
 End Property
 
 Public Property Get Col_Third() As Long
@@ -106,11 +106,11 @@ End Property
 'ƒwƒbƒ_[—ñî•ñ
 '----------------------------------------
 Public Property Get Col_Header_First() As Long
-    Col_Header_First = Col__A
+    Col_Header_First = Col_A
 End Property
 
 Public Property Get Col_Header_Second() As Long
-    Col_Header_Second = Col__B
+    Col_Header_Second = Col_B
 End Property
 
 

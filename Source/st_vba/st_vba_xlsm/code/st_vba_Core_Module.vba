@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        https://www.facebook.com/stndardsoftware/
 '--------------------------------------------------
-'Version:       2017/06/11
+'Version:       2017/07/02
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -2675,7 +2675,7 @@ Private Sub testArrayAdd()
     ReDim B(2)
     Set B(0) = CreateObject("VBScript.RegExp")
     Set B(1) = Shell
-    Set B(2) = CreateObject("ADODB.Stream")
+    Set B(2) = Nothing
     Call ArrayAdd(B, fso)
     Call Check("test.txt", B(3).GetFileName("C:\temp\test.txt"))
 
@@ -2776,7 +2776,7 @@ Private Sub testArrayInsert()
     ReDim B(2)
     Set B(0) = CreateObject("VBScript.RegExp")
     Set B(1) = Shell
-    Set B(2) = CreateObject("ADODB.Stream")
+    Set B(2) = Nothing
     Call Check(Shell.CurrentDirectory, B(1).CurrentDirectory)
     Call ArrayInsert(B, 1, fso)
     Call Check("test.txt", B(1).GetFileName("C:\temp\test.txt"))
@@ -5782,394 +5782,73 @@ Private Sub testIniFile_SetString()
         "Option", "Name", "TestValue01")
 End Sub
 
+
 '----------------------------------------
 'ÅüÉeÉLÉXÉgÉtÉ@ÉCÉãì«Ç›èëÇ´
 '----------------------------------------
 
-Public Function CheckEncodeName(EncodeName As String) As Boolean
-    CheckEncodeName = OrValue(UCase$(EncodeName), _
-        "SHIFT_JIS", _
-        "UNICODE", "UNICODEFFFE", "UTF-16", _
-        "UTF-16LE", _
-        "UNICODEFEFF", _
-        "UTF-16BE", _
-        "UTF-8", _
-        "ISO-2022-JP", _
-        "EUC-JP", _
-        "UTF-7")
-End Function
-
 '----------------------------------------
 'ÅEÉeÉLÉXÉgÉtÉ@ÉCÉãì«çû
 '----------------------------------------
-'   ÅE  ÉGÉìÉRÅ[ÉhéwíËÇÕâ∫ãLÇÃí ÇË
-'           ÉGÉìÉRÅ[Éh          éwíËï∂éö
-'           ShiftJIS            SHIFT_JIS
-'           UTF-16LE BOMóL/ñ≥   UNICODEFFFE/UNICODE/UTF-16/UTF-16LE
-'                               BOMÇÃóLñ≥Ç…ä÷ÇÌÇÁÇ∏ì«çûâ¬î\
-'           UTF-16BE _BOM_ON    UNICODEFEFF
-'           UTF-16BE _BOM_OFF   UTF-16BE
-'           UTF-8 BOMóL/ñ≥      UTF-8/UTF-8N
-'                               BOMÇÃóLñ≥Ç…ä÷ÇÌÇÁÇ∏ì«çûâ¬î\
-'           JIS                 ISO-2022-JP
-'           EUC-JP              EUC-JP
-'           UTF-7               UTF-7
-'   ÅE  UTF-16LEÇ∆UTF-8ÇÕÅABOMÇÃóLñ≥Ç…Ç©Ç©ÇÌÇÁÇ∏ì«Ç›çûÇﬂÇÈ
+'   ÅE  Shift_JISÇÃÇ›ëŒâû
 '----------------------------------------
-Public Function ADOStream_LoadTextFile( _
-ByVal TextFilePath As String, ByVal EncodeName As String) As String
-    If CheckEncodeName(EncodeName) = False Then
-        Call Assert(False, "Error:ADOStream_LoadTextFile")
-    End If
+Public Function String_LoadFromFile( _
+ByVal FilePath As String) As String
 
-    Dim ADOStream As ADODB.Stream
-    Set ADOStream = New ADODB.Stream
-    ADOStream.Type = adTypeText
-    ADOStream.Charset = EncodeName
-    ADOStream.Open
-    ADOStream.LoadFromFile (TextFilePath)
-    ADOStream_LoadTextFile = ADOStream.ReadText
-    ADOStream.Close
+    Const ForReading = 1
+
+    Dim Stream As Object
+    Set Stream = fso.OpenTextFile( _
+        FilePath, ForReading)
+
+    String_LoadFromFile = Stream.ReadAll()
+    Call Stream.Close
 End Function
+
+Public Sub testString_LoadFromFile()
+    Dim FolderPath As String
+    FolderPath = PathCombine( _
+        ThisWorkbook.Path, "Test", "TextFile")
+    Call ForceCreateFolder(FolderPath)
+
+    Call Check("Shift-JIS Ç`ÇaÇbÇPÇQÇR" + vbCrLf + _
+        "Shift-JIS Ç`ÇaÇbÇPÇQÇR", _
+        String_LoadFromFile( _
+            PathCombine(FolderPath, "test_Shift-JIS.txt")))
+End Sub
 
 '----------------------------------------
 'ÅEÉeÉLÉXÉgÉtÉ@ÉCÉãï€ë∂
 '----------------------------------------
-'   ÅE  ÉGÉìÉRÅ[ÉhéwíËÇÕâ∫ãLÇÃí ÇË
-'           ÉGÉìÉRÅ[Éh          éwíËï∂éö
-'           ShiftJIS            SHIFT_JIS
-'           UTF-16LE _BOM_ON    UNICODEFFFE/UNICODE/UTF-16
-'           UTF-16LE _BOM_OFF    UTF-16LE
-'           UTF-16BE _BOM_ON    UNICODEFEFF
-'           UTF-16BE _BOM_OFF    UTF-16BE
-'           UTF-8 _BOM_ON       UTF-8
-'           UTF-8 _BOM_OFF       UTF-8N
-'           JIS                 ISO-2022-JP
-'           EUC-JP              EUC-JP
-'           UTF-7               UTF-7
-'   ÅE  UTF-16LEÇ∆UTF-8ÇÕÇªÇÃÇ‹Ç‹ÇæÇ∆_BOM_ONÇ…Ç»ÇÈÇÃÇ≈
-'       BONñ≥ÇµéwíËÇÃèÍçáÇÕì¡éÍèàóùÇÇµÇƒÇ¢ÇÈ
+'   ÅE  Shift_JISÇÃÇ›ëŒâû
 '----------------------------------------
-Public Sub ADOStream_SaveTextFile(ByVal Text As String, _
-ByVal TextFilePath As String, ByVal EncodeName As String, _
-Optional ByVal BOM As Boolean = True)
-    If CheckEncodeName(EncodeName) = False Then
-        Call Assert(False, "Error:ADOStream_LoadTextFile")
-    End If
-
-    Dim ADOStream As New ADODB.Stream
-    ADOStream.Type = adTypeText
-    ADOStream.Charset = EncodeName
-    ADOStream.Open
-    Call ADOStream.WriteText(Text)
-
-    Dim ByteData() As Byte
-    Select Case UCase$(EncodeName)
-    Case "UNICODE", "UNICODEFFFE", "UTF-16LE", "UTF-16"
-        If BOM = False Then
-            ADOStream.Position = 0
-            ADOStream.Type = adTypeBinary
-            ADOStream.Position = 2
-            ByteData = ADOStream.Read
-            ADOStream.Close
-            ADOStream.Open
-            Call ADOStream.Write(ByteData)
-        End If
-    Case "UTF-8"
-        If BOM = False Then
-            ADOStream.Position = 0
-            ADOStream.Type = adTypeBinary
-            ADOStream.Position = 3
-            ByteData = ADOStream.Read
-            ADOStream.Close
-            ADOStream.Open
-            Call ADOStream.Write(ByteData)
-        End If
-    End Select
-    Call ADOStream.SaveToFile(TextFilePath, adSaveCreateOverWrite)
-    ADOStream.Close
-End Sub
-
-'----------------------------------------
-'ÅûÉeÉLÉXÉgÉtÉ@ÉCÉãì«Ç›èëÇ´ EnuméwíËî≈
-'----------------------------------------
-'   ÅE  ADODB.Stream Ç™ãñóeÇ∑ÇÈï∂éöóÒÇÕéüÇÃí ÇË
-'           égópâ¬î\ï∂éöóÒ                  ÉGÉìÉRÅ[Éh
-'           SHIFT_JIS
-'           UNICODEFFFE/UNICODE/UTF-16      UTF-16LE_BOM_ON
-'           UTF-16LE                        UTF-16LE_BOM_OFF
-'           UNICODEFEFF                     UTF-16BE_BOM_ON
-'           UTF-16BE                        UTF-16BE_BOM_OFF
-'           UTF-8
-'           ISO-2022-JP
-'           EUC-JP
-'           UTF-7
-'       Ç±ÇÃÇ§ÇøÅAïœÇÌÇ¡ÇΩãììÆÇÇ∑ÇÈÇÃÇÕ UTF-16LE Ç∆ UFT-8
-'
-'       UTF-16LEÇÕÅAì«Ç›çûÇ›éûÇ…éwíËÇ∑ÇÈÇ∆
-'       ÉeÉLÉXÉgÉtÉ@ÉCÉãÇ™ UTF-16LE ÇÃBOMÇ†ÇËÇ»Çµä÷ÇÌÇÁÇ∏ì«Ç›çûÇ›â¬î\
-'       Ç±ÇÍÇÕì¡Ç…ñ‚ëËÇ…ÇÕÇ»ÇÁÇ»Ç¢ÇÃÇæÇ™
-'       èëÇ´çûÇ›éûÇ… UTF-16LE ÇéwíËÇµÇƒÇ‡
-'       BOMÇ†ÇËÇ∆ÇµÇƒèëÇ´çûÇ‹ÇÍÇƒÇµÇ‹Ç§ÅB
-'       Ç¬Ç‹ÇËÅAUTF-16LEÇÕ UNICODEFFFE/UNICODE/UTF-16 Ç∆ìØÇ∂ã@î\Ç…Ç»ÇÈ
-'       ÇªÇÍÇ≈ÇÕã@î\ïsë´Ç»ÇÃÇ≈ÅAString_SaveToFile Ç≈ÇÕBOMÇèúäOÇ∑ÇÈèàóùÇÇµÇƒÇ¢ÇÈÅB
-'
-'       UFT-8ÇÕÅAèÌÇ…BOMÇ†ÇËÇ∆ÇµÇƒèëÇ´çûÇ‹ÇÍÇÈÅB
-'       BOMñ≥ÇµÇÃUTF-8Ç»ÇÒÇƒê¢ÇÃíÜÇ…ë∂ç›ÇµÇ»Ç¢ï˚Ç™Ç¢Ç¢ÇÃÇæÇ™
-'       ÇªÇ§ÇÕÇ¢Ç¡ÇƒÇ‡ÅAUTF-8BOMñ≥ÇµÇ≈èoóÕÇµÇΩÇ¢èÍçáÇ‡Ç†ÇÈÇÃÇ≈
-'       ADODB.Stream ÇÕBOMñ≥ÇµUTF-8ÇãñóeÇµÇ»Ç¢ÇÃÇæÇ™
-'       UFT-8N Ç∆Ç¢Ç§ï∂éöóÒÇ…ÇÊÇ¡Çƒ
-'       UTF-8ÇÃBOMÇ»ÇµÇÃï∂éöÇ∆ÇµÇƒï\åªÇµÇƒÅA
-'       String_SaveToFile Ç≈ÇÕBOMÇèúäOÇ∑ÇÈèàóùÇÇµÇƒÇ¢ÇÈÅB
-'----------------------------------------
-Public Function GetEncodingTypeJpCharCode( _
-ByVal EncodingTypeName As String) As EncodingTypeJpCharCode
-    
-    Dim Result As EncodingTypeJpCharCode
-    Result = EncodingTypeJpCharCode.NONE
-    Select Case UCase(EncodingTypeName)
-    Case "SHIFT_JIS"
-        Result = EncodingTypeJpCharCode.Shift_JIS
-    
-    Case "UNICODE", "UNICODEFFFE", "UTF-16"
-        Result = EncodingTypeJpCharCode.UTF16_LE_BOM
-    Case "UTF-16LE"
-        Result = EncodingTypeJpCharCode.UTF16_LE_BOM_NO
-    
-    Case "UNICODEFEFF"
-        Result = EncodingTypeJpCharCode.UTF16_BE_BOM
-    Case "UTF-16BE"
-        Result = EncodingTypeJpCharCode.UTF16_BE_BOM_NO
-    
-    Case "UTF-8"
-        Result = EncodingTypeJpCharCode.UTF8_BOM
-    Case "UTF-8N"
-        Result = EncodingTypeJpCharCode.UTF8_BOM_NO
-    
-    Case "ISO-2022-JP"
-        Result = EncodingTypeJpCharCode.JIS
-        
-    Case "EUC-JP"
-        Result = EncodingTypeJpCharCode.EUC_JP
-    
-    Case "UTF-7"
-        Result = EncodingTypeJpCharCode.UTF_7
-    
-    End Select
-    
-End Function
-
-
-Public Function GetEncodingTypeName( _
-ByVal EncodingType As EncodingTypeJpCharCode) As String
-    Dim Result As String: Result = ""
-    
-    Select Case EncodingType
-    Case EncodingTypeJpCharCode.Shift_JIS
-        Result = "SHIFT_JIS"
-    
-    Case EncodingTypeJpCharCode.UTF16_LE_BOM
-        Result = "UNICODEFFFE"
-    Case EncodingTypeJpCharCode.UTF16_LE_BOM_NO
-        Result = "UTF-16LE"
-    
-    Case EncodingTypeJpCharCode.UTF16_BE_BOM
-        Result = "UNICODEFEFF"
-    Case EncodingTypeJpCharCode.UTF16_BE_BOM_NO
-        Result = "UTF-16BE"
-    
-    Case EncodingTypeJpCharCode.UTF8_BOM
-        Result = "UTF-8"
-    Case EncodingTypeJpCharCode.UTF8_BOM_NO
-        Result = "UTF-8N"
-    
-    Case EncodingTypeJpCharCode.JIS
-        Result = "ISO-2022-JP"
-        
-    Case EncodingTypeJpCharCode.EUC_JP
-        Result = "EUC-JP"
-    
-    Case EncodingTypeJpCharCode.UTF_7
-        Result = "UTF-7"
-    
-    End Select
-    GetEncodingTypeName = Result
-End Function
-
-Public Function String_LoadFromFile( _
-ByVal FilePath As String, _
-ByVal EncodingType As EncodingTypeJpCharCode) As String
-
-    Dim EncordingName As String
-    EncordingName = GetEncodingTypeName(EncodingType)
-    Call Assert(EncordingName <> "", "Error:Encoding No Select")
-
-    Dim Stream As New ADODB.Stream
-    Stream.Type = adTypeText
-    Select Case EncodingType
-    Case EncodingTypeJpCharCode.UTF8_BOM_NO
-        Stream.Charset = GetEncodingTypeName(EncodingTypeJpCharCode.UTF8_BOM)
-    Case Else
-        Stream.Charset = EncordingName
-    End Select
-    Stream.Open
-    Stream.LoadFromFile (FilePath)
-    String_LoadFromFile = Stream.ReadText
-    Stream.Close
-   
-End Function
-
-Private Sub testString_LoadFromFile()
-    Dim FolderPath As String
-    FolderPath = PathCombine( _
-        ThisWorkbook.Path, "Test", "ADOStream")
-    Call ForceCreateFolder(FolderPath)
-
-    Call Assert("Shift-JIS Ç`ÇaÇbÇPÇQÇR" = _
-        String_LoadFromFile( _
-            PathCombine(FolderPath, "test_Shift-JIS.txt"), _
-            EncodingTypeJpCharCode.Shift_JIS))
-
-    Call Assert("UTF-16LE-BOM Ç`ÇaÇbÇPÇQÇR" = _
-        String_LoadFromFile( _
-            PathCombine(FolderPath, "test_UTF-16LE-BOM.txt"), _
-            EncodingTypeJpCharCode.UTF16_LE_BOM))
-    Call Assert("UTF-16LE-BOM-NO Ç`ÇaÇbÇPÇQÇR" = _
-        String_LoadFromFile( _
-            PathCombine(FolderPath, "test_UTF-16LE-BOM-NO.txt"), _
-            EncodingTypeJpCharCode.UTF16_LE_BOM_NO))
-    
-    Call Assert("UTF-16BE-BOM Ç`ÇaÇbÇPÇQÇR" = _
-        String_LoadFromFile( _
-            PathCombine(FolderPath, "test_UTF-16BE-BOM.txt"), _
-            EncodingTypeJpCharCode.UTF16_BE_BOM))
-    Call Assert("UTF-16BE-BOM-NO Ç`ÇaÇbÇPÇQÇR" = _
-        String_LoadFromFile( _
-            PathCombine(FolderPath, "test_UTF-16BE-BOM-NO.txt"), _
-            EncodingTypeJpCharCode.UTF16_BE_BOM_NO))
-        
-    Call Assert("UTF-8-BOM Ç`ÇaÇbÇPÇQÇR" = _
-        String_LoadFromFile( _
-            PathCombine(FolderPath, "test_UTF-8-BOM.txt"), _
-            EncodingTypeJpCharCode.UTF8_BOM))
-    Call Assert("UTF-8-BOM-NO Ç`ÇaÇbÇPÇQÇR" = _
-        String_LoadFromFile( _
-            PathCombine(FolderPath, "test_UTF-8-BOM-NO.txt"), _
-            EncodingTypeJpCharCode.UTF8_BOM_NO))
-            
-    Call Assert("JIS ISO-2022-JP Ç`ÇaÇbÇPÇQÇR" = _
-        String_LoadFromFile( _
-            PathCombine(FolderPath, "test_JIS.txt"), _
-            EncodingTypeJpCharCode.JIS))
-        
-    Call Assert("EUC-JP Ç`ÇaÇbÇPÇQÇR" = _
-        String_LoadFromFile( _
-            PathCombine(FolderPath, "test_EUC-JP.txt"), _
-            EncodingTypeJpCharCode.EUC_JP))
-        
-    Call Assert("UTF-7 Ç`ÇaÇbÇPÇQÇR" = _
-        String_LoadFromFile( _
-            PathCombine(FolderPath, "test_UTF-7.txt"), _
-            EncodingTypeJpCharCode.UTF_7))
-End Sub
-
 Public Sub String_SaveToFile( _
 ByVal Text As String, _
-ByVal FilePath As String, _
-ByVal EncodingType As EncodingTypeJpCharCode)
+ByVal FilePath As String)
 
-    Dim EncordingName As String
-    EncordingName = GetEncodingTypeName(EncodingType)
-    Call Assert(EncordingName <> "", "Error:Encoding No Select")
+    Const ForWriting = 2
 
-    Dim Stream As New ADODB.Stream
-    Stream.Type = adTypeText
-    Select Case EncodingType
-    Case EncodingTypeJpCharCode.UTF8_BOM_NO
-        Stream.Charset = GetEncodingTypeName(EncodingTypeJpCharCode.UTF8_BOM)
-    Case Else
-        Stream.Charset = EncordingName
-    End Select
-    Stream.Open
-    Call Stream.WriteText(Text)
+    Dim Stream As Object
+    Set Stream = fso.OpenTextFile( _
+        FilePath, ForWriting, True)
 
-    Dim ByteData() As Byte
-    Select Case EncodingType
-    Case EncodingTypeJpCharCode.UTF16_LE_BOM_NO
-        Stream.Position = 0
-        Stream.Type = adTypeBinary
-        Stream.Position = 2
-        ByteData = Stream.Read
-        Stream.Close
-        Stream.Open
-        Call Stream.Write(ByteData)
-    Case EncodingTypeJpCharCode.UTF8_BOM_NO
-        Stream.Position = 0
-        Stream.Type = adTypeBinary
-        Stream.Position = 3
-        ByteData = Stream.Read
-        Stream.Close
-        Stream.Open
-        Call Stream.Write(ByteData)
-    End Select
-    Call Stream.SaveToFile(FilePath, adSaveCreateOverWrite)
-    Stream.Close
+    Call Stream.Write(Text)
+    Call Stream.Close
+    
 End Sub
 
-Private Sub testString_SaveToFile()
+Public Sub testString_SaveToFile()
     Dim FolderPath As String
     FolderPath = PathCombine( _
-        ThisWorkbook.Path, "Test", "ADOStream")
+        ThisWorkbook.Path, "Test", "TextFile")
     Call ForceCreateFolder(FolderPath)
 
     Call String_SaveToFile( _
+        "Shift-JIS Ç`ÇaÇbÇPÇQÇR" + vbCrLf + _
         "Shift-JIS Ç`ÇaÇbÇPÇQÇR", _
-        PathCombine(FolderPath, "test_Shift-JIS.txt"), _
-        EncodingTypeJpCharCode.Shift_JIS)
-
-    Call String_SaveToFile( _
-        "UTF-16LE-BOM Ç`ÇaÇbÇPÇQÇR", _
-        PathCombine(FolderPath, "test_UTF-16LE-BOM.txt"), _
-        EncodingTypeJpCharCode.UTF16_LE_BOM)
-    Call String_SaveToFile( _
-        "UTF-16LE-BOM-NO Ç`ÇaÇbÇPÇQÇR", _
-        PathCombine(FolderPath, "test_UTF-16LE-BOM-NO.txt"), _
-        EncodingTypeJpCharCode.UTF16_LE_BOM_NO)
-    
-    Call String_SaveToFile( _
-        "UTF-16BE-BOM Ç`ÇaÇbÇPÇQÇR", _
-        PathCombine(FolderPath, "test_UTF-16BE-BOM.txt"), _
-        EncodingTypeJpCharCode.UTF16_BE_BOM)
-    Call String_SaveToFile( _
-        "UTF-16BE-BOM-NO Ç`ÇaÇbÇPÇQÇR", _
-        PathCombine(FolderPath, "test_UTF-16BE-BOM-NO.txt"), _
-        EncodingTypeJpCharCode.UTF16_BE_BOM_NO)
-        
-    Call String_SaveToFile( _
-        "UTF-8-BOM Ç`ÇaÇbÇPÇQÇR", _
-        PathCombine(FolderPath, "test_UTF-8-BOM.txt"), _
-        EncodingTypeJpCharCode.UTF8_BOM)
-    Call String_SaveToFile( _
-        "UTF-8-BOM-NO Ç`ÇaÇbÇPÇQÇR", _
-        PathCombine(FolderPath, "test_UTF-8-BOM-NO.txt"), _
-        EncodingTypeJpCharCode.UTF8_BOM_NO)
-        
-    Call String_SaveToFile( _
-        "JIS ISO-2022-JP Ç`ÇaÇbÇPÇQÇR", _
-        PathCombine(FolderPath, "test_JIS.txt"), _
-        EncodingTypeJpCharCode.JIS)
-        
-    Call String_SaveToFile( _
-        "EUC-JP Ç`ÇaÇbÇPÇQÇR", _
-        PathCombine(FolderPath, "test_EUC-JP.txt"), _
-        EncodingTypeJpCharCode.EUC_JP)
-        
-    Call String_SaveToFile( _
-        "UTF-7 Ç`ÇaÇbÇPÇQÇR", _
-        PathCombine(FolderPath, "test_UTF-7.txt"), _
-        EncodingTypeJpCharCode.UTF_7)
-        
+        PathCombine(FolderPath, "test_Shift-JIS.txt"))
 End Sub
+
 
 '----------------------------------------
 'ÅüâÊëúÉtÉ@ÉCÉã
@@ -6260,8 +5939,7 @@ End Sub
 '----------------------------------------
 'ÅE ÉRÉ}ÉìÉhé¿çså„ÇÃåãâ éÊìæ
 '----------------------------------------
-Public Function CommandExecuteReturn(Command As String, _
-Optional ByVal EncodeName As String = "Shift_JIS") As String
+Public Function CommandExecuteReturn(Command As String) As String
     Dim Result As String: Result = ""
 
     'ÉeÉìÉ|ÉâÉäÉtÉ@ÉCÉãÉpÉXÇéÊìæ
@@ -6277,7 +5955,7 @@ Optional ByVal EncodeName As String = "Shift_JIS") As String
          VBA.VbAppWinStyle.vbHide, True)
 
     If fso.FileExists(TempFilePath) Then
-        Result = ADOStream_LoadTextFile(TempFilePath, EncodeName)
+        Result = String_LoadFromFile(TempFilePath)
         Kill TempFilePath
     End If
 
@@ -9205,4 +8883,9 @@ End Function
 'Åû ver 2017/06/11
 'ÅE keybd_event / GetKeyboardState API í«â¡
 'ÅE NumLockOn í«â¡
+'Åû ver 2017/07/02
+'ÅE ADODB.StreamÇ™Excel2016 64bitä¬ã´Ç≈ïsãÔçáÇ™Ç†ÇË
+'   ä¬ã´àÀë∂Ç©Ç‡ÇµÇÍÇ»Ç¢Ç™ñ‚ëËÇâåàÇ≈Ç´Ç»Ç©Ç¡ÇΩÇΩÇﬂÇ…ÉRÅ[ÉhÇï™ó£
+'ÅE ShiftJISÇÃÇ›ëŒâûÇÃ String_LoadFromFile/String_SaveToFile í«â¡
+'ÅE CommandExecuteReturnÇ©ÇÁADOStream_LoadTextFileçÌèú
 '--------------------------------------------------
