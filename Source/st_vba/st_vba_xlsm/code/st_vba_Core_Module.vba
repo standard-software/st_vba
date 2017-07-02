@@ -6636,12 +6636,16 @@ End Sub
 '----------------------------------------
 '・ワークブックを確認ダイアログなど無しで保存する
 '----------------------------------------
-'   ・  旧形式(XLS)の拡張子に自動対応
+' ・  .xls/.xlsx/.xlsm形式の場合は形式指定保存
 '----------------------------------------
 Public Sub Book_SaveAs( _
 ByVal Book As Workbook, _
 ByVal FilePath As String)
 
+    Dim Application_DisplayAlerts_Flag As Boolean
+    Application_DisplayAlerts_Flag = Application.DisplayAlerts
+    Application.DisplayAlerts = False
+    
     If Val(Application.Version) < 12 Then
         '以前のバージョンならそのまま保存
         Call Book.SaveAs(FilePath)
@@ -6651,15 +6655,17 @@ ByVal FilePath As String)
         
             '旧バージョンの確認ダイアログのようなものを出させない
             
-            Dim Application_DisplayAlerts_Flag As Boolean
-            Application_DisplayAlerts_Flag = Application.DisplayAlerts
-            Application.DisplayAlerts = False
             Call Book.SaveAs(FilePath, XlFileFormat.xlExcel8)
-            Application.DisplayAlerts = Application_DisplayAlerts_Flag
+        ElseIf LCase(GetExtensionIncludePeriod(FilePath)) = ".xlsx" Then
+            Call Book.SaveAs(FilePath, xlOpenXMLWorkbook)
+        ElseIf LCase(GetExtensionIncludePeriod(FilePath)) = ".xlsm" Then
+            Call Book.SaveAs(FilePath, xlOpenXMLWorkbookMacroEnabled)
         Else
+            'その他の形式ならそのまま保存
             Call Book.SaveAs(FilePath)
         End If
     End If
+    Application.DisplayAlerts = Application_DisplayAlerts_Flag
 
 End Sub
 
@@ -8888,4 +8894,6 @@ End Function
 '   環境依存かもしれないが問題を解決できなかったためにコードを分離
 '・ ShiftJISのみ対応の String_LoadFromFile/String_SaveToFile 追加
 '・ CommandExecuteReturnからADOStream_LoadTextFile削除
+'・ st_vba_WaitForm.Update_ProgressInfo を .Updateに処理分離
+'・ Book_SaveAsの対応をxlsのみから、xlsx/xlsmを追加した
 '--------------------------------------------------

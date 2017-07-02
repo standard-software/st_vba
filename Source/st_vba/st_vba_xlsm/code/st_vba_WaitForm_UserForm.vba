@@ -79,15 +79,23 @@ End Sub
 '------------------------------
 '・ ループ表示の制御
 '------------------------------
-'   ・  ループ中、1000回の中で10回に1回とかだけ
-'       Result = True にして、外部でDoEventsを行う
-'   ・  PassLoopCount=1にすると毎回DoEvents
-'       PassLoopCount=5にすると5回に1回DoEvents
-'   ・  StartLimitを設定すると初期のループ回数だけ毎回DoEvent
+'   ・  PassLoopCount=10 とすることで
+'       ループ中に10回に1回だけ
+'       戻り値 = Result = True になり、
+'       呼び出し元で戻り値をチェックして
+'       DoEventsを行うようにするとループ中も
+'       とまったように見えない
+'   ・  PassLoopCount=1にすると毎回DoEventsされる
+'       PassLoopCount=5にすると5回に1回DoEventsされる
+'   ・  StartLimitを設定すると
+'       処理開始時の初期のループ回数だけ毎回DoEventされる
+'   ・  LabelText/StatusTextを指定することもできる
+'       指定なければ 5/100 　5% という表示になる
 '------------------------------
 
-Public Function Update_ProgressInfo( _
-ByVal Message As String, _
+Public Function Update( _
+ByVal LabelText As String, _
+ByVal StatusText As String, _
 ByVal PassLoopCount As Long, _
 ByVal Value As Long, _
 ByVal StartValue As Long, ByVal EndValue As Long, _
@@ -100,13 +108,27 @@ Optional ByVal StartLimit As Long = 1) As Boolean
     If (((Value - StartValue + 1) Mod PassLoopCount) = 0) Then Result = True
     
     If Result Then
-        Me.Label1.Caption = _
-            ProgressText(Message, vbCrLf, StartValue, Value, EndValue, , False)
+        Me.Label1.Caption = LabelText
         If Me.Visible = False Then Me.Show
-        Call Application_StatusBar_Progress(Message, "|", StartValue, Value, EndValue)
+        Application.StatusBar = StatusText
     End If
     
-    Update_ProgressInfo = Result
+    Update = Result
+End Function
+
+Public Function Update_ProgressInfo( _
+ByVal Message As String, _
+ByVal PassLoopCount As Long, _
+ByVal Value As Long, _
+ByVal StartValue As Long, ByVal EndValue As Long, _
+Optional ByVal StartLimit As Long = 1) As Boolean
+
+    Update_ProgressInfo = _
+        Update( _
+            ProgressText(Message, vbCrLf, StartValue, Value, EndValue, , False), _
+            ProgressText(Message, "|", StartValue, Value, EndValue), _
+            PassLoopCount, _
+            Value, StartValue, EndValue, StartLimit)
 End Function
 
 
