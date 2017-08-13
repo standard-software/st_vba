@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        https://www.facebook.com/stndardsoftware/
 '--------------------------------------------------
-'Version:       2017/07/02
+'Version:       2017/08/14
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -4796,8 +4796,103 @@ End Function
 
 
 '----------------------------------------
-'◆ファイル名処理
+'◆ファイルフォルダパス処理
 '----------------------------------------
+
+
+'----------------------------------------
+'・相対パスから絶対パス取得
+'----------------------------------------
+'   ・  ドライブパスとネットワークパスの場合をわけて
+'       ドライブパスの場合は ChDrive と ChDir を組み合わせて
+'       実装していたが、そんな必要もなく
+'       Shellオブジェクトを使う方が楽に設定できる。
+'----------------------------------------
+Public Function AbsolutePath(ByVal BasePath As String, _
+ByVal RelativePath As String) As String
+    Dim CurDirBuffer As String
+    CurDirBuffer = Shell.CurrentDirectory
+
+    Call Assert(fso.FolderExists(BasePath) Or fso.FileExists(BasePath), _
+        "Error:AbsolutePath")
+        
+    Call Assert(IsDrivePath(BasePath) Or IsNetworkPath(BasePath), _
+        "Error:AbsolutePath")
+
+    Shell.CurrentDirectory = BasePath
+    AbsolutePath = TrimLastSpace(fso.GetAbsolutePathName(RelativePath))
+    '終端に改行コードが含まれる場合があるので削除する
+    Shell.CurrentDirectory = CurDirBuffer
+    
+End Function
+
+Private Sub testAbsolutePath()
+    Shell.CurrentDirectory = "C:\Program Files"
+
+    Call Check("C:\Program Files", AbsolutePath("C:\", ".\Program Files"))
+    Call Check("C:\", AbsolutePath("C:\Program Files", "..\"))
+    Call Check("C:\Windows", AbsolutePath("C:\", ".\Program Files\..\Windows"))
+
+    'ネットワークパスの場合、大小文字が一致しない時がある
+    Call Check(LCase("\\vmware-host\Shared Folders\この Mac 上の satoshi_yamamoto\MyFolder\MyData"), _
+        LCase(AbsolutePath("\\vmware-host\Shared Folders\この Mac 上の satoshi_yamamoto\MyFolder", ".\MyData")))
+
+    '"C:\Program Files (x86)\Microsoft Office\root\Office16\EXCEL.EXE"
+    Call Check("C:\Program Files (x86)\Google\Chrome", AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "..\..\..\Google\Chrome"))
+    
+    '存在しないフォルダでも相対アドレスで指定できた
+    Call Check("C:\Program Files (x86)\abc\def", AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "..\..\..\abc\def"))
+    
+    '先頭にピリオドがなくても指定できる
+    Call Check("C:\Program Files (x86)\Microsoft Office\root\Office16\abc\def", _
+        AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "abc\def"))
+
+
+    
+    Shell.CurrentDirectory = "\\vmware-host\Shared Folders"
+    
+    Call Check("C:\Program Files", AbsolutePath("C:\", ".\Program Files"))
+    Call Check("C:\", AbsolutePath("C:\Program Files", "..\"))
+    Call Check("C:\Windows", AbsolutePath("C:\", ".\Program Files\..\Windows"))
+    Call Check(LCase("\\vmware-host\Shared Folders\この Mac 上の satoshi_yamamoto\MyFolder\MyData"), _
+        LCase(AbsolutePath("\\vmware-host\Shared Folders\この Mac 上の satoshi_yamamoto\MyFolder", ".\MyData")))
+    Call Check("C:\Program Files (x86)\Google\Chrome", AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "..\..\..\Google\Chrome"))
+    Call Check("C:\Program Files (x86)\abc\def", AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "..\..\..\abc\def"))
+    Call Check("C:\Program Files (x86)\Microsoft Office\root\Office16\abc\def", _
+        AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "abc\def"))
+
+End Sub
+
+'----------------------------------------
+'パス入力欄からフルパスを取得する関数
+'----------------------------------------
+'   ・  相対アドレスなどに対応
+'----------------------------------------
+Public Function SettingFullPath( _
+ByVal SettingPath As String, _
+Optional ByVal BasePath As String = "") As String
+    Dim Result As String
+
+    If SettingPath = "" Then
+        Result = ThisWorkbook.Path
+    Else
+        If BasePath = "" Then BasePath = ThisWorkbook.Path
+
+        If IsDrivePath(BasePath) Then
+            'ファイルダイアログを開いた後
+            'カレントディレクトリが変になる場合があるので
+            'カレントディレクトリをリセットする
+            Call ChDrive(ExcludeLastStr(BasePath, ":\"))
+            Call ChDir(BasePath)
+
+            Result = AbsolutePath(BasePath, SettingPath)
+        Else
+            Result = SettingPath
+        End If
+    End If
+    SettingFullPath = Result
+End Function
+
 
 '----------------------------------------
 '◇ 終端パス区切り
@@ -5108,155 +5203,170 @@ Sub testGetSpecialFolderPath()
     Call MsgBox(GetSpecialFolderPath(AllUsersStartMenuStartup))
 End Sub
 
-
 '----------------------------------------
-'◆ファイル処理
+'◆ファイルフォルダ列挙
 '----------------------------------------
 
-'------------------------------
-'・ファイル存在確認
-'------------------------------
-'   ・ Win/Mac両対応版
-'------------------------------
-Function FileExists(ByVal AFileName As String) As Boolean
-    On Error GoTo Catch
-
-    FileSystem.FileLen AFileName
-
-    FileExists = True
-
-    GoTo Finally
-
-Catch:
-        FileExists = False
-Finally:
-End Function
-
-'----------------------------------------
-'・相対パスから絶対パス取得
-'----------------------------------------
-'   ・  ドライブパスとネットワークパスの場合をわけて
-'       ドライブパスの場合は ChDrive と ChDir を組み合わせて
-'       実装していたが、そんな必要もなく
-'       Shellオブジェクトを使う方が楽に設定できる。
-'----------------------------------------
-Public Function AbsolutePath(ByVal BasePath As String, _
-ByVal RelativePath As String) As String
-    Dim CurDirBuffer As String
-    CurDirBuffer = Shell.CurrentDirectory
-
-    Call Assert(fso.FolderExists(BasePath) Or fso.FileExists(BasePath), _
-        "Error:AbsolutePath")
-        
-    Call Assert(IsDrivePath(BasePath) Or IsNetworkPath(BasePath), _
-        "Error:AbsolutePath")
-
-    Shell.CurrentDirectory = BasePath
-    AbsolutePath = TrimLastSpace(fso.GetAbsolutePathName(RelativePath))
-    '終端に改行コードが含まれる場合があるので削除する
-    Shell.CurrentDirectory = CurDirBuffer
-    
-End Function
-
-Private Sub testAbsolutePath()
-    Shell.CurrentDirectory = "C:\Program Files"
-
-    Call Check("C:\Program Files", AbsolutePath("C:\", ".\Program Files"))
-    Call Check("C:\", AbsolutePath("C:\Program Files", "..\"))
-    Call Check("C:\Windows", AbsolutePath("C:\", ".\Program Files\..\Windows"))
-
-    'ネットワークパスの場合、大小文字が一致しない時がある
-    Call Check(LCase("\\vmware-host\Shared Folders\この Mac 上の satoshi_yamamoto\MyFolder\MyData"), _
-        LCase(AbsolutePath("\\vmware-host\Shared Folders\この Mac 上の satoshi_yamamoto\MyFolder", ".\MyData")))
-
-    '"C:\Program Files (x86)\Microsoft Office\root\Office16\EXCEL.EXE"
-    Call Check("C:\Program Files (x86)\Google\Chrome", AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "..\..\..\Google\Chrome"))
-    
-    '存在しないフォルダでも相対アドレスで指定できた
-    Call Check("C:\Program Files (x86)\abc\def", AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "..\..\..\abc\def"))
-    
-    '先頭にピリオドがなくても指定できる
-    Call Check("C:\Program Files (x86)\Microsoft Office\root\Office16\abc\def", _
-        AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "abc\def"))
-
-
-    
-    Shell.CurrentDirectory = "\\vmware-host\Shared Folders"
-    
-    Call Check("C:\Program Files", AbsolutePath("C:\", ".\Program Files"))
-    Call Check("C:\", AbsolutePath("C:\Program Files", "..\"))
-    Call Check("C:\Windows", AbsolutePath("C:\", ".\Program Files\..\Windows"))
-    Call Check(LCase("\\vmware-host\Shared Folders\この Mac 上の satoshi_yamamoto\MyFolder\MyData"), _
-        LCase(AbsolutePath("\\vmware-host\Shared Folders\この Mac 上の satoshi_yamamoto\MyFolder", ".\MyData")))
-    Call Check("C:\Program Files (x86)\Google\Chrome", AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "..\..\..\Google\Chrome"))
-    Call Check("C:\Program Files (x86)\abc\def", AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "..\..\..\abc\def"))
-    Call Check("C:\Program Files (x86)\Microsoft Office\root\Office16\abc\def", _
-        AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "abc\def"))
-
+Sub testGetFilePathListTopFolder()
+    Call MsgBox(FilePathListTopFolder(AbsolutePath(ThisWorkbook.Path, "..\..\")))
+    Call MsgBox(FolderPathListTopFolder(AbsolutePath(ThisWorkbook.Path, "..\..\")))
+    Call MsgBox(FolderPathListSubFolder(AbsolutePath(ThisWorkbook.Path, "..\..\")))
+    Call MsgBox(FilePathListSubFolder(AbsolutePath(ThisWorkbook.Path, "..\..\")))
 End Sub
 
-'----------------------------------------
-'プログラムの設定などでパスを取得する関数
-'----------------------------------------
-'   ・  相対アドレスなどに対応
-'----------------------------------------
-Public Function SettingFullPath( _
-ByVal SettingPath As String, _
-Optional ByVal BasePath As String = "") As String
-    Dim Result As String
+Sub testFileFolderPathList()
+    Dim Path As String: Path = AbsolutePath( _
+        ThisWorkbook.Path, ".\Test\TestFileFolderPathList")
+    Dim PathList
 
-    If SettingPath = "" Then
-        Result = ThisWorkbook.Path
-    Else
-        If BasePath = "" Then BasePath = ThisWorkbook.Path
+    PathList = Replace(UCase(FolderPathListTopFolder(Path)), UCase(Path), "")
+'    Call MsgBox(PathList)
+    Call Check(PathList, _
+        StringCombine(vbCrLf, _
+            "\AAA", _
+            "\BBB" _
+        ))
 
-        If IsDrivePath(BasePath) Then
-            'ファイルダイアログを開いた後
-            'カレントディレクトリが変になる場合があるので
-            'カレントディレクトリをリセットする
-            Call ChDrive(ExcludeLastStr(BasePath, ":\"))
-            Call ChDir(BasePath)
+    PathList = Replace(UCase(FolderPathListSubFolder(Path)), UCase(Path), "")
+'    Call MsgBox(PathList)
+    Call Check(PathList, _
+        StringCombine(vbCrLf, _
+            "\AAA", _
+            "\AAA\AAA-1", _
+            "\AAA\AAA-2", _
+            "\AAA\AAA-2\AAA-2-1", _
+            "\AAA\AAA-2\AAA-2-2", _
+            "\AAA\AAA-2\AAA-2-2\AAA-2-2-1", _
+            "\BBB", _
+            "\BBB\BBB-1", _
+            "\BBB\BBB-1\BBB-1-1", _
+            "\BBB\BBB-1\BBB-1-1\BBB-1-1-1", _
+            "\BBB\BBB-1\BBB-1-2", _
+            "\BBB\BBB-2", "" _
+        ))
 
-            Result = AbsolutePath(BasePath, SettingPath)
-        Else
-            Result = SettingPath
+    PathList = Replace(UCase(FilePathListTopFolder(Path)), UCase(Path), "")
+'    Call MsgBox(PathList)
+    Call Check(PathList, _
+        StringCombine(vbCrLf, _
+            "\AAA.TXT", _
+            "\BBB.TXT" _
+        ))
+
+    PathList = Replace(UCase(FilePathListSubFolder(Path)), UCase(Path), "")
+'    Call MsgBox(PathList)
+    Call Check(PathList, _
+        StringCombine(vbCrLf, _
+            "\AAA\AAA-1.TXT", _
+            "\AAA\AAA-2.TXT", _
+            "\AAA\AAA-1\AAA-1-1.TXT", _
+            "\AAA\AAA-2\AAA-2-1.TXT", _
+            "\AAA\AAA-2\AAA-2-2.TXT", _
+            "\AAA\AAA-2\AAA-2-1\AAA-2-1-1.TXT", _
+            "\AAA\AAA-2\AAA-2-2\AAA-2-2-1.TXT", _
+            "\AAA\AAA-2\AAA-2-2\AAA-2-2-1\AAA-2-2-1-1.TXT", _
+            "\BBB\BBB-1.TXT", _
+            "\BBB\BBB-2.TXT", _
+            "\BBB\BBB-1\BBB-1-1.TXT", _
+            "\BBB\BBB-1\BBB-1-2.TXT", _
+            "\BBB\BBB-1\BBB-1-1\BBB-1-1-1.TXT", _
+            "\BBB\BBB-1\BBB-1-1\BBB-1-1-1\BBB-1-1-1-1.TXT", _
+            "\BBB\BBB-1\BBB-1-2\BBB-1-2-1.TXT", _
+            "\BBB\BBB-2\BBB-2-1.TXT", _
+            "\AAA.TXT", _
+            "\BBB.TXT" _
+        ))
+End Sub
+
+
+'----------------------------------------
+'◇フォルダ
+'----------------------------------------
+
+'----------------------------------------
+'・トップレベルのフォルダリストを取得
+'----------------------------------------
+'   ・  存在しなければ空文字を返す。
+'   ・  パスは改行コードで区切られている
+'----------------------------------------
+Public Function FolderPathListTopFolder(ByVal FolderPath As String) As String
+    Call Assert(fso.FolderExists(FolderPath), _
+        "Error:FolderPathListTopFolder:Folder no Exists")
+    Dim Result As String: Result = ""
+    Dim SubFolder As Folder
+    For Each SubFolder In fso.GetFolder(FolderPath).SubFolders
+        Result = StringCombine(vbCrLf, Result, SubFolder.Path)
+    Next
+    FolderPathListTopFolder = Result
+End Function
+
+'----------------------------------------
+'・サブフォルダのフォルダリストを取得
+'----------------------------------------
+'   ・  存在しなければ空文字を返す。
+'   ・  パスは改行コードで区切られている
+'----------------------------------------
+Function FolderPathListSubFolder(FolderPath As String) As String
+    Call Assert(fso.FolderExists(FolderPath), _
+        "Error:FolderPathListSubFolder:Folder no Exists")
+    Dim Result As String: Result = ""
+    Dim SubFolder As Folder
+    For Each SubFolder In fso.GetFolder(FolderPath).SubFolders
+        Result = StringCombine(vbCrLf, _
+            Result, SubFolder.Path, _
+            FolderPathListSubFolder(SubFolder.Path))
+    Next
+    FolderPathListSubFolder = Result
+End Function
+
+'----------------------------------------
+'◇ファイル
+'----------------------------------------
+
+'----------------------------------------
+'・トップレベルのファイルリストを取得
+'----------------------------------------
+'   ・  存在しなければ空文字を返す。
+'   ・  パスは改行コードで区切られている
+'----------------------------------------
+Function FilePathListTopFolder(FolderPath As String) As String
+    Call Assert(fso.FolderExists(FolderPath), _
+        "Error:FilePathListTopFolder:Folder no Exists")
+    Dim Result As String: Result = ""
+    Dim File As File
+    For Each File In fso.GetFolder(FolderPath).Files
+        Result = StringCombine(vbCrLf, Result, File.Path)
+    Next
+    FilePathListTopFolder = ExcludeLastStr(Result, vbCrLf)
+End Function
+
+'----------------------------------------
+'・サブフォルダのファイルリストを取得
+'----------------------------------------
+'   ・  存在しなければ空文字を返す。
+'   ・  パスの最後には必ず改行コードが付属
+'----------------------------------------
+Function FilePathListSubFolder(FolderPath As String) As String
+    Call Assert(fso.FolderExists(FolderPath), _
+        "Error:FilePathListSubFolder:Folder no Exists")
+    Dim Result As String: Result = ""
+    Dim FolderPathList() As String
+    FolderPathList = Split( _
+        FolderPathListSubFolder(FolderPath) + vbCrLf + FolderPath, vbCrLf)
+    Dim I As Long
+    For I = 0 To ArrayCount(FolderPathList) - 1
+        If fso.FolderExists(FolderPathList(I)) Then
+            Result = StringCombine(vbCrLf, _
+                Result, FilePathListTopFolder(FolderPathList(I)))
         End If
-    End If
-    SettingFullPath = Result
-End Function
-
-'----------------------------------------
-'・ファイルが作成されるのをしばらく待つ関数
-'----------------------------------------
-'   ・  作成されたらTrueを返す
-'----------------------------------------
-Public Function FileExistsWait(ByVal FilePath As String, _
-Optional ByVal ExistsFlag As Boolean = True) As Boolean
-    FileExistsWait = False
-    Dim I As Long: I = 0
-    Do While (fso.FileExists(FilePath) = Not ExistsFlag)
-        I = I + 1
-        If I = 10 Then Exit Function
-    Loop
-    FileExistsWait = True
+    Next
+    FilePathListSubFolder = ExcludeLastStr(Result, vbCrLf)
 End Function
 
 
 '----------------------------------------
-'・ファイルコピー上書き失敗を検知するための関数
+'◆ファイルフォルダ操作
 '----------------------------------------
-'   ・  Success:=True / Fail:=False
-'----------------------------------------
-Public Function CopyFile( _
-ByVal SourceFilePath, ByVal DestFilePath) As Boolean
-On Error GoTo Err:
-    Call fso.CopyFile(SourceFilePath, DestFilePath, True)
-    CopyFile = True
-    Exit Function
-Err:
-    CopyFile = False
-End Function
-
 
 '----------------------------------------
 '◇空フォルダの削除
@@ -5391,165 +5501,126 @@ ByVal FolderPath As String)
 End Sub
 
 '----------------------------------------
-'◆ファイルフォルダ列挙
-'----------------------------------------
-
-Sub testGetFilePathListTopFolder()
-    Call MsgBox(FilePathListTopFolder(AbsolutePath(ThisWorkbook.Path, "..\..\")))
-    Call MsgBox(FolderPathListTopFolder(AbsolutePath(ThisWorkbook.Path, "..\..\")))
-    Call MsgBox(FolderPathListSubFolder(AbsolutePath(ThisWorkbook.Path, "..\..\")))
-    Call MsgBox(FilePathListSubFolder(AbsolutePath(ThisWorkbook.Path, "..\..\")))
-End Sub
-
-Sub testFileFolderPathList()
-    Dim Path As String: Path = AbsolutePath( _
-        ThisWorkbook.Path, ".\Test\TestFileFolderPathList")
-    Dim PathList
-
-    PathList = Replace(UCase(FolderPathListTopFolder(Path)), UCase(Path), "")
-'    Call MsgBox(PathList)
-    Call Check(PathList, _
-        StringCombine(vbCrLf, _
-            "\AAA", _
-            "\BBB" _
-        ))
-
-    PathList = Replace(UCase(FolderPathListSubFolder(Path)), UCase(Path), "")
-'    Call MsgBox(PathList)
-    Call Check(PathList, _
-        StringCombine(vbCrLf, _
-            "\AAA", _
-            "\AAA\AAA-1", _
-            "\AAA\AAA-2", _
-            "\AAA\AAA-2\AAA-2-1", _
-            "\AAA\AAA-2\AAA-2-2", _
-            "\AAA\AAA-2\AAA-2-2\AAA-2-2-1", _
-            "\BBB", _
-            "\BBB\BBB-1", _
-            "\BBB\BBB-1\BBB-1-1", _
-            "\BBB\BBB-1\BBB-1-1\BBB-1-1-1", _
-            "\BBB\BBB-1\BBB-1-2", _
-            "\BBB\BBB-2", "" _
-        ))
-
-    PathList = Replace(UCase(FilePathListTopFolder(Path)), UCase(Path), "")
-'    Call MsgBox(PathList)
-    Call Check(PathList, _
-        StringCombine(vbCrLf, _
-            "\AAA.TXT", _
-            "\BBB.TXT" _
-        ))
-
-    PathList = Replace(UCase(FilePathListSubFolder(Path)), UCase(Path), "")
-'    Call MsgBox(PathList)
-    Call Check(PathList, _
-        StringCombine(vbCrLf, _
-            "\AAA\AAA-1.TXT", _
-            "\AAA\AAA-2.TXT", _
-            "\AAA\AAA-1\AAA-1-1.TXT", _
-            "\AAA\AAA-2\AAA-2-1.TXT", _
-            "\AAA\AAA-2\AAA-2-2.TXT", _
-            "\AAA\AAA-2\AAA-2-1\AAA-2-1-1.TXT", _
-            "\AAA\AAA-2\AAA-2-2\AAA-2-2-1.TXT", _
-            "\AAA\AAA-2\AAA-2-2\AAA-2-2-1\AAA-2-2-1-1.TXT", _
-            "\BBB\BBB-1.TXT", _
-            "\BBB\BBB-2.TXT", _
-            "\BBB\BBB-1\BBB-1-1.TXT", _
-            "\BBB\BBB-1\BBB-1-2.TXT", _
-            "\BBB\BBB-1\BBB-1-1\BBB-1-1-1.TXT", _
-            "\BBB\BBB-1\BBB-1-1\BBB-1-1-1\BBB-1-1-1-1.TXT", _
-            "\BBB\BBB-1\BBB-1-2\BBB-1-2-1.TXT", _
-            "\BBB\BBB-2\BBB-2-1.TXT", _
-            "\AAA.TXT", _
-            "\BBB.TXT" _
-        ))
-End Sub
-
-
-'----------------------------------------
-'◇フォルダ
+'◇エラーを無視する処理
 '----------------------------------------
 
 '----------------------------------------
-'◇トップレベルのフォルダリストを取得
+'・CopyFile
 '----------------------------------------
-'・ 存在しなければ空文字を返す。
-'・ パスは改行コードで区切られている
+'   ・  fso.CopyFileの最終要素に"*.*"を指定すると、
+'       ファイルがない場合にエラーになるので
+'       その場合でも無視して処理を続ける
+'   ・  Success:=True / Fail:=False
 '----------------------------------------
-Public Function FolderPathListTopFolder(ByVal FolderPath As String) As String
-    Call Assert(fso.FolderExists(FolderPath), _
-        "Error:FolderPathListTopFolder:Folder no Exists")
-    Dim Result As String: Result = ""
-    Dim SubFolder As Folder
-    For Each SubFolder In fso.GetFolder(FolderPath).SubFolders
-        Result = StringCombine(vbCrLf, Result, SubFolder.Path)
-    Next
-    FolderPathListTopFolder = Result
+Public Function CopyFile( _
+ByVal SourceFilePath As String, _
+ByVal DestFilePath As String) As Boolean
+On Error GoTo Err:
+    Call fso.CopyFile(SourceFilePath, DestFilePath, True)
+    CopyFile = True
+    Exit Function
+Err:
+    CopyFile = False
 End Function
 
 '----------------------------------------
-'◇サブフォルダのフォルダリストを取得
+'・MoveFile
 '----------------------------------------
-'・ 存在しなければ空文字を返す。
-'・ パスは改行コードで区切られている
+'   ・  fso.MoveFileの最終要素に"*.*"を指定すると、
+'       ファイルがない場合にエラーになるので
+'       その場合でも無視して処理を続ける
+'   ・  Success:=True / Fail:=False
 '----------------------------------------
-Function FolderPathListSubFolder(FolderPath As String) As String
-    Call Assert(fso.FolderExists(FolderPath), _
-        "Error:FolderPathListSubFolder:Folder no Exists")
-    Dim Result As String: Result = ""
-    Dim SubFolder As Folder
-    For Each SubFolder In fso.GetFolder(FolderPath).SubFolders
-        Result = StringCombine(vbCrLf, _
-            Result, SubFolder.Path, _
-            FolderPathListSubFolder(SubFolder.Path))
-    Next
-    FolderPathListSubFolder = Result
+Public Function MoveFile( _
+ByVal SourceFilePath As String, _
+ByVal DestFilePath As String) As Boolean
+On Error GoTo Err:
+    Call fso.MoveFile(SourceFilePath, DestFilePath)
+    MoveFile = True
+    Exit Function
+Err:
+    MoveFile = False
 End Function
 
 '----------------------------------------
-'◇ファイル
+'・CopyFolder
 '----------------------------------------
-
+'   ・  fso.CopyFolderの最終要素に"*"を指定すると、
+'       フォルダがない場合にエラーになるので
+'       その場合でも無視して処理を続ける
+'   ・  Success:=True / Fail:=False
 '----------------------------------------
-'◇トップレベルのファイルリストを取得
-'----------------------------------------
-'・ 存在しなければ空文字を返す。
-'・ パスは改行コードで区切られている
-'----------------------------------------
-Function FilePathListTopFolder(FolderPath As String) As String
-    Call Assert(fso.FolderExists(FolderPath), _
-        "Error:FilePathListTopFolder:Folder no Exists")
-    Dim Result As String: Result = ""
-    Dim File As File
-    For Each File In fso.GetFolder(FolderPath).Files
-        Result = StringCombine(vbCrLf, Result, File.Path)
-    Next
-    FilePathListTopFolder = ExcludeLastStr(Result, vbCrLf)
+Public Function CopyFolder( _
+ByVal SourceFolderPath As String, _
+ByVal DestFolderPath As String) As Boolean
+On Error GoTo Err:
+    Call fso.CopyFolder(SourceFolderPath, DestFolderPath, True)
+    CopyFolder = True
+    Exit Function
+Err:
+    CopyFolder = False
 End Function
 
 '----------------------------------------
-'◇サブフォルダのファイルリストを取得
-'存在しなければ空文字を返す。
-'パスの最後には必ず改行コードが付属
-Function FilePathListSubFolder(FolderPath As String) As String
-    Call Assert(fso.FolderExists(FolderPath), _
-        "Error:FilePathListSubFolder:Folder no Exists")
-    Dim Result As String: Result = ""
-    Dim FolderPathList() As String
-    FolderPathList = Split( _
-        FolderPathListSubFolder(FolderPath) + vbCrLf + FolderPath, vbCrLf)
-    Dim I As Long
-    For I = 0 To ArrayCount(FolderPathList) - 1
-        If fso.FolderExists(FolderPathList(I)) Then
-            Result = StringCombine(vbCrLf, _
-                Result, FilePathListTopFolder(FolderPathList(I)))
-        End If
-    Next
-    FilePathListSubFolder = ExcludeLastStr(Result, vbCrLf)
+'・MoveFolder
+'----------------------------------------
+'   ・  fso.MoveFolderの最終要素に"*"を指定すると、
+'       フォルダがない場合にエラーになるので
+'       それを無視するための関数
+'----------------------------------------
+Public Function MoveFolder( _
+ByVal SourceFolderPath As String, _
+ByVal DestFolderPath As String) As Boolean
+On Error GoTo Err:
+    Call fso.MoveFolder(SourceFolderPath, DestFolderPath)
+    MoveFolder = True
+    Exit Function
+Err:
+    MoveFolder = False
 End Function
 
 '----------------------------------------
-'◆ファイル日時
+'◆ファイルフォルダ状態確認
+'----------------------------------------
+
+'----------------------------------------
+'・ファイル存在確認
+'----------------------------------------
+'   ・ Win/Mac両対応版
+'----------------------------------------
+Function FileExists(ByVal AFileName As String) As Boolean
+    On Error GoTo Catch
+
+    FileSystem.FileLen AFileName
+
+    FileExists = True
+
+    GoTo Finally
+
+Catch:
+        FileExists = False
+Finally:
+End Function
+
+'----------------------------------------
+'・ファイルが作成されるのをしばらく待つ関数
+'----------------------------------------
+'   ・  作成されたらTrueを返す
+'----------------------------------------
+Public Function FileExistsWait(ByVal FilePath As String, _
+Optional ByVal ExistsFlag As Boolean = True) As Boolean
+    FileExistsWait = False
+    Dim I As Long: I = 0
+    Do While (fso.FileExists(FilePath) = Not ExistsFlag)
+        I = I + 1
+        If I = 10 Then Exit Function
+    Loop
+    FileExistsWait = True
+End Function
+
+
+'----------------------------------------
+'◆ファイルフォルダ日時
 '----------------------------------------
 
 '----------------------------------------
@@ -5853,6 +5924,66 @@ Public Sub testString_SaveToFile()
         "Shift-JIS ＡＢＣ１２３", _
         PathCombine(FolderPath, "test_Shift-JIS.txt"))
 End Sub
+
+'----------------------------------------
+'◇CSV/TSVファイル
+'----------------------------------------
+
+Public Sub Sheet_OpenCSV( _
+ByVal Sheet As Worksheet, _
+ByVal FilePath As String, _
+ByVal SeparateChar As String)
+
+    Dim ScreenUpdateBuffer As Boolean
+    ScreenUpdateBuffer = Application.ScreenUpdating
+    Application.ScreenUpdating = False
+
+    Dim FileText As String
+    FileText = String_LoadFromFile(FilePath)
+   
+    Dim Row As Long
+    Dim Col As Long
+    Dim FileLines() As String
+    FileLines = Split(FileText, vbCrLf)
+    For Row = 0 To ArrayCount(FileLines) - 1
+        Dim FileLine() As String
+        FileLine = Split(FileLines(Row), SeparateChar)
+        For Col = 0 To ArrayCount(FileLine) - 1
+            Sheet.Cells(Row + 1, Col + 1).Value = FileLine(Col)
+        Next
+    Next
+    
+    Application.ScreenUpdating = ScreenUpdateBuffer
+
+End Sub
+
+Public Sub Sheet_SaveCSV( _
+ByVal Sheet As Worksheet, _
+ByVal FilePath As String, _
+ByVal SeparateChar As String)
+    
+    Dim LastCell As Range
+    Set LastCell = Sheet_DataLastCellRange(Sheet)
+
+    Dim Row As Long
+    Dim Col As Long
+    
+    Dim StrBuilderText As New st_vba_StringBuilder
+    Dim StrBuilderLine As New st_vba_StringBuilder
+    
+    For Row = 1 To LastCell.Row
+        Call StrBuilderLine.Clear
+        For Col = 1 To LastCell.Column
+            Call StrBuilderLine.Add(Sheet.Cells(Row, Col).Text & SeparateChar)
+        Next
+        Call StrBuilderText.Add( _
+            ExcludeLastStr(StrBuilderLine.Text, SeparateChar) & vbCrLf)
+    Next
+    
+    Call String_SaveToFile(StrBuilderText.Text, FilePath)
+
+End Sub
+
 
 
 '----------------------------------------
@@ -7052,35 +7183,70 @@ Public Function GetShapeFromImageFile(ByVal Sheet As Worksheet, _
         Top:=Rect.Top, _
         Width:=0, _
         Height:=0)
-
+    
     '元画像サイズに戻す
     Call Shape.ScaleHeight(1#, True)
     Call Shape.ScaleWidth(1#, True)
 
     '縦横比を保持したまま、高さを調整する
     Shape.LockAspectRatio = True
-    Shape.Height = GetRectHeight(Rect)
+    
+    If Not OrValue(Shape.Rotation, 90, 270) Then
+        Shape.Height = GetRectHeight(Rect)
 
-    '画像横サイズが範囲内に収まっているかどうか確認
-    If Shape.Width > GetRectWidth(Rect) Then
-        '横サイズがはみ出ているなら横を合わせる
-        Shape.Width = GetRectWidth(Rect)
-
-        '左右位置はぴったりなので上下位置調整をする
-        Select Case VerticalAlign
-        Case AlineVertical.alCenter
-            Shape.Top = Shape.Top + (GetRectHeight(Rect) - Shape.Height) / 2
-        Case AlineVertical.alBottom
-            Shape.Top = Shape.Top + (GetRectHeight(Rect) - Shape.Height)
-        End Select
+        '画像横サイズが範囲内に収まっているかどうか確認
+        If Shape.Width > GetRectWidth(Rect) Then
+            '横サイズがはみ出ているなら横を合わせる
+            Shape.Width = GetRectWidth(Rect)
+    
+            '左右位置はぴったりなので上下位置調整をする
+            Select Case VerticalAlign
+            Case AlineVertical.alCenter
+                Shape.Top = Shape.Top + (GetRectHeight(Rect) - Shape.Height) / 2
+            Case AlineVertical.alBottom
+                Shape.Top = Shape.Top + (GetRectHeight(Rect) - Shape.Height)
+            End Select
+        Else
+            '上下位置はぴったりなので左右位置調整をする
+            Select Case HorizontalAlign
+            Case AlineHorizontal.alCenter
+                Shape.Left = Shape.Left + (GetRectWidth(Rect) - Shape.Width) / 2
+            Case AlineHorizontal.alRight
+                Shape.Left = Shape.Left + (GetRectWidth(Rect) - Shape.Width)
+            End Select
+        End If
     Else
-        '上下位置はぴったりなので左右位置調整をする
-        Select Case HorizontalAlign
-        Case AlineHorizontal.alCenter
-            Shape.Left = Shape.Left + (GetRectWidth(Rect) - Shape.Width) / 2
-        Case AlineHorizontal.alRight
-            Shape.Left = Shape.Left + (GetRectWidth(Rect) - Shape.Width)
-        End Select
+        'JpegのExif情報によって回転した状態になる場合がある
+        Shape.Width = GetRectHeight(Rect)
+      
+        '画像横サイズが範囲内に収まっているかどうか確認
+        If Shape.Height > GetRectWidth(Rect) Then
+            '横サイズがはみ出ているなら横を合わせる
+            Shape.Heigth = GetRectWidth(Rect)
+    
+            '左端に寄せる
+            Shape.Left = Rect.Left - (Shape.Width / 2) + (Shape.Height / 2)
+    
+            '左右位置はぴったりなので上下位置調整をする
+            Select Case VerticalAlign
+            Case AlineVertical.alCenter
+                Shape.Top = Shape.Top + (GetRectHeight(Rect) - Shape.Height) / 2
+            Case AlineVertical.alBottom
+                Shape.Top = Shape.Top + (GetRectHeight(Rect) - Shape.Height)
+            End Select
+        Else
+            '左端に寄せる
+            Shape.Left = Rect.Left - (Shape.Width / 2) + (Shape.Height / 2)
+        
+            '上下位置はぴったりなので左右位置調整をする
+            Select Case HorizontalAlign
+            Case AlineHorizontal.alCenter
+                Shape.Left = Shape.Left + (GetRectWidth(Rect) - Shape.Height) / 2
+            Case AlineHorizontal.alRight
+                Shape.Left = Shape.Left + (GetRectWidth(Rect) - Shape.Height)
+            End Select
+        End If
+      
     End If
 
     Set GetShapeFromImageFile = Shape
@@ -8904,4 +9070,15 @@ End Function
 '・ CommandExecuteReturnからADOStream_LoadTextFile削除
 '・ st_vba_WaitForm.Update_ProgressInfo を .Updateに処理分離
 '・ Book_SaveAsの対応をxlsのみから、xlsx/xlsmを追加した
+'◇ ver 2017/07/03
+'・ ファイルフォルダ処理の分類を整頓
+'・ CopyFileに加えて、MoveFile/CopyFolder/MoveFolderを追加
+'◇ ver 2017/08/08
+'・ Sheet_OpenCSV/Sheet_SaveCSV を追加
+'◇ ver 2017/08/14
+'・ GetShapeFromImageFileでExifの回転画像対応
+'・ IE_Navigate 修正
+'   IE_Navigate_AuthBasic 作成
+'   IE_Navigate_AuthBasicInput 作成
+'・ IE_GetElementByTagNameClassName に除外条件指定可能にした
 '--------------------------------------------------

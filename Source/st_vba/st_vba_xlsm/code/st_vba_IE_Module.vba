@@ -4,7 +4,7 @@
 'ModuleName:    IE Module
 'ObjectName:    st_vba_IE
 '--------------------------------------------------
-'Version:       2017/03/19
+'Version:       2017/08/14
 '--------------------------------------------------
 '   ・  IEコントロールするためのモジュール
 '--------------------------------------------------
@@ -80,10 +80,68 @@ End Sub
 '----------------------------------------
 Sub IE_Navigate(ByVal ie As InternetExplorer, _
 ByVal URL As String, _
-Optional ByRef NavigateCancelFlag As Boolean = False)
+Optional ByRef NavigateCancelFlag As Boolean = False, _
+Optional ByVal RefreshSecond As Long = 30, _
+Optional ByVal TimeOutSecond As Long = 60)
     Call ie.Navigate(URL)
-    Call IE_NavigateWait(IE, 30, 60, NavigateCancelFlag)
+    Call IE_NavigateWait(ie, _
+        RefreshSecond, TimeOutSecond, NavigateCancelFlag)
 End Sub
+
+'----------------------------------------
+'・IE起動とアドレス表示
+'----------------------------------------
+'   ・  Basic認証として
+'       AuthBasicに
+'       user:password
+'       この文字列をBASE64エンコードしたキーを入れると
+'       認証を通過する
+'----------------------------------------
+Sub IE_Navigate_AuthBasic(ByVal ie As InternetExplorer, _
+ByVal URL As String, _
+Optional ByRef NavigateCancelFlag As Boolean = False, _
+Optional ByVal AuthBasic As String, _
+Optional ByVal RefreshSecond As Long = 30, _
+Optional ByVal TimeOutSecond As Long = 60)
+    If AuthBasic = "" Then
+        Call ie.Navigate(URL)
+    Else
+        AuthBasic = _
+            "Authorization: Basic " & AuthBasic & vbCrLf
+        Call ie.Navigate(URL, , , , AuthBasic)
+    End If
+    Call IE_NavigateWait(ie, _
+        RefreshSecond, TimeOutSecond, NavigateCancelFlag)
+End Sub
+
+'----------------------------------------
+'・IE起動とアドレス表示
+'----------------------------------------
+'   ・  Basic認証として
+'       AuthBasicInputにSendKeysのコードを入れる
+'       ID, "{TAB}", PASSWORD, "{ENTER}"
+'       あるいは
+'       "+({TAB})", ID, "{TAB}", PASSWORD, "{ENTER}"
+'----------------------------------------
+Sub IE_Navigate_AuthBasicInput(ByVal ie As InternetExplorer, _
+ByVal URL As String, _
+ByRef AuthBasicInput() As String, _
+Optional ByRef NavigateCancelFlag As Boolean = False, _
+Optional ByVal RefreshSecond As Long = 30, _
+Optional ByVal TimeOutSecond As Long = 60, _
+Optional ByVal InputBeforeMiliSecond As Long = 5000)
+    Call ie.Navigate(URL)
+    
+    '5秒停止
+    Call Sleep(InputBeforeMiliSecond)
+    Dim I As Long
+    For I = 0 To ArrayCount(AuthBasicInput) - 1
+        Call SendKeys(AuthBasicInput(I))
+    Next
+    
+    Call IE_NavigateWait(ie, RefreshSecond, TimeOutSecond, NavigateCancelFlag)
+End Sub
+
 
 '----------------------------------------
 '・IEリフレッシュ
@@ -213,16 +271,31 @@ ByVal TagName As String) As Object
     Set IE_GetElementByTagName = Result
 End Function
 
+'ClassNameWildCardに一致するが
+'さらに除外条件をつけたい場合に
+'NotClassNameWildCardを指定する
 Public Function IE_GetElementByTagNameClassName(ByVal Element As Object, _
-ByVal TagName As String, ByVal ClassNameWildCard As String) As Object
+ByVal TagName As String, ByVal ClassNameWildCard As String, _
+Optional ByVal NotClassNameWildCard As String = "") As Object
     Dim Result As Object: Set Result = Nothing
     Dim E1 As Object
-    For Each E1 In Element.GetElementsByTagName(TagName)
-        If E1.ClassName Like ClassNameWildCard Then
-            Set Result = E1
-            Exit For
-        End If
-    Next
+    If NotClassNameWildCard = "" Then
+        For Each E1 In Element.GetElementsByTagName(TagName)
+            If E1.ClassName Like ClassNameWildCard Then
+                Set Result = E1
+                Exit For
+            End If
+        Next
+    Else
+        For Each E1 In Element.GetElementsByTagName(TagName)
+            If E1.ClassName Like ClassNameWildCard Then
+                If Not (E1.ClassName Like NotClassNameWildCard) Then
+                    Set Result = E1
+                    Exit For
+                End If
+            End If
+        Next
+    End If
     Set IE_GetElementByTagNameClassName = Result
 End Function
 
@@ -264,5 +337,7 @@ ByVal TagName As String, ByVal InnerHTMLWildCard As String) As Object
     Next
     Set IE_GetElementByTagNameInnerHTML = Result
 End Function
+
+
 
 
