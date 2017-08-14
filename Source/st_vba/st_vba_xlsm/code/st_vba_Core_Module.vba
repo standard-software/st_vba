@@ -7218,15 +7218,16 @@ Public Function GetShapeFromImageFile(ByVal Sheet As Worksheet, _
     Else
         'JpegのExif情報によって回転した状態になる場合がある
         Shape.Width = GetRectHeight(Rect)
-      
+        
         '画像横サイズが範囲内に収まっているかどうか確認
         If Shape.Height > GetRectWidth(Rect) Then
             '横サイズがはみ出ているなら横を合わせる
-            Shape.Heigth = GetRectWidth(Rect)
+            Shape.Height = GetRectWidth(Rect)
     
-            '左端に寄せる
+            '左上端に寄せる
             Shape.Left = Rect.Left - (Shape.Width / 2) + (Shape.Height / 2)
-    
+            Shape.Top = Rect.Top - (Shape.Height / 2) + (Shape.Width / 2)
+            
             '左右位置はぴったりなので上下位置調整をする
             Select Case VerticalAlign
             Case AlineVertical.alCenter
@@ -7235,9 +7236,10 @@ Public Function GetShapeFromImageFile(ByVal Sheet As Worksheet, _
                 Shape.Top = Shape.Top + (GetRectHeight(Rect) - Shape.Height)
             End Select
         Else
-            '左端に寄せる
+            '左上端に寄せる
             Shape.Left = Rect.Left - (Shape.Width / 2) + (Shape.Height / 2)
-        
+            Shape.Top = Rect.Top - (Shape.Height / 2) + (Shape.Width / 2)
+            
             '上下位置はぴったりなので左右位置調整をする
             Select Case HorizontalAlign
             Case AlineHorizontal.alCenter
