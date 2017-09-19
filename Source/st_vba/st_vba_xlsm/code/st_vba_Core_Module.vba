@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        https://www.facebook.com/stndardsoftware/
 '--------------------------------------------------
-'Version:       2017/08/14
+'Version:       2017/09/19
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -381,6 +381,38 @@ Public Declare PtrSafe Function WritePrivateProfileString _
     ByVal lpKeyName As Any, _
     ByVal lpString As Any, _
     ByVal lpFileName As String) As Long
+    
+'----------------------------------------
+'◆画像ファイル
+'----------------------------------------
+Private Declare PtrSafe Function GdiplusStartup Lib "gdiplus" ( _
+    ByRef token As LongPtr, _
+    ByRef inputbuf As GdiplusStartupInput, _
+    Optional ByVal outputbuf As LongPtr = 0) As Long
+Private Declare PtrSafe Sub GdiplusShutdown Lib "gdiplus" ( _
+    ByVal token As LongPtr)
+Private Declare PtrSafe Function GdipLoadImageFromFile Lib "gdiplus" ( _
+    ByVal FileName As LongPtr, _
+    ByRef image As LongPtr) As Long
+Private Declare PtrSafe Function GdipDisposeImage Lib "gdiplus" ( _
+    ByVal image As LongPtr) As Long
+'Private Declare PtrSafe Function GdipGetImageWidth Lib "gdiplus" ( _
+'    ByVal image As LongPtr, ByRef Width As Long) As Long
+'Private Declare PtrSafe Function GdipGetImageHeight Lib "gdiplus" ( _
+'    ByVal image As LongPtr, ByRef Height As Long) As Long
+'Private Declare PtrSafe Function GdipBitmapGetPixel Lib "gdiplus" ( _
+'    ByVal image As LongPtr, ByVal x As Long, ByVal y As Long, ByRef Color As Long) As Long
+Private Declare PtrSafe Function GdipGetImageDimension Lib "gdiplus" ( _
+        ByVal image As LongPtr, _
+        ByRef Width As Single, _
+        ByRef Height As Single) As Long
+
+Private Type GdiplusStartupInput
+    GdiplusVersion As Long
+    DebugEventCallback As LongPtr
+    SuppressBackgroundThread As Long
+    SuppressExternalCodecs As Long
+End Type
 
 '----------------------------------------
 '◆キーボード入力
@@ -2335,6 +2367,16 @@ End Sub
 '----------------------------------------
 
 '----------------------------------------
+'・現在時刻のミリ秒を取得
+'----------------------------------------
+Function NowMilliSec() As Long
+    Dim MTimer As Double
+    
+    MTimer = CDbl(Timer)
+    NowMilliSec = Round(MTimer - Fix(MTimer), 3) * 1000
+End Function
+
+'----------------------------------------
 '・月の最終日を取得
 '----------------------------------------
 Public Function MonthLastDay(ByVal DateValue As Date) As Date
@@ -2506,7 +2548,7 @@ End Function
 '   ・  日付時刻とは関係のないFomat関数の書式文字列を使えなくして
 '       日付時刻書式だけを指定できるようにした
 '----------------------------------------
-Public Function Format_Date_UseOnlyYMDHNS( _
+Public Function FormatOnlyYMDHNS( _
 ByVal DateValue As Date, _
 ByVal FormatStr As String) As String
     Dim Result As String: Result = ""
@@ -2514,10 +2556,10 @@ ByVal FormatStr As String) As String
         ReplaceArrayValue(FormatStr, _
             ArrayStr("\", "0", "#", "%", "@", "&", "!", "<", ">", "."), _
             ArrayStr("\\", "\0", "\#", "\%", "\@", "\&", "\!", "\<", "\>", "\.")))
-    Format_Date_UseOnlyYMDHNS = Result
+    FormatOnlyYMDHNS = Result
 End Function
 
-Public Sub testFormat_Date_UseOnlyYMDHNS()
+Public Sub testFormatOnlyYMDHNS()
     Dim DateValue As Date
     DateValue = CDate("2017/03/21")
     
@@ -2536,20 +2578,20 @@ Public Sub testFormat_Date_UseOnlyYMDHNS()
     Call Check("123.4.0.0.", Format("123.4", ".0.0.0."))
     Call Check(",123", Format("123456", ",0,0,0,"))
     
-    Call Check("@", Format_Date_UseOnlyYMDHNS(DateValue, "@"))
-    Call Check("@-@-@", Format_Date_UseOnlyYMDHNS(DateValue, "@-@-@"))
-    Call Check("@@", Format_Date_UseOnlyYMDHNS(DateValue, "@@"))
-    Call Check("@@@", Format_Date_UseOnlyYMDHNS(DateValue, "@@@"))
-    Call Check("@@@@", Format_Date_UseOnlyYMDHNS(DateValue, "@@@@"))
-    Call Check("!@@@@", Format_Date_UseOnlyYMDHNS(DateValue, "!@@@@"))
-    Call Check("<@@@@", Format_Date_UseOnlyYMDHNS(DateValue, "<@@@@"))
-    Call Check(">@@@@", Format_Date_UseOnlyYMDHNS(DateValue, ">@@@@"))
-    Call Check("&-&-&", Format_Date_UseOnlyYMDHNS(DateValue, "&-&-&"))
-    Call Check("&&", Format_Date_UseOnlyYMDHNS(DateValue, "&&"))
-    Call Check("&&&", Format_Date_UseOnlyYMDHNS(DateValue, "&&&"))
-    Call Check("&&&&", Format_Date_UseOnlyYMDHNS(DateValue, "&&&&"))
-    Call Check(".0.0.0.", Format_Date_UseOnlyYMDHNS(DateValue, ".0.0.0."))
-    Call Check(",0,0,0,", Format_Date_UseOnlyYMDHNS(DateValue, ",0,0,0,"))
+    Call Check("@", FormatOnlyYMDHNS(DateValue, "@"))
+    Call Check("@-@-@", FormatOnlyYMDHNS(DateValue, "@-@-@"))
+    Call Check("@@", FormatOnlyYMDHNS(DateValue, "@@"))
+    Call Check("@@@", FormatOnlyYMDHNS(DateValue, "@@@"))
+    Call Check("@@@@", FormatOnlyYMDHNS(DateValue, "@@@@"))
+    Call Check("!@@@@", FormatOnlyYMDHNS(DateValue, "!@@@@"))
+    Call Check("<@@@@", FormatOnlyYMDHNS(DateValue, "<@@@@"))
+    Call Check(">@@@@", FormatOnlyYMDHNS(DateValue, ">@@@@"))
+    Call Check("&-&-&", FormatOnlyYMDHNS(DateValue, "&-&-&"))
+    Call Check("&&", FormatOnlyYMDHNS(DateValue, "&&"))
+    Call Check("&&&", FormatOnlyYMDHNS(DateValue, "&&&"))
+    Call Check("&&&&", FormatOnlyYMDHNS(DateValue, "&&&&"))
+    Call Check(".0.0.0.", FormatOnlyYMDHNS(DateValue, ".0.0.0."))
+    Call Check(",0,0,0,", FormatOnlyYMDHNS(DateValue, ",0,0,0,"))
 
 End Sub
 
@@ -6045,6 +6087,78 @@ Err:
     GetJpegExifDateTime = Result
 End Function
 
+'----------------------------------------
+'・JpegExifの回転情報
+'----------------------------------------
+'   ・  取得内容は次の通り
+'           TopLeft = 1,
+'           TopRight = 2,
+'           BottomRight = 3,
+'           BottomLeft = 4,
+'           LeftTop = 5,
+'           RightTop = 6,
+'           RightBottom = 7,
+'           LeftBottom = 8
+'       通常画像は  1
+'       左回転は    8
+'       右回転は    6
+'       180度回転は 3
+'       その他は反転が入る
+'----------------------------------------
+Public Function GetJpegExifRotate(ByVal FilePath As String) As Long
+On Error GoTo Err:
+    Dim Result As Long: Result = 0
+    If IsJpegImageFile(FilePath) Then
+
+        Dim WIA_ImageFile As Object
+        Set WIA_ImageFile = CreateObject("Wia.ImageFile")
+        Call WIA_ImageFile.LoadFile(FilePath)
+
+        Dim p As Object
+        For Each p In WIA_ImageFile.Properties
+            '回転方向 Orientation ID=0x0112
+            If p.PropertyID = &H112 Then
+                Result = p.Value
+                Exit For
+            End If
+        Next
+         
+    End If
+Err:
+    GetJpegExifRotate = Result
+End Function
+
+
+'----------------------------------------
+'・画像ファイルのWidthとHeightを取得する
+'----------------------------------------
+Function ImageSize( _
+ByVal ImageFilePath As String, _
+ByRef ImageWidth As Single, _
+ByRef ImageHeight As Single) As Boolean
+    Dim uGdiStartupInput As GdiplusStartupInput
+    Dim nGdiToken As LongPtr
+    Dim nStatus As Long
+    Dim hImage As LongPtr
+    ImageSize = False
+    ImageWidth = 0: ImageHeight = 0
+    uGdiStartupInput.GdiplusVersion = 1
+    nStatus = GdiplusStartup(nGdiToken, uGdiStartupInput)
+    If nStatus = 0 Then
+        nStatus = GdipLoadImageFromFile(ByVal StrPtr(ImageFilePath), hImage)
+        If nStatus = 0 Then
+            nStatus = GdipGetImageDimension(hImage, ImageWidth, ImageHeight)
+            If nStatus = 0 Then
+                ImageSize = True
+            End If
+            Call GdipDisposeImage(hImage)
+            'ネットにはこれがないコードが多く
+            'そうすると、画像ファイルにロックがかかって
+            '削除などができなくなる
+        End If
+        Call GdiplusShutdown(nGdiToken)
+    End If
+End Function
 
 '----------------------------------------
 '◆シェル起動
@@ -6955,11 +7069,21 @@ Public Sub Sheet_DeleteSilence(ByVal Sheet As Worksheet)
     Application.DisplayAlerts = Application_DisplayAlerts_Flag
 End Sub
 
+'----------------------------------------
+'・ワークシートセル指定
+'----------------------------------------
+Public Function Sheet_CellRange( _
+ByVal Sheet As Worksheet, _
+ByVal Row1 As Long, ByVal Col1 As Long, _
+ByVal Row2 As Long, ByVal Col2 As Long) As Range
+    Set Sheet_CellRange = Sheet.Range( _
+        Sheet.Cells(Row1, Col1), _
+        Sheet.Cells(Row2, Col2))
+End Function
 
 '----------------------------------------
 '・ワークシートへのテキスト配置
 '----------------------------------------
-
 Public Sub Sheet_SetText(ByVal Sheet As Worksheet, _
 ByVal RowIndex As Long, ByVal ColumnIndex As Long, _
 ByVal DocumentText As String)
@@ -7169,18 +7293,22 @@ Public Function GetShapeFromImageFile(ByVal Sheet As Worksheet, _
     End If
 
     'マージンをとるために値を設定
-    Dim Rect As Rect
-    Rect.Left = SheetRange.Left + Margin
-    Rect.Top = SheetRange.Top + Margin
-    Call SetRectWidth(Rect, SheetRange.Width - (Margin * 2))
-    Call SetRectHeight(Rect, SheetRange.Height - (Margin * 2))
+'    Dim Rect As Rect
+    Dim Rect_Left As Double
+    Dim Rect_Top As Double
+    Dim Rect_Width As Double
+    Dim Rect_Height As Double
+    Rect_Left = SheetRange.Left + Margin
+    Rect_Top = SheetRange.Top + Margin
+    Rect_Width = SheetRange.Width - (Margin * 2)
+    Rect_Height = SheetRange.Height - (Margin * 2)
 
     Dim Shape As Shape
     Set Shape = Sheet.Shapes.AddPicture( _
         FileName:=ImageFilePath, LinkToFile:=False, _
         SaveWithDocument:=True, _
-        Left:=Rect.Left, _
-        Top:=Rect.Top, _
+        Left:=Rect_Left, _
+        Top:=Rect_Top, _
         Width:=0, _
         Height:=0)
     
@@ -7191,61 +7319,61 @@ Public Function GetShapeFromImageFile(ByVal Sheet As Worksheet, _
     '縦横比を保持したまま、高さを調整する
     Shape.LockAspectRatio = True
     
-    If Not OrValue(Shape.Rotation, 90, 270) Then
-        Shape.Height = GetRectHeight(Rect)
+    If OrValue(Shape.Rotation, 0, 180) Then
+        Shape.Height = Rect_Height
 
         '画像横サイズが範囲内に収まっているかどうか確認
-        If Shape.Width > GetRectWidth(Rect) Then
+        If Shape.Width > Rect_Width Then
             '横サイズがはみ出ているなら横を合わせる
-            Shape.Width = GetRectWidth(Rect)
-    
-            '左右位置はぴったりなので上下位置調整をする
-            Select Case VerticalAlign
-            Case AlineVertical.alCenter
-                Shape.Top = Shape.Top + (GetRectHeight(Rect) - Shape.Height) / 2
-            Case AlineVertical.alBottom
-                Shape.Top = Shape.Top + (GetRectHeight(Rect) - Shape.Height)
-            End Select
-        Else
-            '上下位置はぴったりなので左右位置調整をする
-            Select Case HorizontalAlign
-            Case AlineHorizontal.alCenter
-                Shape.Left = Shape.Left + (GetRectWidth(Rect) - Shape.Width) / 2
-            Case AlineHorizontal.alRight
-                Shape.Left = Shape.Left + (GetRectWidth(Rect) - Shape.Width)
-            End Select
+            Shape.Width = Rect_Width
         End If
-    Else
+    
+        '左右位置調整をする
+        Select Case HorizontalAlign
+        Case AlineHorizontal.alCenter
+            Shape.Left = Rect_Left + (Rect_Width - Shape.Width) / 2
+        Case AlineHorizontal.alRight
+            Shape.Left = Rect_Left + (Rect_Width - Shape.Width)
+        End Select
+        
+        Select Case VerticalAlign
+        Case AlineVertical.alCenter
+            Shape.Top = Rect_Top + (Rect_Height - Shape.Height) / 2
+        Case AlineVertical.alBottom
+            Shape.Top = Rect_Top + (Rect_Height - Shape.Height)
+        End Select
+        
+    ElseIf OrValue(Shape.Rotation, 90, 270) Then
         'JpegのExif情報によって回転した状態になる場合がある
-        Shape.Width = GetRectHeight(Rect)
+        Shape.Width = Rect_Height
         
         '画像横サイズが範囲内に収まっているかどうか確認
-        If Shape.Height > GetRectWidth(Rect) Then
+        If Shape.Height > Rect_Width Then
             '横サイズがはみ出ているなら横を合わせる
-            Shape.Height = GetRectWidth(Rect)
+            Shape.Height = Rect_Width
     
             '左上端に寄せる
-            Shape.Left = Rect.Left - (Shape.Width / 2) + (Shape.Height / 2)
-            Shape.Top = Rect.Top - (Shape.Height / 2) + (Shape.Width / 2)
+            Shape.Left = Rect_Left - (Shape.Width / 2) + (Shape.Height / 2)
+            Shape.Top = Rect_Top - (Shape.Height / 2) + (Shape.Width / 2)
             
             '左右位置はぴったりなので上下位置調整をする
             Select Case VerticalAlign
             Case AlineVertical.alCenter
-                Shape.Top = Shape.Top + (GetRectHeight(Rect) - Shape.Height) / 2
+                Shape.Top = Rect_Top + (Rect_Height / 2) - (Shape.Height / 2)
             Case AlineVertical.alBottom
-                Shape.Top = Shape.Top + (GetRectHeight(Rect) - Shape.Height)
+                Shape.Top = Rect_Top + (Rect_Height) - (Shape.Height / 2) + (Shape.Width / 2)
             End Select
         Else
             '左上端に寄せる
-            Shape.Left = Rect.Left - (Shape.Width / 2) + (Shape.Height / 2)
-            Shape.Top = Rect.Top - (Shape.Height / 2) + (Shape.Width / 2)
+            Shape.Left = Rect_Left - (Shape.Width / 2) + (Shape.Height / 2)
+            Shape.Top = Rect_Top - (Shape.Height / 2) + (Shape.Width / 2)
             
             '上下位置はぴったりなので左右位置調整をする
             Select Case HorizontalAlign
             Case AlineHorizontal.alCenter
-                Shape.Left = Shape.Left + (GetRectWidth(Rect) - Shape.Height) / 2
+                Shape.Left = Rect_Left + (Rect_Width / 2) - (Shape.Width / 2)
             Case AlineHorizontal.alRight
-                Shape.Left = Shape.Left + (GetRectWidth(Rect) - Shape.Height)
+                Shape.Left = Rect_Left + (Rect_Width) - (Shape.Width / 2) - (Shape.Height / 2)
             End Select
         End If
       
@@ -7345,7 +7473,7 @@ ByVal Range As Range)
     Dim Shape As Shape
     For Each Shape In Sheet.Shapes
     Do
-        Shape.Placement = xlMove
+'        Shape.Placement = xlMove
         Dim Point As Point
         Point.X = Shape.Left + (Shape.Width / 2)
         Point.Y = Shape.Top + (Shape.Height / 2)
@@ -9083,4 +9211,14 @@ End Function
 '   IE_Navigate_AuthBasic 作成
 '   IE_Navigate_AuthBasicInput 作成
 '・ IE_GetElementByTagNameClassName に除外条件指定可能にした
+'◇ ver 2017/09/19
+'・ GetJpegExifRotate 作成
+'・ ImageSize 作成
+'・ Sheet_CellRange 作成
+'・ IE_GetElementByTagNameSearch 作成
+'・	NowMilliSec 作成
+'・ Format_Date_UseOnlyYMDHNS を FormatOnlyYMDHNS に名前変更
+'・ GetShapeFromImageFile の内部を小数点以下サイズに対応
+'   Exif での回転画像に対応
+'・ Range_DeleteShape 軽微な修正
 '--------------------------------------------------

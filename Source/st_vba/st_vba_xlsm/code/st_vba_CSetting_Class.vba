@@ -4,17 +4,15 @@
 'ModuleName:    Setting Class
 'ObjectName:    st_vba_CSetting
 '--------------------------------------------------
-'Version:       2017/04/01
+'Version:       2017/09/19
 '--------------------------------------------------
 Option Explicit
 
-Public Option1 As String
-
+Private m_Sheet As Worksheet
 
 Public Sub Initialize(ByVal Sheet As Worksheet)
-    
-    Option1 = Sheet.Cells( _
-        Sheet_RowNumberByTitle(Sheet, Col_A, "Option1"), Col_B).Value
+
+    Set m_Sheet = Sheet
 
 End Sub
 
@@ -25,4 +23,10 @@ End Sub
 '2  |Option1    |値A    |
 '3  |Option2    |値B    |
 '
-'こうしておくと、Option1で値Aの内容を取得することができる
+'こうしておくと、Setting.Read("Option1")で値Aの内容を取得することができる
+
+Public Function Read(ByVal Key As String) As String
+    Read = m_Sheet.Cells( _
+        Sheet_RowNumberByTitle(m_Sheet, Col_A, Key), _
+        Col_B).Value
+End Function
