@@ -304,7 +304,7 @@ ByVal TagName As String, ByVal IdWildCard As String) As Object
     Dim Result As Object: Set Result = Nothing
     Dim E1 As Object
     For Each E1 In Element.GetElementsByTagName(TagName)
-        If E1.ID Like IdWildCard Then
+        If E1.Id Like IdWildCard Then
             Set Result = E1
             Exit For
         End If
@@ -326,11 +326,11 @@ ByVal TagName As String, ByVal NameWildCard As String) As Object
 End Function
 
 Public Function IE_GetElementByTagNameInnerHTML(ByVal Element As Object, _
-ByVal TagName As String, ByVal InnerHTMLWildCard As String) As Object
+ByVal TagName As String, ByVal InnerHtmlWildCard As String) As Object
     Dim Result As Object: Set Result = Nothing
     Dim E1 As Object
     For Each E1 In Element.GetElementsByTagName(TagName)
-        If E1.InnerHTML Like InnerHTMLWildCard Then
+        If E1.InnerHTML Like InnerHtmlWildCard Then
             Set Result = E1
             Exit For
         End If

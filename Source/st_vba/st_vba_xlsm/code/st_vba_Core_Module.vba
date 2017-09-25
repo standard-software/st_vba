@@ -393,9 +393,9 @@ Private Declare PtrSafe Sub GdiplusShutdown Lib "gdiplus" ( _
     ByVal token As LongPtr)
 Private Declare PtrSafe Function GdipLoadImageFromFile Lib "gdiplus" ( _
     ByVal FileName As LongPtr, _
-    ByRef image As LongPtr) As Long
+    ByRef Image As LongPtr) As Long
 Private Declare PtrSafe Function GdipDisposeImage Lib "gdiplus" ( _
-    ByVal image As LongPtr) As Long
+    ByVal Image As LongPtr) As Long
 'Private Declare PtrSafe Function GdipGetImageWidth Lib "gdiplus" ( _
 '    ByVal image As LongPtr, ByRef Width As Long) As Long
 'Private Declare PtrSafe Function GdipGetImageHeight Lib "gdiplus" ( _
@@ -403,7 +403,7 @@ Private Declare PtrSafe Function GdipDisposeImage Lib "gdiplus" ( _
 'Private Declare PtrSafe Function GdipBitmapGetPixel Lib "gdiplus" ( _
 '    ByVal image As LongPtr, ByVal x As Long, ByVal y As Long, ByRef Color As Long) As Long
 Private Declare PtrSafe Function GdipGetImageDimension Lib "gdiplus" ( _
-        ByVal image As LongPtr, _
+        ByVal Image As LongPtr, _
         ByRef Width As Single, _
         ByRef Height As Single) As Long
 
@@ -9216,7 +9216,7 @@ End Function
 '・ ImageSize 作成
 '・ Sheet_CellRange 作成
 '・ IE_GetElementByTagNameSearch 作成
-'・	NowMilliSec 作成
+'・ NowMilliSec 作成
 '・ Format_Date_UseOnlyYMDHNS を FormatOnlyYMDHNS に名前変更
 '・ GetShapeFromImageFile の内部を小数点以下サイズに対応
 '   Exif での回転画像に対応
