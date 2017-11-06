@@ -304,7 +304,7 @@ ByVal TagName As String, ByVal IdWildCard As String) As Object
     Dim Result As Object: Set Result = Nothing
     Dim E1 As Object
     For Each E1 In Element.GetElementsByTagName(TagName)
-        If E1.Id Like IdWildCard Then
+        If E1.ID Like IdWildCard Then
             Set Result = E1
             Exit For
         End If
@@ -366,7 +366,7 @@ Optional ByVal MatchCounter As Long = 1) As Object
     For Each E1 In Element.GetElementsByTagName(TagName)
     Do
         If NotIdWildCard <> "" Then
-            If E1.Id Like NotIdWildCard Then
+            If E1.ID Like NotIdWildCard Then
                 Exit Do
             End If
         End If
@@ -402,7 +402,7 @@ Optional ByVal MatchCounter As Long = 1) As Object
         UnMatchFlag = False
         
         If IdWildCard <> "" Then
-            If E1.Id Like IdWildCard Then
+            If E1.ID Like IdWildCard Then
                 MatchFlag = True
             Else
                 UnMatchFlag = True

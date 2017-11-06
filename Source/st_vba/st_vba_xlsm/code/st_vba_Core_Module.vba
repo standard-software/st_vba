@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        https://www.facebook.com/stndardsoftware/
 '--------------------------------------------------
-'Version:       2017/09/19
+'Version:       2017/11/06
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -381,7 +381,7 @@ Public Declare PtrSafe Function WritePrivateProfileString _
     ByVal lpKeyName As Any, _
     ByVal lpString As Any, _
     ByVal lpFileName As String) As Long
-    
+
 '----------------------------------------
 '◆画像ファイル
 '----------------------------------------
@@ -934,6 +934,18 @@ Public Sub testCastExcludeComma()
 End Sub
 
 '----------------------------------------
+'◇Hex
+'----------------------------------------
+Public Function HexToLong(ByVal Value As String) As Long
+    HexToLong = Val("&H" + Value)
+End Function
+
+Private Sub testHexToLong()
+    Call Check("FF", Hex(255))
+    Call Check(255, HexToLong("FF"))
+End Sub
+
+'----------------------------------------
 '◇Boolean
 '----------------------------------------
 Public Function BoolToStr(ByVal Value As Boolean) As String
@@ -1299,7 +1311,7 @@ ByVal Value As Currency, _
 ByVal MaxValue As Currency) As Boolean
 
     InRangeCurrency = ((MinValue <= Value) And (Value <= MaxValue))
-    
+
 End Function
 
 '----------------------------------------
@@ -1316,6 +1328,101 @@ ByVal MinValue As Long, ByVal MaxValue As Long) As Long
     RandomValue = Int((MaxValue - MinValue + 1) * Rnd + MinValue)
 
 End Function
+
+'----------------------------------------
+'◆色処理
+'----------------------------------------
+
+'----------------------------------------
+'・色を文字列表現にする
+'----------------------------------------
+'   ・  カラー値を"FFFFFF"や
+'       "255,255,255"などの文字列に変換する
+'       Radix は 10 or 16 を指定する
+'----------------------------------------
+Public Function ColorToStr(ByVal Color As Long, _
+Optional ByVal Radix As Byte = 10, _
+Optional ByVal Delimiter As String = ",") As String
+    Call Assert(OrValue(Radix, 10, 16))
+    Dim Result As String: Result = ""
+
+    Dim Red As Byte
+    Dim Green As Byte
+    Dim Blue As Byte
+    Red = Color Mod 256
+    Green = Int(Color / 256) Mod 256
+    Blue = Int(Color / 256 / 256)
+
+    Select Case Radix
+    Case 10:
+        Result = Join(ArrayStr(CStr(Red), CStr(Green), CStr(Blue)), Delimiter)
+    Case 16:
+        Result = Join(ArrayStr(Hex(Red), Hex(Green), Hex(Blue)), Delimiter)
+    End Select
+    ColorToStr = Result
+End Function
+
+Private Sub testColorToStr()
+    Call Check("255,0,0", ColorToStr(RGB(255, 0, 0)))
+    Call Check("128,128,128", ColorToStr(RGB(128, 128, 128)))
+    Call Check("808080", ColorToStr(RGB(128, 128, 128), 16, ""))
+    Call Check("8080FF", ColorToStr(RGB(128, 128, 255), 16, ""))
+End Sub
+
+'----------------------------------------
+'・文字列表現を色にする
+'----------------------------------------
+'   ・  "FFFFFF"や"255,255,255"などの文字列を
+'       カラー値に変換する
+'       Radix は 10 or 16 を指定する
+'----------------------------------------
+Public Function StrToColor(ByVal str As String, _
+Optional ByVal Radix As Byte = 10, _
+Optional ByVal Delimiter As String = ",") As Long
+    Call Assert(OrValue(Radix, 10, 16))
+    Dim Result As Long: Result = 0
+
+    Dim ColorStrs() As String
+    If Delimiter = "" Then
+        ReDim ColorStrs(2)
+        Select Case Radix
+        Case 10:
+            ColorStrs(0) = Left(str, 3)
+            ColorStrs(1) = Mid(str, 4, 3)
+            ColorStrs(2) = Right(str, 3)
+        Case 16:
+            ColorStrs(0) = Left(str, 2)
+            ColorStrs(1) = Mid(str, 3, 2)
+            ColorStrs(2) = Right(str, 2)
+        End Select
+    Else
+        ColorStrs = Split(str, Delimiter, 3)
+    End If
+
+    Dim Red As Byte
+    Dim Green As Byte
+    Dim Blue As Byte
+    Select Case Radix
+    Case 10:
+        Red = CByte(ColorStrs(0))
+        Green = CByte(ColorStrs(1))
+        Blue = CByte(ColorStrs(2))
+    Case 16:
+        Red = HexToLong(ColorStrs(0))
+        Green = HexToLong(ColorStrs(1))
+        Blue = HexToLong(ColorStrs(2))
+    End Select
+    Result = RGB(Red, Green, Blue)
+    StrToColor = Result
+End Function
+
+Private Sub testStrToColor()
+    Call Check(RGB(255, 0, 0), StrToColor("255,0,0"))
+    Call Check(RGB(128, 128, 128), StrToColor("128,128,128"))
+    Call Check(RGB(128, 128, 128), StrToColor("808080", 16, ""))
+    Call Check(RGB(128, 128, 255), StrToColor("8080FF", 16, ""))
+End Sub
+
 
 '----------------------------------------
 '◆文字列処理
@@ -1736,14 +1843,14 @@ Public Sub testTagInnerText()
     Call Check("456", TagInnerText("456<789>000", "<123>", "<789>"))
     Call Check("456", TagInnerText("456", "<123>", "<789>"))
     Call Check("", TagInnerText("000<123><789>000", "<123>", "<789>"))
-    
+
     Dim Text As String
     Text = "<123>123<789> <123>456<789> <123>789<789>"
     Call Check("123", TagInnerText(Text, "<123>", "<789>"))
     Call Check("<123>123", TagInnerText(Text, "<456>", "<789>"))
     Call Check("", TagInnerText(Text, "<456>", "<123>"))
     Call Check(Text, TagInnerText(Text, "<321>", "<456>"))
-    
+
 End Sub
 
 '----------------------------------------
@@ -1827,7 +1934,7 @@ End Sub
 Public Function String_TagDelete(ByVal Text As String, _
 ByVal StartTag As String, ByVal EndTag As String) As String
     Dim Result As String
-    
+
     Result = Text
     Do
         If IsIncludeStr(Text, StartTag) = False Then Exit Do
@@ -1835,7 +1942,7 @@ ByVal StartTag As String, ByVal EndTag As String) As String
         Result = Result + LastStrFirstDelim(Text, EndTag)
         Text = Result
     Loop While True
-    
+
     String_TagDelete = Result
 End Function
 
@@ -1861,7 +1968,7 @@ Public Function String_DeleteSpaceLine(ByVal Value As String) As String
     Dim Lines() As String
     Lines = Split(Replace(Replace(Value, vbCrLf, vbLf), vbCr, vbLf), vbLf)
     Dim Line As String
-    
+
     Dim I As Long
     For I = ArrayCount(Lines) - 1 To 0 Step -1
         If TrimBothEndsSpace(Lines(I)) = "" Then
@@ -1878,7 +1985,7 @@ Public Function String_LineTrim(ByVal Value As String) As String
     Dim Lines() As String
     Lines = Split(Replace(Replace(Value, vbCrLf, vbLf), vbCr, vbLf), vbLf)
     Dim Line As String
-    
+
     Dim I As Long
     For I = ArrayCount(Lines) - 1 To 0 Step -1
         Lines(I) = TrimBothEndsSpace(Lines(I))
@@ -2371,7 +2478,7 @@ End Sub
 '----------------------------------------
 Function NowMilliSec() As Long
     Dim MTimer As Double
-    
+
     MTimer = CDbl(Timer)
     NowMilliSec = Round(MTimer - Fix(MTimer), 3) * 1000
 End Function
@@ -2379,38 +2486,42 @@ End Function
 '----------------------------------------
 '・月の最終日を取得
 '----------------------------------------
-Public Function MonthLastDay(ByVal DateValue As Date) As Date
-    MonthLastDay = DateSerial(Year(DateValue), Month(DateValue) + 1, 0)
+Public Function MonthLastDay( _
+ByVal YearValue As Long, _
+ByVal MonthValue As Long) As Date
+    MonthLastDay = DateSerial(YearValue, MonthValue + 1, 0)
 End Function
 
 Private Sub testMonthLastDay()
     Call Check( _
         DateValue("2014/11/30"), _
-        MonthLastDay(DateValue("2014/11/3")) _
-        )
+        MonthLastDay(2014, 11) _
+    )
     Call Check( _
         DateSerial(2014, 11, 30), _
-        MonthLastDay(DateSerial(2014, 11, 3)) _
-        )
+        MonthLastDay(2014, 11) _
+    )
 End Sub
 
 '----------------------------------------
 '・月の日数取得
 '----------------------------------------
-Public Function MonthDayCount(ByVal DateValue As Date) As Long
+Public Function MonthDayCount( _
+ByVal YearValue As Long, _
+ByVal MonthValue As Long) As Long
     MonthDayCount = _
-        Day(MonthLastDay(DateValue))
+        Day(MonthLastDay(YearValue, MonthValue))
 End Function
 
 Private Sub testMonthMonthDayCount()
     Call Check( _
         30, _
-        MonthDayCount(DateValue("2014/11/3")) _
-        )
+        MonthDayCount(2014, 11) _
+    )
     Call Check( _
         28, _
-        MonthDayCount(DateValue("2014/2/3")) _
-        )
+        MonthDayCount(2014, 2) _
+    )
 End Sub
 
 
@@ -2562,7 +2673,7 @@ End Function
 Public Sub testFormatOnlyYMDHNS()
     Dim DateValue As Date
     DateValue = CDate("2017/03/21")
-    
+
     Call Check("2017/03/21", Format(DateValue, "@"))
     Call Check("A-B-C", Format("ABC", "@-@-@"))
     Call Check("ABC", Format("ABC", "@@"))
@@ -2577,7 +2688,7 @@ Public Sub testFormatOnlyYMDHNS()
     Call Check("ABC", Format("ABC", "&&&&"))
     Call Check("123.4.0.0.", Format("123.4", ".0.0.0."))
     Call Check(",123", Format("123456", ",0,0,0,"))
-    
+
     Call Check("@", FormatOnlyYMDHNS(DateValue, "@"))
     Call Check("@-@-@", FormatOnlyYMDHNS(DateValue, "@-@-@"))
     Call Check("@@", FormatOnlyYMDHNS(DateValue, "@@"))
@@ -2688,7 +2799,7 @@ Public Sub testSetArrayCount()
     Call Check(5, ArrayCount(A))
     A(3) = "D"
     A(4) = "E"
-    
+
     Call Check("A,B,C,D,E", ArrayToString(A, ","))
 
     Call SetArrayCount(A, 2)
@@ -2785,7 +2896,7 @@ Private Sub testArrayAddArray()
     Call Check("1", B1(0))
     Call Check("2", B1(1))
 
-    
+
 End Sub
 
 
@@ -4304,7 +4415,7 @@ ByVal RowIndexMin As Long, ByVal RowIndexMax As Long)
     Dim ColOrigin As Long
     RowOrigin = LBoundNoError(ArrayValue, 2)
     ColOrigin = LBoundNoError(ArrayValue, 1)
-    
+
     RowIndexCenter = (RowIndexMin + RowIndexMax) \ 2
 
     '中央値をバッファ
@@ -4435,8 +4546,8 @@ Sub testArray2dSortQuick()
     Call Check(Array1(1, 4), "102")
     Call Check(Array1(1, 5), "105")
     'キー項目に対してソートするときれいな結果になる
-    
-    
+
+
     '1開始の動的配列での動作確認
     Dim Array2(1 To 3, 1 To 6) As String
     Array2(1, 1) = "A1"
@@ -4456,7 +4567,7 @@ Sub testArray2dSortQuick()
     For I = LBoundNoError(Array2, 2) To UBoundNoError(Array2, 2)
         Array2(3, I) = Array2(1, I) + CStr(Array2(2, I))
     Next
-    
+
     Call Array2dSortQuick(Array2, 3)
     Call Check(Array2(1, 1), "A1")
     Call Check(Array2(1, 2), "A1")
@@ -4470,8 +4581,8 @@ Sub testArray2dSortQuick()
     Call Check(Array2(2, 4), "104")
     Call Check(Array2(2, 5), "102")
     Call Check(Array2(2, 6), "105")
-    
-    
+
+
 End Sub
 
 '----------------------------------------
@@ -4798,17 +4909,17 @@ ByVal ColumnIndex As Long, _
 ByRef OrderArrayWildCard() As String, _
 Optional CaseCompare As CaseCompare = CaseCompare.IgnoreCase, _
 Optional NoOrderValuePriority As Boolean = False)
-    
+
     Dim Array2D As Variant
     Array2D = Range
-    
+
     Array2D = Array2dTranspose(Array2D)
-    
+
     Call Array2dSortCustomOrder(Array2D, ColumnIndex, OrderArrayWildCard, _
         CaseCompare, NoOrderValuePriority)
 
     Array2D = Array2dTranspose(Array2D)
-    
+
     Range = Array2D
 End Sub
 
@@ -4822,7 +4933,7 @@ Public Function Array2dTranspose(ByRef ArrayValue As Variant) As Variant
     Dim UBound1 As Long: UBound1 = UBoundNoError(ArrayValue, 1)
     Dim LBound2 As Long: LBound2 = LBoundNoError(ArrayValue, 2)
     Dim UBound2 As Long: UBound2 = UBoundNoError(ArrayValue, 2)
- 
+
     Dim Result As Variant
     ReDim Result(LBound2 To UBound2, LBound1 To UBound1)
     Dim I As Long
@@ -4832,7 +4943,7 @@ Public Function Array2dTranspose(ByRef ArrayValue As Variant) As Variant
             Result(J, I) = ArrayValue(I, J)
         Next J
     Next I
-    
+
     Array2dTranspose = Result
 End Function
 
@@ -4857,7 +4968,7 @@ ByVal RelativePath As String) As String
 
     Call Assert(fso.FolderExists(BasePath) Or fso.FileExists(BasePath), _
         "Error:AbsolutePath")
-        
+
     Call Assert(IsDrivePath(BasePath) Or IsNetworkPath(BasePath), _
         "Error:AbsolutePath")
 
@@ -4865,7 +4976,7 @@ ByVal RelativePath As String) As String
     AbsolutePath = TrimLastSpace(fso.GetAbsolutePathName(RelativePath))
     '終端に改行コードが含まれる場合があるので削除する
     Shell.CurrentDirectory = CurDirBuffer
-    
+
 End Function
 
 Private Sub testAbsolutePath()
@@ -4881,18 +4992,18 @@ Private Sub testAbsolutePath()
 
     '"C:\Program Files (x86)\Microsoft Office\root\Office16\EXCEL.EXE"
     Call Check("C:\Program Files (x86)\Google\Chrome", AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "..\..\..\Google\Chrome"))
-    
+
     '存在しないフォルダでも相対アドレスで指定できた
     Call Check("C:\Program Files (x86)\abc\def", AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "..\..\..\abc\def"))
-    
+
     '先頭にピリオドがなくても指定できる
     Call Check("C:\Program Files (x86)\Microsoft Office\root\Office16\abc\def", _
         AbsolutePath("C:\Program Files (x86)\Microsoft Office\root\Office16", "abc\def"))
 
 
-    
+
     Shell.CurrentDirectory = "\\vmware-host\Shared Folders"
-    
+
     Call Check("C:\Program Files", AbsolutePath("C:\", ".\Program Files"))
     Call Check("C:\", AbsolutePath("C:\Program Files", "..\"))
     Call Check("C:\Windows", AbsolutePath("C:\", ".\Program Files\..\Windows"))
@@ -5014,7 +5125,7 @@ Public Function FilePath_IsIncludeFileNameOutString(ByVal FileName As String) As
     Result = Result Or IsIncludeStr(FileName, "<")
     Result = Result Or IsIncludeStr(FileName, ">")
     Result = Result Or IsIncludeStr(FileName, "|")
-    
+
     FilePath_IsIncludeFileNameOutString = Result
 End Function
 
@@ -5042,7 +5153,7 @@ Optional ByVal ReplaceStr As String = "") As String
     Result = ReplaceArrayValue(FileName, _
         ArrayStr("\", "/", ":", "*", "?", """", "<", ">", "|"), _
         ArrayStr(ReplaceStr, ReplaceStr, ReplaceStr, ReplaceStr, ReplaceStr, ReplaceStr, ReplaceStr, ReplaceStr, ReplaceStr))
-        
+
     FilePath_ReplaceFileNameOutString = Result
 End Function
 
@@ -5123,16 +5234,16 @@ End Function
 Private Sub testChangeFileExtension()
     Call Check("C:\temp\text.csv", _
         ChangeFileExtension("C:\temp\text.txt", ".csv"))
-        
+
     Call Check("C:\temp\textcsv", _
         ChangeFileExtension("C:\temp\text", "csv"))
-        
+
     Call Check("C:\temp\text_csv", _
         ChangeFileExtension("C:\temp\text.", "_csv"))
-        
+
     Call Check("C:\temp\text", _
         ChangeFileExtension("C:\temp\text.", ""))
-        
+
 End Sub
 
 '----------------------------------------
@@ -5461,13 +5572,13 @@ ByVal FolderPath As String) As Boolean
 
     Dim Result As Boolean: Result = True
     Call Assert(fso.FolderExists(FolderPath), "Error:Folder_HasSubItem")
-    
+
     If FilePathListTopFolder(FolderPath) = "" Then
         If FolderPathListTopFolder(FolderPath) = "" Then
             Result = False
         End If
     End If
-    
+
     Folder_HasSubItem = Result
 End Function
 
@@ -5481,22 +5592,22 @@ ByVal FolderPath As String) As Boolean
 
 On Error GoTo ErrorLabel
     Call Assert(fso.FolderExists(FolderPath), "Error:Folder_HasSubItem")
-    
+
     Dim I As Long
-    
+
     Dim FileList() As String
     FileList = Split(FilePathListTopFolder(FolderPath), vbCrLf)
     For I = 0 To ArrayCount(FileList) - 1
         Call fso.DeleteFile(FileList(I))
     Next
-    
+
     Dim FolderList() As String
     FolderList = Split(FolderPathListTopFolder(FolderPath), vbCrLf)
 
     For I = 0 To ArrayCount(FolderList) - 1
         Call fso.DeleteFolder(FolderList(I), True)
     Next
-    
+
     Folder_DeleteSubItem = True
     Exit Function
 ErrorLabel:
@@ -5952,7 +6063,7 @@ ByVal FilePath As String)
 
     Call Stream.Write(Text)
     Call Stream.Close
-    
+
 End Sub
 
 Public Sub testString_SaveToFile()
@@ -5982,7 +6093,7 @@ ByVal SeparateChar As String)
 
     Dim FileText As String
     FileText = String_LoadFromFile(FilePath)
-   
+
     Dim Row As Long
     Dim Col As Long
     Dim FileLines() As String
@@ -5994,7 +6105,7 @@ ByVal SeparateChar As String)
             Sheet.Cells(Row + 1, Col + 1).Value = FileLine(Col)
         Next
     Next
-    
+
     Application.ScreenUpdating = ScreenUpdateBuffer
 
 End Sub
@@ -6003,16 +6114,16 @@ Public Sub Sheet_SaveCSV( _
 ByVal Sheet As Worksheet, _
 ByVal FilePath As String, _
 ByVal SeparateChar As String)
-    
+
     Dim LastCell As Range
     Set LastCell = Sheet_DataLastCellRange(Sheet)
 
     Dim Row As Long
     Dim Col As Long
-    
+
     Dim StrBuilderText As New st_vba_StringBuilder
     Dim StrBuilderLine As New st_vba_StringBuilder
-    
+
     For Row = 1 To LastCell.Row
         Call StrBuilderLine.Clear
         For Col = 1 To LastCell.Column
@@ -6021,7 +6132,7 @@ ByVal SeparateChar As String)
         Call StrBuilderText.Add( _
             ExcludeLastStr(StrBuilderLine.Text, SeparateChar) & vbCrLf)
     Next
-    
+
     Call String_SaveToFile(StrBuilderText.Text, FilePath)
 
 End Sub
@@ -6122,7 +6233,7 @@ On Error GoTo Err:
                 Exit For
             End If
         Next
-         
+
     End If
 Err:
     GetJpegExifRotate = Result
@@ -6288,7 +6399,7 @@ Optional PercentVisible As Boolean = True)
             Result = Result + Delimiter + _
             CStr(Format((Value - StartValue + 1) / (EndValue - StartValue + 1) * 100, "0.00")) + "%"
         End If
-            
+
     Else
         Result = _
             Message + Delimiter + _
@@ -6643,7 +6754,7 @@ End Sub
 '----------------------------------------
 '・書式のコピー
 '----------------------------------------
-Public Sub Range_CopyFormat( _
+Public Sub RangeCopyFormat( _
 ByRef RangeSource As Range, _
 ByRef RangeDest As Range)
     RangeSource.Copy
@@ -6654,7 +6765,7 @@ End Sub
 '----------------------------------------
 '・値のコピー
 '----------------------------------------
-Public Sub Range_CopyValue( _
+Public Sub RangeCopyValue( _
 ByRef RangeSource As Range, _
 ByRef RangeDest As Range)
     RangeSource.Copy
@@ -6677,16 +6788,16 @@ End Sub
 '----------------------------------------
 '・範囲の上の1行
 '----------------------------------------
-Public Function Range_UpRow(ByRef SourceRange As Range) As Range
-    Set Range_UpRow = _
+Public Function RangeUpRow(ByRef SourceRange As Range) As Range
+    Set RangeUpRow = _
         SourceRange.Resize(1, SourceRange.Columns.Count).Offset(-1, 0)
 End Function
 
 '----------------------------------------
 '・範囲の下の1行
 '----------------------------------------
-Public Function Range_DownRow(ByRef SourceRange As Range) As Range
-    Set Range_DownRow = _
+Public Function RangeDownRow(ByRef SourceRange As Range) As Range
+    Set RangeDownRow = _
         SourceRange.Resize(1, SourceRange.Columns.Count).Offset( _
             SourceRange.Rows.Count, 0)
 End Function
@@ -6698,7 +6809,7 @@ End Function
 '----------------------------------------
 '・範囲を上に1、移動する
 '----------------------------------------
-Public Sub Range_MoveUpRowOne(ByRef SourceRange As Range)
+Public Sub RangeMoveUpRowOne(ByRef SourceRange As Range)
     '複数の選択範囲には非対応
     Call Assert(SourceRange.Areas.Count = 1, _
         "Error:RangeMoveUpRowOne:Areas.Count != 1")
@@ -6716,14 +6827,14 @@ Public Sub Range_MoveUpRowOne(ByRef SourceRange As Range)
     End If
 
     '選択範囲の下1セルをあける
-    Call Range_DownRow(SourceRange).Insert(xlDown)
+    Call RangeDownRow(SourceRange).Insert(xlDown)
 
     '上のセルを下のセルにコピーする
-    Call Range_UpRow(SourceRange).Copy( _
-        Destination:=Range_DownRow(SourceRange))
+    Call RangeUpRow(SourceRange).Copy( _
+        Destination:=RangeDownRow(SourceRange))
 
     '上のセルを1つ削除
-    Call Range_UpRow(SourceRange).Delete(xlUp)
+    Call RangeUpRow(SourceRange).Delete(xlUp)
 
     '選択位置を1つ上にする
     If SelectionFlag Then
@@ -6734,7 +6845,7 @@ Public Sub Range_MoveUpRowOne(ByRef SourceRange As Range)
 
 End Sub
 
-Public Sub Range_MoveDownRowOne(ByRef SourceRange As Range)
+Public Sub RangeMoveDownRowOne(ByRef SourceRange As Range)
     '複数の選択範囲には非対応
     Call Assert(SourceRange.Areas.Count = 1, _
         "Error:RangeMoveUpRowOne:Areas.Count != 1")
@@ -6755,11 +6866,11 @@ Public Sub Range_MoveDownRowOne(ByRef SourceRange As Range)
     Call SourceRange.Resize(1, Selection.Columns.Count).Insert(xlDown)
 
     '下のセルを上のセルにコピーする
-    Call Range_DownRow(SourceRange).Copy( _
-        Destination:=Range_UpRow(SourceRange))
+    Call RangeDownRow(SourceRange).Copy( _
+        Destination:=RangeUpRow(SourceRange))
 
     '下のセルを1つ削除
-    Call Range_DownRow(SourceRange).Delete(xlUp)
+    Call RangeDownRow(SourceRange).Delete(xlUp)
 
     '選択位置を1つ上にする
     If SelectionFlag Then
@@ -6784,7 +6895,7 @@ End Sub
 '----------------------------------------
 '・ワークブックの存在確認
 '----------------------------------------
-Public Function App_GetOpenedBook( _
+Public Function GetOpenedBook( _
 ByVal App As Application, _
 ByVal BookNameWildCard As String, _
 Optional ByVal BookFolderPath As String = "") As Workbook
@@ -6807,59 +6918,63 @@ Optional ByVal BookFolderPath As String = "") As Workbook
             End If
         Next
     End If
-    Set App_GetOpenedBook = Result
+    Set GetOpenedBook = Result
 End Function
 
-Public Function App_OpenedBookExists( _
+Public Function OpenedBookExists( _
 ByVal App As Application, _
 ByVal BookNameWildCard As String, _
 Optional ByVal BookFolderPath As String = "") As Boolean
 
     Dim Result As Boolean: Result = False
     If IsNotNothing( _
-        App_GetOpenedBook(App, BookNameWildCard, BookFolderPath)) Then
+        GetOpenedBook(App, BookNameWildCard, BookFolderPath)) Then
         Result = True
     End If
 
-    App_OpenedBookExists = Result
+    OpenedBookExists = Result
 End Function
 
-Public Sub testBook_Exists()
-    Call Check(True, App_OpenedBookExists(Application, "st_vba.xlsm"))
-    Call Check(True, App_OpenedBookExists(Application, "st_vba*"))
-    Call Check(False, App_OpenedBookExists(Application, "st_vba.xls"))
+Public Sub testOpenedBookExists()
+    Call Check(True, OpenedBookExists(Application, "st_vba.xlsm"))
+    Call Check(True, OpenedBookExists(Application, "st_vba*"))
+    Call Check(False, OpenedBookExists(Application, "st_vba.xls"))
 End Sub
 
 '----------------------------------------
 '・ワークブックが開いていれば取得
 '  開いていなければ開く
 '----------------------------------------
-
-Public Function App_GetOpenedBookOrOpenBook( _
-ByVal App As Application, _
+Public Function GetOpenedBookOrOpenBook( _
 ByVal FilePath As String, _
 Optional ByVal CheckFullPath As Boolean = False, _
 Optional ByVal OpenReadOnlyFlag As Boolean = False, _
+Optional ByVal OpenHide As Boolean = True, _
 Optional ByRef ResultOpen As Boolean) As Workbook
     Dim Result As Workbook
-    
+
+    Dim App As Excel.Application
+    Set App = Application
     If CheckFullPath Then
-        Set Result = App_GetOpenedBook(App, _
+        Set Result = GetOpenedBook(App, _
             fso.GetFileName(FilePath), _
             fso.GetParentFolderName(FilePath))
     Else
-        Set Result = App_GetOpenedBook(App, _
+        Set Result = GetOpenedBook(App, _
             fso.GetFileName(FilePath))
     End If
-    
+
     If (IsNothing(Result)) Then
+        If OpenHide Then
+            Set App = ApplicationHide
+        End If
         Set Result = App.Workbooks.Open(FilePath, , OpenReadOnlyFlag)
         ResultOpen = True
     Else
         ResultOpen = False
     End If
-    
-    Set App_GetOpenedBookOrOpenBook = Result
+
+    Set GetOpenedBookOrOpenBook = Result
 End Function
 
 
@@ -6870,17 +6985,17 @@ End Function
 '----------------------------------------
 '・ワークブックのフルパス取得
 '----------------------------------------
-Public Function Book_FullPath( _
+Public Function BookFullPath( _
 ByVal Book As Workbook) As String
-'    Book_FullPath = _
+'    BookFullPath = _
 '        PathCombine( _
 '            Book.Path, _
 '            Book.Name)
-    Book_FullPath = Book.FullName
+    BookFullPath = Book.FullName
 End Function
 
-Public Sub test_Book_FullPath()
-    Call Check(ThisWorkbook.FullName, Book_FullPath(ThisWorkbook))
+Public Sub test_BookFullPath()
+    Call Check(ThisWorkbook.FullName, BookFullPath(ThisWorkbook))
 End Sub
 
 '----------------------------------------
@@ -6888,23 +7003,23 @@ End Sub
 '----------------------------------------
 ' ・  .xls/.xlsx/.xlsm形式の場合は形式指定保存
 '----------------------------------------
-Public Sub Book_SaveAs( _
+Public Sub BookSaveAs( _
 ByVal Book As Workbook, _
 ByVal FilePath As String)
 
     Dim Application_DisplayAlerts_Flag As Boolean
     Application_DisplayAlerts_Flag = Application.DisplayAlerts
     Application.DisplayAlerts = False
-    
+
     If Val(Application.Version) < 12 Then
         '以前のバージョンならそのまま保存
         Call Book.SaveAs(FilePath)
     Else
         '拡張子XLS なら古い形式で保存
         If LCase(GetExtensionIncludePeriod(FilePath)) = ".xls" Then
-        
+
             '旧バージョンの確認ダイアログのようなものを出させない
-            
+
             Call Book.SaveAs(FilePath, XlFileFormat.xlExcel8)
         ElseIf LCase(GetExtensionIncludePeriod(FilePath)) = ".xlsx" Then
             Call Book.SaveAs(FilePath, xlOpenXMLWorkbook)
@@ -6922,20 +7037,20 @@ End Sub
 '----------------------------------------
 '・ワークブックを確認ダイアログなど無しで閉じる
 '----------------------------------------
-Public Sub Book_CloseSilence(ByVal Book As Workbook)
+Public Sub BookCloseSilence(ByVal Book As Workbook)
     Call Book.Close(SaveChanges:=False)
 End Sub
 
 '----------------------------------------
 '・ワークブックBeforCloseイベント時に保存するかしないかを記述する
 '----------------------------------------
-Public Sub Book_BeforeClose_NoSave( _
+Public Sub BookBeforeCloseNoSave( _
 ByVal Book As Workbook)
     '終了時に保存しないためにSavedフラグをTrueにする
     Book.Saved = True
 End Sub
 
-Public Sub Book_BeforeClose_Save( _
+Public Sub BookBeforeCloseSave( _
 ByVal Book As Workbook)
     Call Book.Save
 End Sub
@@ -6944,7 +7059,7 @@ End Sub
 '・ワークシートの存在確認
 '----------------------------------------
 
-Public Function Book_GetSheet( _
+Public Function GetSheet( _
 ByVal Book As Workbook, _
 ByVal SheetNameWildCard As String) As Worksheet
 
@@ -6957,33 +7072,33 @@ ByVal SheetNameWildCard As String) As Worksheet
         End If
     Next
 
-    Set Book_GetSheet = Result
+    Set GetSheet = Result
 End Function
 
-Public Function Book_SheetExists( _
+Public Function SheetExists( _
 ByVal Book As Workbook, _
 ByVal SheetNameWildCard As String) As Boolean
 
     Dim Result As Boolean: Result = False
-    If (Book_GetSheet(Book, SheetNameWildCard) Is Nothing) = False Then
+    If (GetSheet(Book, SheetNameWildCard) Is Nothing) = False Then
         Result = True
     End If
 
-    Book_SheetExists = Result
+    SheetExists = Result
 End Function
 
-Public Sub testBook_SheetExists()
-    Call Check(True, Book_SheetExists(ThisWorkbook, "Sheet1"))
-    Call Check(True, Book_SheetExists(ThisWorkbook, "Sheet*"))
-    Call Check(False, Book_SheetExists(ThisWorkbook, "Sheet"))
+Public Sub testSheetExists()
+    Call Check(True, SheetExists(ThisWorkbook, "Sheet1"))
+    Call Check(True, SheetExists(ThisWorkbook, "Sheet*"))
+    Call Check(False, SheetExists(ThisWorkbook, "Sheet"))
 End Sub
 
 '----------------------------------------
 '・ワークシートの削除
 '----------------------------------------
-Public Sub Book_DefaultSheetsDelete( _
+Public Sub DefaultSheetsDelete( _
 ByVal Book As Workbook)
-    Call Book_SheetsDelete(Book, "Sheet*", , False)
+    Call SheetsDelete(Book, "Sheet*", , False)
 End Sub
 
 '----------------------------------------
@@ -6993,7 +7108,7 @@ End Sub
 '           Call DeleteSheets("*(?)")
 '       Sheet1(2) という名前のシートだけ削除される
 '----------------------------------------
-Public Sub Book_SheetsDelete( _
+Public Sub SheetsDelete( _
 ByVal Book As Workbook, _
 ByVal SheetNameWildCard As String, _
 Optional MatchUnDelete As Boolean = False, _
@@ -7017,14 +7132,14 @@ Optional MsgBoxFlag As Boolean = True)
             End If
         End If
     Next
-    
+
     If MessageText = "" Then
         If MsgBoxFlag Then
             Call MsgBox("削除対象シートはありません。")
         End If
         Exit Sub
     End If
-    
+
     If MsgBoxFlag Then
         If MsgBox(StringCombine(vbCrLf, _
             "次のシートを削除しますか？", MessageText), _
@@ -7033,11 +7148,11 @@ Optional MsgBoxFlag As Boolean = True)
             Exit Sub
         End If
     End If
-    
+
     Dim Application_DisplayAlerts_Flag As Boolean
     Application_DisplayAlerts_Flag = Application.DisplayAlerts
     Application.DisplayAlerts = False
-    
+
     For I = Book.Sheets.Count To 1 Step -1
         If MatchUnDelete = False Then
             If (Book.Sheets(I).Name Like SheetNameWildCard) Then
@@ -7049,9 +7164,9 @@ Optional MsgBoxFlag As Boolean = True)
             End If
         End If
     Next
-        
+
     Application.DisplayAlerts = Application_DisplayAlerts_Flag
-    
+
 End Sub
 
 '----------------------------------------
@@ -7061,7 +7176,7 @@ End Sub
 '----------------------------------------
 '・ワークシートを確認ダイアログ無しで削除する
 '----------------------------------------
-Public Sub Sheet_DeleteSilence(ByVal Sheet As Worksheet)
+Public Sub SheetDeleteSilence(ByVal Sheet As Worksheet)
     Dim Application_DisplayAlerts_Flag As Boolean
     Application_DisplayAlerts_Flag = Application.DisplayAlerts
     Application.DisplayAlerts = False
@@ -7072,11 +7187,11 @@ End Sub
 '----------------------------------------
 '・ワークシートセル指定
 '----------------------------------------
-Public Function Sheet_CellRange( _
+Public Function CellRange( _
 ByVal Sheet As Worksheet, _
 ByVal Row1 As Long, ByVal Col1 As Long, _
 ByVal Row2 As Long, ByVal Col2 As Long) As Range
-    Set Sheet_CellRange = Sheet.Range( _
+    Set CellRange = Sheet.Range( _
         Sheet.Cells(Row1, Col1), _
         Sheet.Cells(Row2, Col2))
 End Function
@@ -7084,7 +7199,7 @@ End Function
 '----------------------------------------
 '・ワークシートへのテキスト配置
 '----------------------------------------
-Public Sub Sheet_SetText(ByVal Sheet As Worksheet, _
+Public Sub SheetSetText(ByVal Sheet As Worksheet, _
 ByVal RowIndex As Long, ByVal ColumnIndex As Long, _
 ByVal DocumentText As String)
 
@@ -7113,7 +7228,7 @@ End Sub
 '----------------------------------------
 '・値の増加
 '----------------------------------------
-Public Sub Sheet_CellValueIncrement( _
+Public Sub CellValueIncrement( _
 ByVal Sheet As Worksheet, _
 ByVal Row As Long, ByVal Col As Long, _
 ByVal Increment As Long)
@@ -7127,13 +7242,13 @@ End Sub
 '   ・  タイトル列をダブルクリックすると全行がON/OFF切り替わる
 '   ・  使い方は次の通り
 '           Private Sub Worksheet_BeforeDoubleClick(ByVal Target As Range, Cancel As Boolean)
-'               Cancel = Sheet_CheckBoxColumn(Me, Target, Col_A, Col_D, 2)
+'               Cancel = CheckBoxColumn(Me, Target, Col_A, Col_D, 2)
 '           End Sub
 '       Col_Aは対象列
 '       Col_Dはデータの有無をチェックする列
 '       2は、タイトル行、2+1以上がデータ列になる
 '----------------------------------------
-Public Function Sheet_CheckBoxColumn(ByVal Sheet As Worksheet, _
+Public Function CheckBoxColumn(ByVal Sheet As Worksheet, _
 ByVal Target As Range, _
 ByVal Col_CheckBox As Long, _
 ByVal Col_Data As Long, _
@@ -7141,11 +7256,11 @@ ByVal Row_Title As Long) As Boolean
 
 
     Dim Result As Boolean: Result = False
-    
+
     If Target.Column <> Col_CheckBox Then Exit Function
     If Target.Columns.Count <> 1 Then Exit Function
     If Target.Rows.Count <> 1 Then Exit Function
-    
+
     If Target.Row = Row_Title Then
 
         '全てONされているかどうかを調べて
@@ -7167,10 +7282,10 @@ ByVal Row_Title As Long) As Boolean
                 Sheet.Cells(I, Col_CheckBox).Value = IIf(AllOnFlag, "OFF", "ON")
             End If
         Next
-        
+
         Result = True
     ElseIf Row_Title + 1 <= Target.Row Then
-    
+
         If Target.Value = "" Then
             Target.Value = "ON"
         ElseIf Target.Value = "ON" Then
@@ -7180,8 +7295,8 @@ ByVal Row_Title As Long) As Boolean
         End If
         Result = True
     End If
-    
-    Sheet_CheckBoxColumn = Result
+
+    CheckBoxColumn = Result
 End Function
 
 '----------------------------------------
@@ -7311,14 +7426,14 @@ Public Function GetShapeFromImageFile(ByVal Sheet As Worksheet, _
         Top:=Rect_Top, _
         Width:=0, _
         Height:=0)
-    
+
     '元画像サイズに戻す
     Call Shape.ScaleHeight(1#, True)
     Call Shape.ScaleWidth(1#, True)
 
     '縦横比を保持したまま、高さを調整する
     Shape.LockAspectRatio = True
-    
+
     If OrValue(Shape.Rotation, 0, 180) Then
         Shape.Height = Rect_Height
 
@@ -7327,7 +7442,7 @@ Public Function GetShapeFromImageFile(ByVal Sheet As Worksheet, _
             '横サイズがはみ出ているなら横を合わせる
             Shape.Width = Rect_Width
         End If
-    
+
         '左右位置調整をする
         Select Case HorizontalAlign
         Case AlineHorizontal.alCenter
@@ -7335,27 +7450,27 @@ Public Function GetShapeFromImageFile(ByVal Sheet As Worksheet, _
         Case AlineHorizontal.alRight
             Shape.Left = Rect_Left + (Rect_Width - Shape.Width)
         End Select
-        
+
         Select Case VerticalAlign
         Case AlineVertical.alCenter
             Shape.Top = Rect_Top + (Rect_Height - Shape.Height) / 2
         Case AlineVertical.alBottom
             Shape.Top = Rect_Top + (Rect_Height - Shape.Height)
         End Select
-        
+
     ElseIf OrValue(Shape.Rotation, 90, 270) Then
         'JpegのExif情報によって回転した状態になる場合がある
         Shape.Width = Rect_Height
-        
+
         '画像横サイズが範囲内に収まっているかどうか確認
         If Shape.Height > Rect_Width Then
             '横サイズがはみ出ているなら横を合わせる
             Shape.Height = Rect_Width
-    
+
             '左上端に寄せる
             Shape.Left = Rect_Left - (Shape.Width / 2) + (Shape.Height / 2)
             Shape.Top = Rect_Top - (Shape.Height / 2) + (Shape.Width / 2)
-            
+
             '左右位置はぴったりなので上下位置調整をする
             Select Case VerticalAlign
             Case AlineVertical.alCenter
@@ -7367,7 +7482,7 @@ Public Function GetShapeFromImageFile(ByVal Sheet As Worksheet, _
             '左上端に寄せる
             Shape.Left = Rect_Left - (Shape.Width / 2) + (Shape.Height / 2)
             Shape.Top = Rect_Top - (Shape.Height / 2) + (Shape.Width / 2)
-            
+
             '上下位置はぴったりなので左右位置調整をする
             Select Case HorizontalAlign
             Case AlineHorizontal.alCenter
@@ -7376,7 +7491,7 @@ Public Function GetShapeFromImageFile(ByVal Sheet As Worksheet, _
                 Shape.Left = Rect_Left + (Rect_Width) - (Shape.Width / 2) - (Shape.Height / 2)
             End Select
         End If
-      
+
     End If
 
     Set GetShapeFromImageFile = Shape
@@ -7485,10 +7600,10 @@ ByVal Range As Range)
                 Shape.Delete
             End If
         End If
-        
+
     Loop While False
     Next
-    
+
 End Sub
 
 '----------------------------------------
@@ -7518,18 +7633,18 @@ ParamArray Filters())
 
     Dim Dialog As FileDialog
     Set Dialog = Application.FileDialog(msoFileDialogFilePicker)
-    
+
     Call Dialog.Filters.Clear
     Dim I As Long
     For I = LBound(Filters) To UBound(Filters)
         Call Dialog.Filters.Add( _
             FirstStrFirstDelim(Filters(I), "|"), _
             LastStrFirstDelim(Filters(I), "|"), I + 1)
-            
+
 '        Call Dialog.Filters.Add("Excelブック", "*.xls; *.xlsx; *.xlsm", 1)
 '        Call Dialog.Filters.Add("Textファイル", "*.txt", 1)
     Next
-        
+
     Dialog.InitialFileName = FilePath
     Dialog.InitialView = OptionInitialView
     Dialog.AllowMultiSelect = OptionAllowMultiSelect
@@ -7540,22 +7655,22 @@ ParamArray Filters())
         Next
 
     End If
-    
+
     FileDialog_FilePicker = Result
 End Function
 
 Public Sub testFileDialog_FilePicker()
     Dim Result As String
-    Result = FileDialog_FilePicker(Book_FullPath(ThisWorkbook), _
+    Result = FileDialog_FilePicker(BookFullPath(ThisWorkbook), _
         msoFileDialogViewDetails, True)
     Call MsgBox(Result)
-    
-    Result = FileDialog_FilePicker(Book_FullPath(ThisWorkbook), _
+
+    Result = FileDialog_FilePicker(BookFullPath(ThisWorkbook), _
         msoFileDialogViewDetails, False, _
         "Excelブック|*.xls; *.xlsx; *.xlsm", _
         "Textファイル|*.txt")
     Call MsgBox(Result)
-    
+
     Result = FileDialog_FilePicker("", _
         msoFileDialogViewDetails, True)
     Call MsgBox(Result)
@@ -7585,18 +7700,18 @@ ParamArray Filters())
 
     Dim Dialog As FileDialog
     Set Dialog = Application.FileDialog(msoFileDialogOpen)
-    
+
     Call Dialog.Filters.Clear
     Dim I As Long
     For I = LBound(Filters) To UBound(Filters)
         Call Dialog.Filters.Add( _
             FirstStrFirstDelim(Filters(I), "|"), _
             LastStrFirstDelim(Filters(I), "|"), I + 1)
-            
+
 '        Call Dialog.Filters.Add("Excelブック", "*.xls; *.xlsx; *.xlsm", 1)
 '        Call Dialog.Filters.Add("Textファイル", "*.txt", 1)
     Next
-        
+
     Dialog.InitialFileName = FilePath
     Dialog.InitialView = OptionInitialView
     Dialog.AllowMultiSelect = OptionAllowMultiSelect
@@ -7607,22 +7722,22 @@ ParamArray Filters())
         Next
 
     End If
-    
+
     FileDialog_Open = Result
 End Function
 
 Public Sub testFileDialog_Open()
     Dim Result As String
-    Result = FileDialog_Open(Book_FullPath(ThisWorkbook), _
+    Result = FileDialog_Open(BookFullPath(ThisWorkbook), _
         msoFileDialogViewDetails, True)
     Call MsgBox(Result)
-    
-    Result = FileDialog_Open(Book_FullPath(ThisWorkbook), _
+
+    Result = FileDialog_Open(BookFullPath(ThisWorkbook), _
         msoFileDialogViewDetails, False, _
         "Excelブック|*.xls; *.xlsx; *.xlsm", _
         "Textファイル|*.txt")
     Call MsgBox(Result)
-    
+
     Result = FileDialog_Open("", _
         msoFileDialogViewDetails, True)
     Call MsgBox(Result)
@@ -7646,7 +7761,7 @@ ByVal OptionInitialView As MsoFileDialogView)
 
     Dim Dialog As FileDialog
     Set Dialog = Application.FileDialog(msoFileDialogSaveAs)
-    
+
     Dialog.InitialFileName = FilePath
     Dialog.InitialView = OptionInitialView
     If Dialog.Show = True Then
@@ -7656,20 +7771,20 @@ ByVal OptionInitialView As MsoFileDialogView)
         Next
 
     End If
-    
+
     FileDialog_SaveAs = Result
 End Function
 
 Public Sub testFileDialog_SaveAs()
     Dim Result As String
-    Result = FileDialog_SaveAs(Book_FullPath(ThisWorkbook), _
+    Result = FileDialog_SaveAs(BookFullPath(ThisWorkbook), _
         msoFileDialogViewDetails)
     Call MsgBox(Result)
-    
-    Result = FileDialog_SaveAs(Book_FullPath(ThisWorkbook), _
+
+    Result = FileDialog_SaveAs(BookFullPath(ThisWorkbook), _
         msoFileDialogViewDetails)
     Call MsgBox(Result)
-    
+
     Result = FileDialog_SaveAs("", _
         msoFileDialogViewDetails)
     Call MsgBox(Result)
@@ -7699,9 +7814,9 @@ ByVal OptionInitialView As MsoFileDialogView)
 
     Dim Dialog As FileDialog
     Set Dialog = Application.FileDialog(msoFileDialogFolderPicker)
-    
+
     Dim I As Long
-        
+
     Dialog.InitialFileName = FolderPath
     Dialog.InitialView = OptionInitialView
     If Dialog.Show = True Then
@@ -7711,7 +7826,7 @@ ByVal OptionInitialView As MsoFileDialogView)
         Next
 
     End If
-    
+
     FileDialog_FolderPicker = Result
 End Function
 
@@ -7720,11 +7835,11 @@ Public Sub testFileDialog_FolderPicker()
     Result = FileDialog_FolderPicker(ThisWorkbook.Path, _
         msoFileDialogViewDetails)
     Call MsgBox(Result)
-    
+
     Result = FileDialog_FolderPicker(ThisWorkbook.Path, _
         msoFileDialogViewDetails)
     Call MsgBox(Result)
-    
+
     Result = FileDialog_FolderPicker("", _
         msoFileDialogViewDetails)
     Call MsgBox(Result)
@@ -7755,6 +7870,9 @@ Optional ByVal ActTitle As String = "")
     'ActiveWindow.Caption = "" にするとよい
 End Sub
 
+'----------------------------------------
+'◇Excel Application Mode
+'----------------------------------------
 Public Sub ApplicationModeOn()
     Call ApplicationMode(ThisWorkbook.ActiveSheet, True)
 End Sub
@@ -7796,6 +7914,17 @@ Public Sub ApplicationMode(ByVal Sheet As Worksheet, ByVal Switch As Boolean)
     Application.ScreenUpdating = ScreenUpdatingBuffer
 End Sub
 
+'----------------------------------------
+'◇非表示アプリケーション
+'----------------------------------------
+'   ・  非表示でBOOKを開く時に使える非表示アプリケーションオブジェクト
+'----------------------------------------
+Public Function ApplicationHide() As Excel.Application
+    Dim Result As Excel.Application
+    Set Result = CreateObject("Excel.Application")
+    Result.DisplayAlerts = False
+    Set ApplicationHide = Result
+End Function
 
 '----------------------------------------
 '◆メニュー処理
@@ -8690,7 +8819,7 @@ Sub NumLockOn()
 
   Call GetKeyboardState(keys(0))
   NumLockState = keys(VK_NUMLOCK)
-       
+
   '「NumLock」キーがオフの場合はオンにする。
   If NumLockState <> True Then
     'キーを押す
@@ -8764,20 +8893,20 @@ ByVal Value As String) As Boolean
     If StrCount(Value, ".") = 3 Then
         Dim S() As String
         S = Split(Value, ".")
-        
+
         If IsLong(S(0)) _
         And IsLong(S(1)) _
         And IsLong(S(2)) _
         And IsLong(S(3)) Then
-            
+
             Result = InRange(0, CLng(S(0)), 255) _
                 And InRange(0, CLng(S(1)), 255) _
                 And InRange(0, CLng(S(2)), 255) _
                 And InRange(0, CLng(S(3)), 255) _
-        
+
         End If
     End If
-    
+
     IsIPAddress = Result
 End Function
 
@@ -8788,10 +8917,10 @@ Public Function IPAddressToCurrency( _
 ByVal IPAddressText As String) As Currency
     Dim Result As Currency
     Call Assert(IsIPAddress(IPAddressText), "Error:IPAddressToCurrency")
-    
+
     Dim S() As String
     S = Split(IPAddressText, ".")
-    
+
     Result = _
         CCur(LongToStrDigitZero(S(0), 3)) * 1000000000 + _
         CCur(LongToStrDigitZero(S(1), 3)) * 1000000 + _
@@ -8815,410 +8944,6 @@ ByVal MaxValue As String) As Boolean
         And _
         (IPAddressToCurrency(Value) <= IPAddressToCurrency(MaxValue)) _
     )
-    
+
 End Function
 
-
-'--------------------------------------------------
-'■履歴
-'◇ ver 2014/11/03
-'・ 作成
-'・ 文字列処理First/Last/Delimiter
-'・ グラフ処理
-'・ DataLastRow/Col
-'・ ArrayCount
-'・ Assert/Check/OrValue
-'・ IncludeLastPathDelim
-'・ IniFile_GetString/SetString
-'・ GetAbsolutePath
-'・ MaxValue/MinValue
-'・ LongToStrDigitZero
-'・ PixelToPoint/PointToPixel
-'・ ADOStream
-'◇ ver 2014/11/06
-'・ CommandExecuteReturn
-'・ IncludeBothEndsStr/ExcludeBothEndsStr
-'・ GetFirstStr---/GetLastStr---
-'・ TrimLast/TrimFirst
-'・ IsLong
-'◇ ver 2014/11/07
-'・ ClearLast
-'・ CommandExecuteReturn
-'◇ ver 2014/11/08
-'・ ChartObjectExists/ShapeExists
-'◇ ver 2014/11/19
-'・ ExcludeLastPathDelim追加
-'・ UBound/LBound
-'・ ArrayStr/StringArrayCombine/StringCombine/PathCombine
-'・ GetExtensionIncludePeriod/ChangeFileExtension
-'・ Get/SetWindowLong
-'・ SetWindowStyle/SetWindowExStyle/SetWindowTopMost
-'◇ ver 2014/11/20
-'・ GetAsyncKeyState
-'・ BooleanToString
-'・ FormatYYYY_MM_DD/FormatHH_MM_SS
-'・ GetFolderPathListTopFolder
-'・ ClearLineColumn
-'・ SetTaskbarButtonAppID
-'◇ ver 2014/11/21
-'・ SetIcon/ResetIcon
-'◇ ver 2014/11/24
-'・ BooleanToString>>BoolToStr
-'・ RectToStr/StrToRect
-'・ NewRect/NewRectSize/NewPoint/NewRect_PositionSize
-'   /GetRectSize/RectEqual
-'   /GetRectInsideDesktopRect
-'・ PopupMenu
-'・ Form_GetRectPixel/Form_SetRectPixel
-'・ GetDesktopWindow/GetWindowRect/SystemParametersInfo
-'   GetRectDesktop/GetRectWorkArea
-'・ GetSpecialFolderPath
-'・ Form_IniWritePosition/Form_IniReadPosition
-'・ TaskDialog
-'◇ ver 2014/11/26
-'・ IsWindowsOffice64/32bit
-'   WindowsMajor/MinorVersion
-'   IsTaskbarPinWindows
-'・ ForceCreateFolder
-'・ CreateShortcutFile
-'・ GetWindowState
-'・ GetRectInsideDesktopRect修正
-'◇ ver 2014/12/01
-'・ TaskDialog系の修正
-'・ SetWindowIcon/ResetWindowIcon
-'・ GetBitmapDrawIcon/Image_Picture_SetBitmap
-'・ GetDC/FillRect/DrawIcon
-'   /CreateCompatibleDC/CreateCompatibleBitmap
-'   /SelectObject/DeleteObject/GetStockObject
-'・ GetWindowCloseButton/GetWindowStyle/GetWindowExStyle
-'   /GetWindowIcon
-'◇ ver 2014/12/02
-'・ MouseMove/MouseClick
-'◇ ver 2014/12/04
-'・ SetShortcutIcon/SetTaskbarPinShortcutIcon/SetTaskbarPin
-'◇ ver 2014/12/06
-'・ StrToLongDefault
-'・ ArrayAdd
-'・ ApplicationMode/SetExcelWindowTitle
-'◇ ver 2015/02/02
-'・ Microsoft Forms 2.0 Object Libraryの参照設定追加
-'・ FirstStrFirstDelim/FirstStrLastDelim
-'   /LastStrFirstDelim/LastStrLastDelim
-'◇ ver 2015/02/06
-'・ ReCreateFolder作成
-'◇ ver 2015/02/13
-'・ DataLastCol修正
-'   DataLastCell作成
-'◇ ver 2015/03/05
-'・ 参照設定ReferenceAdd系処理追加
-'・ 配列関連処理追加
-'   ArrayInsert/ArrayDelete
-'   /ArrayIndexOf/ArrayDeleteSameItem
-'   /ArrayDimension/ArrayToString
-'・ ListView関連処理追加
-'   ListView_SelectedItemCount/ListView_CheckedItemCount
-'   /ListView_SelectAll/ListView_CheckSelectedItem
-'   /ListView_IsCheckSelectedItem/ListView_MultiSelectChecked
-'   /ListView_IndexOfKey
-'・ ファイル日時関連処理追加
-'   DateToApiFILETIME/GetFileFolderTime/SetFileFolderTime
-'・ FormatDateTimeNormal追加
-'・ ファイルフォルダ一覧処理追加
-'   FolderPathListTopFolder/FolderPathListSubFolder
-'   /FilePathListTopFolder/FilePathListSubFolder
-'・ ComboBox関連処理追加
-'   ComboBox_GetStrings/ComboBox_SetStrings
-'   /Combobox_ClearList
-'・ 名前変更 GetAbsolutePath>>AbsolutePath
-'・ StringCombine/StringCombineArray
-'   /PathCombine修正
-'◇ ver 2015/03/11
-'・ ArraySetValueObjectを追加
-'   ArrayAdd/ArrayInsertを修正
-'◇ ver 2015/03/19
-'・ ArrayAdd/ArrayInsert/ArrayDeleteを修正
-'・ コメントの修正
-'◇ ver 2015/07/23
-'・ StarndardSoftwareLibraryからst_vbaに名前変更
-'◇ ver 2015/07/29
-'・ 64bit版Excelへの暫定対応(既存は32bit版Excelのみの対応)
-'   TaskDialogAPIを削除
-'・ GetDPIの正しい実装を行った。
-'◇ ver 2015/08/07
-'・ FileExists(Win/Mac両対応版)を追加
-'・ GetClipboardText/SetClipboardText(Win/Mac両対応版)を追加
-'◇ ver 2015/08/23
-'・ CommandExecuteを追加
-'・ PopupMenu_PopupReturn_NoPositionを追加
-'・ IsShortcutLinkFile追加
-'・ IsJpegImageFile/IsJpegExifFile追加
-'・ GetJpegExifDateTime追加
-'◇ ver 2015/12/12
-'・ Excel64bit定数追加
-'・ SleepAPI追加
-'・ IE_NewObject/IE_GetObject/IE_Navigate
-'   /IE_NavigateWait/IE_RunJavaScript追加
-'・ IsIncludeStr追加
-'◇ ver 2015/12/16
-'・ ClearLastRange/ClearLastColumn/ClearLastRow
-'   /ClearLastRangeContents
-'   /ClearLastColumnContents/ClearLastRowContentsを修正追加
-'◇ ver 2016/01/08
-'・ ClearLastRange/ClearLastColumn/ClearLastRowを修正
-'   ClearContents機能を追加
-'・ TrimFirstChar/TrimLastChar/TrimBothEndsCharを廃止
-'   TrimFirstStrs/TrimLastStrs/TrimBothEndsStrs
-'   /TrimFirstSpace/TrimLastSpace/TrimBothEndsSpaceを追加
-'・ DataLastRow/DataLastColがデータがないときにエラー発生するので
-'   OnErrorResumeするように修正
-'◇ ver 2016/02/06
-'・ Enum AlineHorizontal/AlineVertical の定義
-'・ URLDownloadToFile APIとURLDownloadFileの追加
-'・ 日付時刻書式指定関数の追加
-'   FormatYYYYMMDD/FormatYYYY_MM
-'   /FormatHHMMSS/FormatHH_MM
-'   /FormatYYYYMMDDHHMMSS/FormatYYYYMMDDHHMMSS_Hyphen
-'・ クリア形処理の名前変更
-'   ClearLastRange→ClearRangeLast
-'   ClearLastColumn→ClearColumnLast
-'   ClearLastRow→ClearRowLast
-'・ Shape処理の追加
-'   GetShapeFromImageFile/ShapeCompressUseClipboard
-'・ IE処理の修正 IE_NewObject/IE_Refresh
-'   /IE_Navigate/IE_NavigateWait
-'◇ ver 2016/02/20
-'・ GetWorkbook追加
-'・ GetWorksheet/WorksheetExists追加
-'・ DeleteSheet/DeleteDefaultSheet追加
-'・ SetTextSheet追加
-'・ TagInnerText/TagOuterText追加
-'・ IfEmptyStr追加
-'・ セルクリア系処理の名前変更
-'   ClearRangeLast→ClearRangeLastData
-'   ClearColumnLast→ClearColumnLastRow
-'   ClearRowLast→ClearRowLastColumn
-'・ URLDownloadFileの戻り値をBooleanに変更
-'◇ ver 2016/02/21
-'・ IsNothing/IsNotNothing追加
-'・ CastExcludeComma追加
-'・ IE_GetElementByTagNameClassName/IE_GetElementByTagNameInnerHTMLの追加
-'・ FormulaDeleteRange追加
-'・ ColumnNumberByTitle追加
-'・ ColumnNumber追加
-'・ CopyFile追加
-'◇ ver 2016/02/23
-'・ ThisWeekDay/LastWeekDay/NextWeekDay追加
-'◇ ver 2016/02/24
-'・ IsDrivePath/IsNetworkPath追加
-'・ SettingFullPath追加
-'   AbsolutePath修正
-'◇ ver 2016/02/28
-'・ ThisWeekDay/LastWeekDay/NextWeekDay修正
-'・ ColumnNumberByTitle修正
-'・ RangeClear機能追加MergeCellOption対応
-'・ RangeCopyNumberFormat/RangeCopyFormat/RangeCopyAll追加
-'・ FormulaDeleteRange→RangeDeleteFormula名前変更
-'・ FirstStrFirstDelim/FirstStrLastDelim
-'   /LastStrFirstDelim/LastStrLastDelim の修正
-'・ DeleteSheetの修正
-'・ SetTextSheetの修正
-'・ IE_GetElementByTagNameId追加
-'◇ ver 2016/02/29
-'・ ClearRangeLastData/ClearColumnLastRow/ClearRowLastColumn修正
-'◇ ver 2016/03/04
-'・ TagOuterTextの修正
-'・ TagOuterTextList追加
-'・ ReplaceHTMLTag追加
-'◇ ver 2016/03/10
-'・ Wingdings_Checkbox_Checked/UnChecked追加
-'・ urlEncode追加
-'・ ArrayAddNotDuplicate/ArrayExists追加
-'・ ArraySortQuick追加
-'・ RangeUpRow/RangeDownRow追加
-'・ RangeMoveUpRowOne/RangeMoveDownRowOne追加
-'・ LengthSjisByte
-'   /LeftSjisByte/RightSjisByte
-'   /MidSjisByte追加
-'◇ ver 2016/03/13
-'・ urlEncode修正
-'・ TopLeftCell追加
-'・ StrCount追加
-'・ StrToBool追加
-'・ st_vba_Baseから、st_vba_Coreに名称変更
-'・ ListView処理を、st_vba_ListViewに移行
-'・ InternetExplorer処理を、st_vba_IEに移行
-'◇ ver 2016/03/20
-'・ IE_GetElementByTagNameを追加
-'・ ReplaceContinuousSpace追加
-'・ RangeCopyValue追加
-'・ MatchRegExp追加
-'・ ArrayIndexOfに完全一致/部分一致/ワイルドカード/正規表現
-'   の機能を追加。ArrayExistsも追加。
-'◇ ver 2016/03/23
-'・ ArrayIndexOfを改良して
-'   ワイルドカード配列/正規表現配列の機能を追加
-'・ ReplaceArrayValue/DeleteArrayValueを追加
-'・ ArraySortOrderを追加
-'◇ ver 2016/03/26
-'・ ArraySortOrderを修正
-'   ArraySortCustomOrderに名称変更
-'・ ReplaceRegExpを追加
-'・ ReplaceArrayRegExpを追加
-'・ DeleteArrayRegExpを追加
-'・ ArraySortQuickにSortOrder機能追加
-'・ ArraySortStrLength追加
-'・ ArrayReverse追加
-'・ ShapeCompressUseClipboard修正
-'・ RowNumberByTitle追加
-'◇ ver 2016/03/27
-'・ ArrayIsUnique追加
-'・ 2次元配列系の処理を追加
-'   Array2dSetColumn
-'   /Array2dSetRowValues/Array2dGetRowValues
-'   /Array2dAdd/Array2dInsert/Array2dDelete
-'   /Array2dSortQuick/Array2dIsUnique
-'◇ ver 2016/03/28
-'・ Array2dAddを修正
-'◇ ver 2016/03/29
-'・ DeleteRegExp追加
-'・ ReplaceHTMLTag>>DeleteHTMLTag名前変更と修正
-'・ st_vba_IE.IE_GetElementの処理を修正
-'   引数をieからElement=ie.Documentに変更
-'   IE_GetElementByTagNameName追加
-'◇ ver 2016/03/30
-'・ Array2dSetRowValues/Array2dGetRowValues 追加
-'・ Array2dRowsCount/Array2dColumnsCount 追加
-'◇ ver 2016/03/31
-'・ Array2dColumnsCount/Array2dRowsCount 追加
-'・ Array2dColumnsCount/Array2dRowsCount 追加
-'・ Array2dSetColumnValues/Array2dGetColumnValues 追加
-'・ Array2dSortStrLength/Array2dSortStrLengthSetKeyValue 追加
-'・ Array2dSortCustomOrder/Array2dSortCustomOrderSetKeyValue 追加
-'・ ArraySort系処理のAssertとメッセージ修正
-'◇ ver 2016/04/02
-'・ Array2dSort系の処理修正
-'◇ ver 2017/02/05
-'・ FileCreateWaitをFileExistWaitに変更し
-'   ファイルの存在の有無を待つように機能追加
-'◇ ver 2017/02/11
-'・ Array2dRowsStartIndex/Array2dRowsEndIndex
-'   Array2dColumnsStartIndex/Array2dColumnsEndIndex 追加
-'・ Array2dRowsCount/Array2dColumnsCount 修正
-'・ Array2dSortCustomOrder
-'   Array2dSetRowValues/Array2dGetRowValues
-'   Array2dSetColumnValues/Array2dGetColumnValues
-'   1Originの配列(Indexの最小値が1の配列)に対応
-'◇ ver 2017/02/13
-'・ Application_StatusBar_Progress 修正
-'   ProgressText 追加
-'・ DeleteSheets 追加
-'・ SheetRangeSortCustomOrder 追加
-'◇ ver 2017/02/17
-'・ WorksheetExistsのBook指定の不具合修正
-'◇ ver 2017/02/20
-'・ CellValueIncrement 追加
-'・ WorkbookFullPath 追加
-'◇ ver 2017/02/26
-'・ IPアドレスを処理するために
-'   InRangeCurrency/IPAddressToCurrency
-'   /InRangeIPAddress/IsIPAddress 追加
-'・ ProgressText 修正
-'・ st_vba_WaitForm の組み込み
-'・ Standard Software URL Facebookページに変更
-'◇ ver 2017/03/06
-'・ SheetRangeSortCustomOrder に WorksheetFunction.Transpose の
-'   限界値がある不具合があり、Transpose関数と同じものを
-'   自作の Array2dTranspose 関数に置き換えた
-'◇ ver 2017/03/09
-'・ テキストファイル読み書き関数のエンコードのEnumでの指定版を作成
-'   GetEncodingTypeJpCharCode/GetEncodingTypeName
-'   /String_LoadFromFile/String_SaveToFile 追加
-'◇ ver 2017/03/12
-'・ TagInnerText 修正
-'◇ ver 2017/03/14
-'・ 参照設定追加コードを st_vba_SetReference に分離
-'◇ ver 2017/03/19
-'・ st_vba_SetReference の処理順序入れ替え
-'・ 各モジュールやクラスの説明がないものは先頭に説明を記載
-'・ st_vba_CSheetData_Sample を追加
-'◇ ver 2017/03/21
-'・ AbsolutePath のテストを追加
-'・ ForceCreateFolderを修正
-'・ 全体的に関数名をリファクタリング
-'   App_ / Book_ / Sheet_ / Range_ を関数先頭に追加
-'・ Sheet_ColumnNumberByTitle / Sheet_RowNumberByTitle を
-'   ワイルドカード対応
-'・ App_GetOpenedBookOrOpenBook 追加
-'・ Folder_DeleteIfNoFile / Folder_DeleteIfNoFileToUpFolder 追加
-'・ Format_Date_UseOnlyYMDHNS 追加
-'◇ ver 2017/03/23
-'・ RandomValue を追加
-'◇ ver 2017/03/25
-'・ IsDrivePath / IsNetworkPath の不具合を修正
-'・ AbsolutePathのネットワークパス対応
-'   テストの確立
-'・ Book_SaveAs の追加
-'・ FileDialog_FilePicker / FileDialog_Open
-'   / FileDialog_SaveAs / FileDialog_FolderPicker 追加
-'◇ ver 2017/04/01
-'・ st_vba_CSetting 追加
-'・ AbsolutePathを修正
-'・ String_GetOutShiftJIS
-'   /String_GetMachineDependentCharacter 追加
-'◇ ver 2017/04/02
-'・ TagInnerTextLast 追加
-'・ Folder_HasSubItem / Folder_DeleteSubItem 追加
-'・ Folder_DeleteIfNoFile 修正
-'◇ ver 2017/04/03
-'・ ChangeFileExtension 修正
-'◇ ver 2017/04/05
-'・ st_vba_SetReference ReferenceAdd_VBAExtensibility を
-'   64bit版Windowsでも動くように対応した
-'・ Book_FullPath の修正
-'◇ ver 2017/04/06
-'・ FilePath_IsIncludeFileNameOutString / FilePath_ReplaceFileNameOutString 追加
-'◇ ver 2017/04/16
-'・ SetArrayCount / ArrayAddArray 追加
-'・ Application_StatusBar_Progress / ProgressText 修正
-'・ String_DeleteSpaceLine / String_LineTrim
-'   / String_TagDelete / String_HTMLtoText 追加
-'・ Sheet_RowNumberByTitle 追加
-'・ Range_DeleteShape 追加
-'・ Sheet_CheckBoxColumn 追加
-'◇ ver 2017/05/04
-'・ Col__A→Col_A 等、修正
-'◇ ver 2017/06/11
-'・ keybd_event / GetKeyboardState API 追加
-'・ NumLockOn 追加
-'◇ ver 2017/07/01
-'・ Long最大値の定義
-'・ IsLong不具合修正
-'◇ ver 2017/07/02
-'・ ADODB.StreamがExcel2016 64bit環境で不具合があり
-'   環境依存かもしれないが問題を解決できなかったためにコードを分離
-'・ ShiftJISのみ対応の String_LoadFromFile/String_SaveToFile 追加
-'・ CommandExecuteReturnからADOStream_LoadTextFile削除
-'・ st_vba_WaitForm.Update_ProgressInfo を .Updateに処理分離
-'・ Book_SaveAsの対応をxlsのみから、xlsx/xlsmを追加した
-'◇ ver 2017/07/03
-'・ ファイルフォルダ処理の分類を整頓
-'・ CopyFileに加えて、MoveFile/CopyFolder/MoveFolderを追加
-'◇ ver 2017/08/08
-'・ Sheet_OpenCSV/Sheet_SaveCSV を追加
-'◇ ver 2017/08/14
-'・ GetShapeFromImageFileでExifの回転画像対応
-'・ IE_Navigate 修正
-'   IE_Navigate_AuthBasic 作成
-'   IE_Navigate_AuthBasicInput 作成
-'・ IE_GetElementByTagNameClassName に除外条件指定可能にした
-'◇ ver 2017/09/19
-'・ GetJpegExifRotate 作成
-'・ ImageSize 作成
-'・ Sheet_CellRange 作成
-'・ IE_GetElementByTagNameSearch 作成
-'・ NowMilliSec 作成
-'・ Format_Date_UseOnlyYMDHNS を FormatOnlyYMDHNS に名前変更
-'・ GetShapeFromImageFile の内部を小数点以下サイズに対応
-'   Exif での回転画像に対応
-'・ Range_DeleteShape 軽微な修正
-'--------------------------------------------------
