@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        https://www.facebook.com/stndardsoftware/
 '--------------------------------------------------
-'Version:       2017/11/06
+'Version:       2017/11/13
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -6082,7 +6082,7 @@ End Sub
 '◇CSV/TSVファイル
 '----------------------------------------
 
-Public Sub Sheet_OpenCSV( _
+Public Sub SheetOpenCSV( _
 ByVal Sheet As Worksheet, _
 ByVal FilePath As String, _
 ByVal SeparateChar As String)
@@ -6110,13 +6110,13 @@ ByVal SeparateChar As String)
 
 End Sub
 
-Public Sub Sheet_SaveCSV( _
+Public Sub SheetSaveCSV( _
 ByVal Sheet As Worksheet, _
 ByVal FilePath As String, _
 ByVal SeparateChar As String)
 
     Dim LastCell As Range
-    Set LastCell = Sheet_DataLastCellRange(Sheet)
+    Set LastCell = DataLastCellRange(Sheet)
 
     Dim Row As Long
     Dim Col As Long
@@ -6471,14 +6471,14 @@ End Sub
 '----------------------------------------
 '   ・  日本語タイトル行などに対してタイトル文字列で行番号を返す
 '----------------------------------------
-Public Function Sheet_ColumnNumberByTitle(ByRef Sheet As Worksheet, _
+Public Function ColumnNumberByTitle(ByRef Sheet As Worksheet, _
 ByVal TitleRowIndex As Long, _
 ByVal ColumnTitleWildCard As String, _
 Optional TitleMatchCount As Long = 1)
     Dim Result As Long: Result = 0
     Dim Counter As Long: Counter = 0
     Dim I As Long
-    For I = Col_A To Sheet_DataLastColumn(Sheet, TitleRowIndex)
+    For I = Col_A To DataLastColumn(Sheet, TitleRowIndex)
         If Sheet.Cells(TitleRowIndex, I).Value Like ColumnTitleWildCard Then
             Counter = Counter + 1
             If Counter = TitleMatchCount Then
@@ -6487,7 +6487,7 @@ Optional TitleMatchCount As Long = 1)
         End If
         End If
     Next
-    Sheet_ColumnNumberByTitle = Result
+    ColumnNumberByTitle = Result
 End Function
 
 
@@ -6496,14 +6496,14 @@ End Function
 '----------------------------------------
 '   ・  日本語タイトル行などに対してタイトル文字列で行番号を返す
 '----------------------------------------
-Public Function Sheet_RowNumberByTitle(ByRef Sheet As Worksheet, _
+Public Function RowNumberByTitle(ByRef Sheet As Worksheet, _
 ByVal TitleColIndex As Long, _
 ByVal RowTitleWildCard As String, _
 Optional TitleMatchCount As Long = 1)
     Dim Result As Long: Result = 0
     Dim Counter As Long: Counter = 0
     Dim I As Long
-    For I = 1 To Sheet_DataLastRow(Sheet, TitleColIndex)
+    For I = 1 To DataLastRow(Sheet, TitleColIndex)
         If Sheet.Cells(I, TitleColIndex).Value Like RowTitleWildCard Then
             Counter = Counter + 1
             If Counter = TitleMatchCount Then
@@ -6512,22 +6512,22 @@ Optional TitleMatchCount As Long = 1)
         End If
         End If
     Next
-    Sheet_RowNumberByTitle = Result
+    RowNumberByTitle = Result
 End Function
 
 '----------------------------------------
 '・タイトル列の行名から行番号を返す関数
 '----------------------------------------
-'   ・  Sheet_RowNumberByTitle に グループ名を追加した
+'   ・  RowNumberByTitle に グループ名を追加した
 '----------------------------------------
-Public Function Sheet_RowNumberByGroupTitle(ByVal Sheet As Worksheet, _
+Public Function RowNumberByGroupTitle(ByVal Sheet As Worksheet, _
 ByVal GroupColIndex As Long, _
 ByVal TitleColIndex As Long, _
 ByVal GroupName As String, _
 ByVal RowTitleWildCard As String)
     Dim Result As Long: Result = 0
     Dim I As Long
-    For I = 1 To Sheet_DataLastRow(Sheet, TitleColIndex)
+    For I = 1 To DataLastRow(Sheet, TitleColIndex)
         If Sheet.Cells(I, GroupColIndex).Value = GroupName Then
             If Sheet.Cells(I, TitleColIndex).Value Like RowTitleWildCard Then
                 Result = I
@@ -6535,7 +6535,7 @@ ByVal RowTitleWildCard As String)
             End If
         End If
     Next
-    Sheet_RowNumberByGroupTitle = Result
+    RowNumberByGroupTitle = Result
 End Function
 
 
@@ -6549,7 +6549,7 @@ End Function
 '----------------------------------------
 
 '・データ最終行
-Public Function Sheet_DataLastRow(ByVal Sheet As Worksheet, _
+Public Function DataLastRow(ByVal Sheet As Worksheet, _
 Optional ByVal ColumnNumber As Long = -1) As Long
 On Error Resume Next
     Dim Result As Long: Result = 1
@@ -6560,11 +6560,11 @@ On Error Resume Next
     Else
         Result = Sheet.Cells(Sheet.Rows.Count, ColumnNumber).End(xlUp).Row
     End If
-    Sheet_DataLastRow = Result
+    DataLastRow = Result
 End Function
 
 '・データ最終列
-Public Function Sheet_DataLastColumn(ByVal Sheet As Worksheet, _
+Public Function DataLastColumn(ByVal Sheet As Worksheet, _
 Optional ByVal RowNumber As Long = -1) As Long
 On Error Resume Next
     Dim Result As Long: Result = 1
@@ -6575,12 +6575,12 @@ On Error Resume Next
     Else
         Result = Sheet.Cells(RowNumber, Sheet.Columns.Count).End(xlToLeft).Column
     End If
-    Sheet_DataLastColumn = Result
+    DataLastColumn = Result
 End Function
 
-Public Function Sheet_DataLastCellRange(ByVal Sheet As Worksheet) As Range
-    Set Sheet_DataLastCellRange = Sheet.Cells( _
-        Sheet_DataLastRow(Sheet), Sheet_DataLastColumn(Sheet))
+Public Function DataLastCellRange(ByVal Sheet As Worksheet) As Range
+    Set DataLastCellRange = Sheet.Cells( _
+        DataLastRow(Sheet), DataLastColumn(Sheet))
 End Function
 
 '----------------------------------------
@@ -6636,49 +6636,49 @@ Optional ByVal MergeCellOption As Boolean = False)
     End If
 End Sub
 
-Public Sub Sheet_ClearRangeLastData( _
+Public Sub ClearRangeLastData( _
 ByVal Sheet As Worksheet, _
 ByVal RowIndex As Long, ByVal ColumnIndex As Long, _
 Optional ByVal RangeClearType As RangeClearType = rcClear, _
 Optional ByVal MergeCellOption As Boolean = False)
-    If (RowIndex <= Sheet_DataLastRow(Sheet)) _
-    And (ColumnIndex <= Sheet_DataLastColumn(Sheet)) Then
+    If (RowIndex <= DataLastRow(Sheet)) _
+    And (ColumnIndex <= DataLastColumn(Sheet)) Then
         Call Range_Clear( _
             Sheet.Range( _
                 Sheet.Cells(RowIndex, ColumnIndex), _
-                Sheet.Cells(Sheet_DataLastRow(Sheet), Sheet_DataLastColumn(Sheet))), _
+                Sheet.Cells(DataLastRow(Sheet), DataLastColumn(Sheet))), _
             RangeClearType, MergeCellOption)
     End If
 End Sub
 
 '・列のクリア、最終行まで
-Public Sub Sheet_ClearColumnLastRow( _
+Public Sub ClearColumnLastRow( _
 ByVal Sheet As Worksheet, _
 ByVal RowIndex As Long, ByVal ColumnIndex As Long, _
 Optional ByVal RangeClearType As RangeClearType = rcClear, _
 Optional ByVal MergeCellOption As Boolean = False)
-    Dim LastRow As Long: LastRow = Sheet_DataLastRow(Sheet, ColumnIndex)
+    Dim LastRow As Long: LastRow = DataLastRow(Sheet, ColumnIndex)
     If (RowIndex <= LastRow) Then
         Call Range_Clear( _
             Sheet.Range( _
                 Sheet.Cells(RowIndex, ColumnIndex), _
-                Sheet.Cells(Sheet_DataLastRow(Sheet, ColumnIndex), ColumnIndex)), _
+                Sheet.Cells(DataLastRow(Sheet, ColumnIndex), ColumnIndex)), _
             RangeClearType, MergeCellOption)
     End If
 End Sub
 
 '・行のクリア、最終列まで
-Public Sub Sheet_ClearRowLastColumn( _
+Public Sub ClearRowLastColumn( _
 ByVal Sheet As Worksheet, _
 ByVal RowIndex As Long, ByVal ColumnIndex As Long, _
 Optional ByVal RangeClearType As RangeClearType = rcClear, _
 Optional ByVal MergeCellOption As Boolean = False)
-    Dim LastCol As Long: LastCol = Sheet_DataLastColumn(Sheet, RowIndex)
+    Dim LastCol As Long: LastCol = DataLastColumn(Sheet, RowIndex)
     If (ColumnIndex <= LastCol) Then
         Call Range_Clear( _
             Sheet.Range( _
                 Sheet.Cells(RowIndex, ColumnIndex), _
-                Sheet.Cells(RowIndex, Sheet_DataLastColumn(Sheet, RowIndex))), _
+                Sheet.Cells(RowIndex, DataLastColumn(Sheet, RowIndex))), _
             RangeClearType, MergeCellOption)
     End If
 End Sub
@@ -6690,7 +6690,7 @@ End Sub
 '----------------------------------------
 '・数式を削除する関数
 '----------------------------------------
-Public Sub Sheet_RangeDeleteFormula( _
+Public Sub RangeDeleteFormula( _
 ByRef Sheet As Worksheet, ByRef Range As Range)
 
     '数式に影響が出ないように指定範囲の後方から値を指定している
@@ -6945,6 +6945,11 @@ End Sub
 '・ワークブックが開いていれば取得
 '  開いていなければ開く
 '----------------------------------------
+'   ・  OpenHide=Trueの場合は
+'       非表示のApplicationオブジェクトを作成して開くので
+'       異なるApplication間のシートのコピーはできなくなる。
+'----------------------------------------
+
 Public Function GetOpenedBookOrOpenBook( _
 ByVal FilePath As String, _
 Optional ByVal CheckFullPath As Boolean = False, _
@@ -7268,14 +7273,14 @@ ByVal Row_Title As Long) As Boolean
         Dim AllOnFlag As Boolean
         AllOnFlag = True
         Dim I As Long
-        For I = Row_Title + 1 To Sheet_DataLastRow(Sheet)
+        For I = Row_Title + 1 To DataLastRow(Sheet)
             If Sheet.Cells(I, Col_Data).Value <> "" Then
                 If Sheet.Cells(I, Col_CheckBox).Value <> "ON" Then
                     AllOnFlag = False
                 End If
             End If
         Next
-        For I = Row_Title + 1 To Sheet_DataLastRow(Sheet)
+        For I = Row_Title + 1 To DataLastRow(Sheet)
             If Sheet.Cells(I, Col_Data).Value = "" Then
                 Sheet.Cells(I, Col_CheckBox).Value = ""
             Else
@@ -7918,6 +7923,8 @@ End Sub
 '◇非表示アプリケーション
 '----------------------------------------
 '   ・  非表示でBOOKを開く時に使える非表示アプリケーションオブジェクト
+'   ・  異なるアプリケーションオブジェクト間の
+'       シートコピーなどはできないので注意すること
 '----------------------------------------
 Public Function ApplicationHide() As Excel.Application
     Dim Result As Excel.Application

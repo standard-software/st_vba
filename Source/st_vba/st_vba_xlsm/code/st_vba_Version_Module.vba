@@ -400,9 +400,11 @@
 '・ GetShapeFromImageFile の内部を小数点以下サイズに対応
 '   Exif での回転画像に対応
 '・ Range_DeleteShape 軽微な修正
-'◇  ver 2017/11/06
+'◇ ver 2017/11/06
 '・ ColorToStr/StrToColor 作成
 '・ MonthLastDay/MonthDayCount の引数修正
 '・ App_/Book_/Sheet_などの名前を修正した
+'◇ ver 2017/11/13
+'・ Sheet_などの名前をさらに修正した
 '--------------------------------------------------
 
