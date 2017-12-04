@@ -406,5 +406,12 @@
 '・ App_/Book_/Sheet_などの名前を修正した
 '◇ ver 2017/11/13
 '・ Sheet_などの名前をさらに修正した
+'◇ ver 2017/12/03
+'・ StrToBoolDef 追加
+'・ CellText 追加
+'・ IsReadOnlyFile/IsUseFile 追加
+'・ NewSheetNameNumbering 追加
+'・ SheetCopyBookAdd/SheetTextCopyBookAdd 追加
+'・ GetFirstSheet/GetLastSheet 追加
 '--------------------------------------------------
 

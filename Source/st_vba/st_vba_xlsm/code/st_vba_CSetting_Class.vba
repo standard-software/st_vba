@@ -16,17 +16,54 @@ Public Sub Initialize(ByVal Sheet As Worksheet)
 
 End Sub
 
-'シートを次のようにしておく
-'
-'   |A          |B      |C
-'1  |設定名     |値     |説明
-'2  |Option1    |値A    |
-'3  |Option2    |値B    |
-'
-'こうしておくと、Setting.Read("Option1")で値Aの内容を取得することができる
+'----------------------------------------
+'列情報
+'----------------------------------------
+Public Property Get Col_Group() As Long
+    Col_Group = Col_A
+End Property
 
-Public Function Read(ByVal Key As String) As String
-    Read = m_Sheet.Cells( _
-        Sheet_RowNumberByTitle(m_Sheet, Col_A, Key), _
-        Col_B).Value
+Public Property Get Col_Key() As Long
+    Col_Key = Col_B
+End Property
+
+Public Property Get Col_Value() As Long
+    Col_Value = Col_C
+End Property
+
+''キー列/値列の場合
+'Public Function ReadValue(ByVal Key As String) As String
+'    Dim Row As Long
+'    Row = RowNumberByTitle(m_Sheet, Col_Key, Key)
+'    If Row <> 0 Then
+'        Read = m_Sheet.Cells(Row, Col_Value).Value
+'    Else
+'        Read = ""
+'    End If
+'End Function
+
+'グループ列/キー列/値列の場合
+Public Function ReadValue( _
+ByVal Group As String, ByVal Key As String) As String
+    Dim Row As Long
+    Row = RowNumberByGroupTitle(m_Sheet, Col_Group, Col_Key, Group, Key)
+    If Row <> 0 Then
+        ReadValue = m_Sheet.Cells(Row, Col_Value).Value
+    Else
+        ReadValue = ""
+    End If
 End Function
+
+Public Sub WriteValue(ByVal Group As String, ByVal Key As String, ByVal Value As String)
+    Dim Row As Long
+    Row = RowNumberByGroupTitle(m_Sheet, Col_Group, Col_Key, Group, Key)
+    If Row <> 0 Then
+        Call CellText(m_Sheet.Cells(Row, Col_Value), Value)
+    Else
+        Row = DataLastRow(m_Sheet) + 1
+        Call CellText(m_Sheet.Cells(Row, Col_Group), Group)
+        Call CellText(m_Sheet.Cells(Row, Col_Key), Key)
+        Call CellText(m_Sheet.Cells(Row, Col_Value), Value)
+    End If
+End Sub
+

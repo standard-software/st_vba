@@ -47,13 +47,13 @@ Public Sub Initialize()
 End Sub
 
 Public Sub Initialize_Col()
-    m_Col_Third = Sheet_ColumnNumberByTitle( _
+    m_Col_Third = ColumnNumberByTitle( _
         m_Sheet, m_Row_DataTitle, "3”Ô–Ú‚Ì—ñ")
 End Sub
 
 Public Sub Initialize_Row_EndIndex()
     Call Assert(IsNotNothing(m_Sheet), "Error:Sheet is Nothing")
-    m_Row_End = Sheet_DataLastRow(m_Sheet)
+    m_Row_End = DataLastRow(m_Sheet)
 End Sub
 
 '----------------------------------------

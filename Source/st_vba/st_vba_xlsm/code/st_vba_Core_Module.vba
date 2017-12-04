@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        https://www.facebook.com/stndardsoftware/
 '--------------------------------------------------
-'Version:       2017/11/13
+'Version:       2017/12/03
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -826,7 +826,7 @@ End Function
 '----------------------------------------
 '・値が空文字の場合だけ別の値を返す関数
 '----------------------------------------
-Function IfEmptyStr(ByVal Value As String, ByVal EmptyStrCaseValue) As String
+Function IfEmptyStr(ByVal Value As String, ByVal EmptyStrCaseValue As String) As String
     Dim Result As String: Result = ""
     If Value = "" Then
         Result = EmptyStrCaseValue
@@ -967,6 +967,18 @@ Function StrToBool(ByVal Value As String) As Boolean
     StrToBool = Result
 End Function
 
+Function StrToBoolDef(ByVal Value As String, ByVal Default As Boolean) As Boolean
+    Dim Result As Boolean: Result = Default
+    Select Case UCase(Value)
+        Case "TRUE"
+            Result = True
+        Case "FALSE"
+            Result = False
+    End Select
+    StrToBoolDef = Result
+End Function
+
+
 '----------------------------------------
 '◇Point
 '----------------------------------------
@@ -1092,69 +1104,69 @@ End Function
 '・Rect Width/Height値取得
 '----------------------------------------
 Public Function GetRectWidth( _
-ByRef r As Rect) As Long
+ByRef R As Rect) As Long
     GetRectWidth = _
-        GetRectSize(r).Width
+        GetRectSize(R).Width
 End Function
 
 Public Sub SetRectWidth( _
-ByRef r As Rect, ByVal Width As Long)
-    r.Right = r.Left + Width
+ByRef R As Rect, ByVal Width As Long)
+    R.Right = R.Left + Width
 End Sub
 
 Public Function GetRectHeight( _
-ByRef r As Rect) As Long
+ByRef R As Rect) As Long
     GetRectHeight = _
-        GetRectSize(r).Height
+        GetRectSize(R).Height
 End Function
 
 Public Sub SetRectHeight( _
-ByRef r As Rect, ByVal Height As Long)
-    r.Bottom = r.Top + Height
+ByRef R As Rect, ByVal Height As Long)
+    R.Bottom = R.Top + Height
 End Sub
 
 '----------------------------------------
 '◇Rect Get系
 '----------------------------------------
 Public Function GetRectMoveCenter( _
-ByRef r As Rect, ByRef Center As Point) As Rect
+ByRef R As Rect, ByRef Center As Point) As Rect
     Dim OriginalCenter As Point
-    OriginalCenter = GetPointRectCenter(r)
+    OriginalCenter = GetPointRectCenter(R)
     Dim Move As Point
     Move.X = Center.X - OriginalCenter.X
     Move.Y = Center.Y - OriginalCenter.Y
-    GetRectMoveCenter = GetRectMove(r, Move)
+    GetRectMoveCenter = GetRectMove(R, Move)
 End Function
 
 Public Function GetRectMove( _
-ByRef r As Rect, ByRef Move As Point) As Rect
+ByRef R As Rect, ByRef Move As Point) As Rect
     Dim Result As Rect
-    Result.Left = r.Left + Move.X
-    Result.Top = r.Top + Move.Y
-    Result.Right = r.Right + Move.X
-    Result.Bottom = r.Bottom + Move.Y
+    Result.Left = R.Left + Move.X
+    Result.Top = R.Top + Move.Y
+    Result.Right = R.Right + Move.X
+    Result.Bottom = R.Bottom + Move.Y
     GetRectMove = Result
 End Function
 
 Public Function GetRectMovePosition( _
-ByRef r As Rect, ByRef Position As Point) As Rect
+ByRef R As Rect, ByRef Position As Point) As Rect
     Dim Result As Rect
     Dim RectSize As RectSize
-    RectSize = GetRectSize(r)
+    RectSize = GetRectSize(R)
     Result = NewRect_PositionSize(Position, RectSize)
     GetRectMovePosition = Result
 End Function
 
 'はみ出していたら中にいれる
 Public Function GetRectInsideDesktopRect( _
-ByRef r As Rect, ByRef DesktopRect As Rect) As Rect
-    Dim Result As Rect: Result = r
+ByRef R As Rect, ByRef DesktopRect As Rect) As Rect
+    Dim Result As Rect: Result = R
     Dim RectSizeDesktop As RectSize
     RectSizeDesktop = GetRectSize(DesktopRect)
-    If RectSizeDesktop.Width < GetRectWidth(r) Then
+    If RectSizeDesktop.Width < GetRectWidth(R) Then
         Call SetRectWidth(Result, RectSizeDesktop.Width)
     End If
-    If RectSizeDesktop.Height <= GetRectHeight(r) Then
+    If RectSizeDesktop.Height <= GetRectHeight(R) Then
         Call SetRectHeight(Result, RectSizeDesktop.Height)
     End If
 
@@ -5756,6 +5768,40 @@ Finally:
 End Function
 
 '----------------------------------------
+'・ファイルが読取専用かどうか確認する
+'----------------------------------------
+Public Function IsReadOnlyFile(ByVal FilePath As String) As Boolean
+    Dim Result As Boolean: Result = False
+    Do
+        If Not fso.FileExists(FilePath) Then Exit Do
+
+        '読み取り属性調査は定数1とのAndで判定する
+        If fso.GetFile(FilePath).Attributes And 1 Then
+            Result = True
+        End If
+    Loop While False
+    IsReadOnlyFile = Result
+End Function
+
+'----------------------------------------
+'・ファイル使用中かどうかを確認する
+'----------------------------------------
+Public Function IsUseFile(ByVal FilePath As String) As Boolean
+    Dim Result As Boolean: Result = False
+    Do
+        If Not fso.FileExists(FilePath) Then Exit Do
+        If IsReadOnlyFile(FilePath) Then Exit Do
+        On Error Resume Next
+        Dim File
+        Set File = fso.OpenTextFile(FilePath, 8, False)
+        If 0 < Err.Number Then
+            Result = True
+        End If
+    Loop While False
+    IsUseFile = Result
+End Function
+
+'----------------------------------------
 '・ファイルが作成されるのをしばらく待つ関数
 '----------------------------------------
 '   ・  作成されたらTrueを返す
@@ -6482,9 +6528,9 @@ Optional TitleMatchCount As Long = 1)
         If Sheet.Cells(TitleRowIndex, I).Value Like ColumnTitleWildCard Then
             Counter = Counter + 1
             If Counter = TitleMatchCount Then
-            Result = I
-            Exit For
-        End If
+                Result = I
+                Exit For
+            End If
         End If
     Next
     ColumnNumberByTitle = Result
@@ -6954,7 +7000,7 @@ Public Function GetOpenedBookOrOpenBook( _
 ByVal FilePath As String, _
 Optional ByVal CheckFullPath As Boolean = False, _
 Optional ByVal OpenReadOnlyFlag As Boolean = False, _
-Optional ByVal OpenHide As Boolean = True, _
+Optional ByVal OpenHide As Boolean = False, _
 Optional ByRef ResultOpen As Boolean) As Workbook
     Dim Result As Workbook
 
@@ -7178,6 +7224,93 @@ End Sub
 '◇ワークシート
 '----------------------------------------
 
+'--------------------------------------------------
+'・先頭シート、最終シート
+'--------------------------------------------------
+Public Function GetLastSheet(ByVal Book As Workbook) As Worksheet
+    Set GetLastSheet = _
+        Book.Sheets(Book.Sheets.Count)
+End Function
+
+Public Function GetFirstSheet(ByVal Book As Workbook) As Worksheet
+    Set GetFirstSheet = _
+        Book.Sheets(1)
+End Function
+
+'--------------------------------------------------
+'・シートをコピーしてBookに追加する
+'--------------------------------------------------
+'   ・別のブックからのコピーには非対応
+'--------------------------------------------------
+Public Function SheetCopyBookAdd( _
+ByVal OriginalSheet As Worksheet, _
+ByVal Book As Workbook) As Worksheet
+
+    Dim ScreenUpdateBuffer As Boolean
+    ScreenUpdateBuffer = Book.Application.ScreenUpdating
+    If ScreenUpdateBuffer Then
+        Book.Application.ScreenUpdating = False
+    End If
+
+    'シートの表示状態をバッファして全てのシートを表示状態にする
+    Dim SheetVisibles() As Boolean
+    Call SetArrayCount(SheetVisibles, Book.Sheets.Count)
+    Dim I As Long
+    For I = 1 To Book.Sheets.Count
+        SheetVisibles(I - 1) = Book.Sheets(I).Visible
+        Book.Sheets(I).Visible = True
+    Next
+
+    Call OriginalSheet.Copy(after:=GetLastSheet(Book))
+    Set SheetCopyBookAdd = GetLastSheet(Book)
+    
+    'シート表示状態を復帰する
+    For I = 1 To Book.Sheets.Count - 1
+        Book.Sheets(I).Visible = SheetVisibles(I - 1)
+    Next
+    
+    If ScreenUpdateBuffer Then
+        Book.Application.ScreenUpdating = ScreenUpdateBuffer
+    End If
+End Function
+
+Public Sub test_SheetTextCopyBookAdd()
+    Call SheetTextCopyBookAdd(Sheets(1), ThisWorkbook)
+
+End Sub
+
+'--------------------------------------------------
+'・シート内容をコピーしてBookに追加する
+'--------------------------------------------------
+'   ・別のブックからのコピーに対応
+'--------------------------------------------------
+Public Function SheetTextCopyBookAdd( _
+ByVal OriginalSheet As Worksheet, _
+ByVal Book As Workbook) As Worksheet
+
+    Dim ScreenUpdateBuffer As Boolean
+    ScreenUpdateBuffer = Book.Application.ScreenUpdating
+    If ScreenUpdateBuffer Then
+        Book.Application.ScreenUpdating = False
+    End If
+
+    Set SheetTextCopyBookAdd = Book.Worksheets.Add()
+    Dim Values() As Variant
+    Values = CellRange(OriginalSheet, 1, Col_A, _
+        DataLastRow(OriginalSheet), DataLastColumn(OriginalSheet))
+    CellRange(SheetTextCopyBookAdd, 1, Col_A, _
+        DataLastRow(OriginalSheet), DataLastColumn(OriginalSheet)).NumberFormatLocal = "@"
+    CellRange(SheetTextCopyBookAdd, 1, Col_A, _
+        DataLastRow(OriginalSheet), DataLastColumn(OriginalSheet)).Value = Values
+    SheetTextCopyBookAdd.Name = OriginalSheet.Name
+        
+    SheetTextCopyBookAdd.Visible = OriginalSheet.Visible
+    
+    If ScreenUpdateBuffer Then
+        Book.Application.ScreenUpdating = ScreenUpdateBuffer
+    End If
+End Function
+
 '----------------------------------------
 '・ワークシートを確認ダイアログ無しで削除する
 '----------------------------------------
@@ -7188,6 +7321,40 @@ Public Sub SheetDeleteSilence(ByVal Sheet As Worksheet)
     Call Sheet.Delete
     Application.DisplayAlerts = Application_DisplayAlerts_Flag
 End Sub
+
+'--------------------------------------------------
+'・新シート名前
+'--------------------------------------------------
+'新しいシート名をつける場合に
+'既存シートがあるなら、NewSheet(1)、などと連番にして
+'シート名を作成する
+'   ・  NumberingText   "(*)"や"_*"として指定する
+Public Function NewSheetNameNumbering( _
+ByVal Book As Workbook, _
+ByVal NewSheetName As String, _
+ByVal NumberingText As String)
+    Dim Result As String
+    If SheetExists(Book, NewSheetName) Then
+        Dim SheetNameTemplate As String
+        SheetNameTemplate = NewSheetName + NumberingText
+        Dim I As Long
+        I = 1
+        Do
+            Result = Replace(SheetNameTemplate, "*", CStr(I))
+            If Not SheetExists(Book, Result) Then
+                Exit Do
+            End If
+            I = I + 1
+        Loop While True
+    Else
+        Result = NewSheetName
+    End If
+    NewSheetNameNumbering = Result
+End Function
+
+'----------------------------------------
+'◇Range/Cell
+'----------------------------------------
 
 '----------------------------------------
 '・ワークシートセル指定
@@ -7238,6 +7405,14 @@ ByVal Sheet As Worksheet, _
 ByVal Row As Long, ByVal Col As Long, _
 ByVal Increment As Long)
     Sheet.Cells(Row, Col).Value = Sheet.Cells(Row, Col).Value + Increment
+End Sub
+
+'----------------------------------------
+'・文字列として値をセットする関数
+'----------------------------------------
+Public Sub CellText(ByVal Range As Range, ByVal Text As String)
+    Range.NumberFormatLocal = "@"
+    Range.Value = Text
 End Sub
 
 '----------------------------------------
@@ -8438,19 +8613,19 @@ ByVal PositionOnly As Boolean)
     Dim RectStr As String
     RectStr = IniFile_GetString( _
         IniFilePath, Section, Name, "")
-    Dim r As Rect
+    Dim R As Rect
     If CanStrToRect(RectStr) Then
-        r = StrToRect(RectStr)
+        R = StrToRect(RectStr)
         If PositionOnly Then
-            r = NewRect_PositionSize( _
-                    NewPoint(r.Left, r.Top), _
+            R = NewRect_PositionSize( _
+                    NewPoint(R.Left, R.Top), _
                     GetRectSize(Form_GetRectPixel(Form)))
         End If
     Else
-        r = Form_GetRectPixel(Form)
-        r = GetRectMoveCenter(r, GetPointRectCenter(GetRectWorkArea))
+        R = Form_GetRectPixel(Form)
+        R = GetRectMoveCenter(R, GetPointRectCenter(GetRectWorkArea))
     End If
-    Call Form_SetRectPixel(Form, GetRectInsideDesktopRect(r, GetRectWorkArea))
+    Call Form_SetRectPixel(Form, GetRectInsideDesktopRect(R, GetRectWorkArea))
 End Sub
 
 
@@ -8612,9 +8787,9 @@ ByRef IconSize As RectSize) As Long
     hBitmap = CreateCompatibleBitmap(GetDC(0&), IconSize.Width, IconSize.Height)
     hBitmapOld = SelectObject(hDC, hBitmap)
 
-    Dim r As Rect
-    r = NewRect(0, 0, IconSize.Width, IconSize.Height)
-    Call FillRect(hDC, r, GetStockObject(0))
+    Dim R As Rect
+    R = NewRect(0, 0, IconSize.Width, IconSize.Height)
+    Call FillRect(hDC, R, GetStockObject(0))
     Call DrawIcon(hDC, 0, 0, hIcon)
 
     Call SelectObject(hDC, hBitmapOld)
@@ -8734,9 +8909,17 @@ End Sub
 '◆タスクバーピンアイコン登録用
 '----------------------------------------
 
+'----------------------------------------
+'・タスクバーピン登録機能の使用可否
+'----------------------------------------
+'   ・Windows10では動作せずエラーになるために使用できないので
+'     WindowsVista/Windows7 のみ可能
+'----------------------------------------
 Public Function IsTaskbarPinWindows() As Boolean
     If (6 <= WindowsMajorVersion) _
     And (1 <= WindowsMinorVersion) Then
+        IsTaskbarPinWindows = True
+    ElseIf (7 = WindowsMajorVersion) Then
         IsTaskbarPinWindows = True
     Else
         IsTaskbarPinWindows = False
@@ -8755,6 +8938,8 @@ End Sub
 
 '----------------------------------------
 '・タスクバーピン止め用コマンド
+'----------------------------------------
+'   ・Windows10では動作せずエラーになるために使用できない
 '----------------------------------------
 Public Sub SetTaskbarPin(ByVal FilePath As String, ByVal Value As Boolean)
     Dim CommandVerb As String
