@@ -413,5 +413,14 @@
 '・ NewSheetNameNumbering 追加
 '・ SheetCopyBookAdd/SheetTextCopyBookAdd 追加
 '・ GetFirstSheet/GetLastSheet 追加
+'◇ ver 2017/12/10
+'・ SheetRangeCopy/SheetRowHeightCopy/SheetColWidthCopy 追加
+'・ mciSendString 追加
+'・ SoundPlay 追加
+'・ RowNumberByTitle を RowByTitle に変更
+'   RowNumberByGroupTitle を RowByGroupTitle に変更
+'   ColumnNumberByTitle を ColumnByTitle に変更
+'・ CellValueByColumnTitle/CellValueByRowTitle
+'   /CellValueByColumnGroupTitle/CellValueByRowGroupTitle 追加
 '--------------------------------------------------
 

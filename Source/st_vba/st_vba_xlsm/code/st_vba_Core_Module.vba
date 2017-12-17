@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        https://www.facebook.com/stndardsoftware/
 '--------------------------------------------------
-'Version:       2017/12/03
+'Version:       2017/12/10
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -765,6 +765,16 @@ Public Declare PtrSafe Function URLDownloadToFile _
     ByVal szFileName As String, _
     ByVal dwReserved As Long, _
     ByVal lpfnCB As Long) As Long
+
+'----------------------------------------
+'◆サウンド
+'----------------------------------------
+Public Declare PtrSafe Function mciSendString _
+    Lib "winmm.dll" Alias "mciSendStringA" ( _
+    ByVal lpstrCommand As String, _
+    ByVal lpstrReturnString As String, _
+    ByVal uReturnLength As Long, _
+    ByVal hwndCallback As Long) As Long
 
 
 '--------------------------------------------------
@@ -6517,15 +6527,15 @@ End Sub
 '----------------------------------------
 '   ・  日本語タイトル行などに対してタイトル文字列で行番号を返す
 '----------------------------------------
-Public Function ColumnNumberByTitle(ByRef Sheet As Worksheet, _
-ByVal TitleRowIndex As Long, _
+Public Function ColumnByTitle(ByRef Sheet As Worksheet, _
+ByVal TitleRow As Long, _
 ByVal ColumnTitleWildCard As String, _
 Optional TitleMatchCount As Long = 1)
     Dim Result As Long: Result = 0
     Dim Counter As Long: Counter = 0
     Dim I As Long
-    For I = Col_A To DataLastColumn(Sheet, TitleRowIndex)
-        If Sheet.Cells(TitleRowIndex, I).Value Like ColumnTitleWildCard Then
+    For I = Col_A To DataLastColumn(Sheet, TitleRow)
+        If Sheet.Cells(TitleRow, I).Value Like ColumnTitleWildCard Then
             Counter = Counter + 1
             If Counter = TitleMatchCount Then
                 Result = I
@@ -6533,7 +6543,7 @@ Optional TitleMatchCount As Long = 1)
             End If
         End If
     Next
-    ColumnNumberByTitle = Result
+    ColumnByTitle = Result
 End Function
 
 
@@ -6542,15 +6552,15 @@ End Function
 '----------------------------------------
 '   ・  日本語タイトル行などに対してタイトル文字列で行番号を返す
 '----------------------------------------
-Public Function RowNumberByTitle(ByRef Sheet As Worksheet, _
-ByVal TitleColIndex As Long, _
+Public Function RowByTitle(ByRef Sheet As Worksheet, _
+ByVal TitleCol As Long, _
 ByVal RowTitleWildCard As String, _
 Optional TitleMatchCount As Long = 1)
     Dim Result As Long: Result = 0
     Dim Counter As Long: Counter = 0
     Dim I As Long
-    For I = 1 To DataLastRow(Sheet, TitleColIndex)
-        If Sheet.Cells(I, TitleColIndex).Value Like RowTitleWildCard Then
+    For I = 1 To DataLastRow(Sheet, TitleCol)
+        If Sheet.Cells(I, TitleCol).Value Like RowTitleWildCard Then
             Counter = Counter + 1
             If Counter = TitleMatchCount Then
             Result = I
@@ -6558,30 +6568,111 @@ Optional TitleMatchCount As Long = 1)
         End If
         End If
     Next
-    RowNumberByTitle = Result
+    RowByTitle = Result
 End Function
 
 '----------------------------------------
-'・タイトル列の行名から行番号を返す関数
+'・タイトル行の列名から行番号を返す関数
 '----------------------------------------
-'   ・  RowNumberByTitle に グループ名を追加した
+'   ・  RowByTitle に グループ名を追加した
 '----------------------------------------
-Public Function RowNumberByGroupTitle(ByVal Sheet As Worksheet, _
-ByVal GroupColIndex As Long, _
-ByVal TitleColIndex As Long, _
-ByVal GroupName As String, _
+Public Function ColumnByGroupTitle(ByVal Sheet As Worksheet, _
+ByVal GroupRow As Long, _
+ByVal TitleRow As Long, _
+ByVal GroupTitleWildCard As String, _
 ByVal RowTitleWildCard As String)
     Dim Result As Long: Result = 0
     Dim I As Long
-    For I = 1 To DataLastRow(Sheet, TitleColIndex)
-        If Sheet.Cells(I, GroupColIndex).Value = GroupName Then
-            If Sheet.Cells(I, TitleColIndex).Value Like RowTitleWildCard Then
+    For I = 1 To DataLastColumn(Sheet, TitleRow)
+        If Sheet.Cells(GroupRow, I).Value Like GroupTitleWildCard Then
+            If Sheet.Cells(TitleRow, I).Value Like RowTitleWildCard Then
                 Result = I
                 Exit For
             End If
         End If
     Next
-    RowNumberByGroupTitle = Result
+    ColumnByGroupTitle = Result
+End Function
+
+'----------------------------------------
+'・タイトル列の行名から行番号を返す関数
+'----------------------------------------
+'   ・  RowByTitle に グループ名を追加した
+'----------------------------------------
+Public Function RowByGroupTitle(ByVal Sheet As Worksheet, _
+ByVal GroupColumn As Long, _
+ByVal TitleColumn As Long, _
+ByVal GroupTitleWildCard As String, _
+ByVal RowTitleWildCard As String)
+    Dim Result As Long: Result = 0
+    Dim I As Long
+    For I = 1 To DataLastRow(Sheet, TitleColumn)
+        If Sheet.Cells(I, GroupColumn).Value Like GroupTitleWildCard Then
+            If Sheet.Cells(I, TitleColumn).Value Like RowTitleWildCard Then
+                Result = I
+                Exit For
+            End If
+        End If
+    Next
+    RowByGroupTitle = Result
+End Function
+
+'----------------------------------------
+'◇セル値をタイトルから求める
+'----------------------------------------
+
+Public Function CellValueByColumnTitle( _
+ByVal Sheet As Worksheet, _
+ByVal TitleRow As Long, ByVal TitleWildCard As String, _
+ByVal Row As Long) As String
+    Dim Result As String: Result = ""
+    Dim Column As Long
+    Column = ColumnByTitle(Sheet, TitleRow, TitleWildCard)
+    If Column <> 0 Then
+        Result = Sheet.Cells(Row, Column).Text
+    End If
+    CellValueByColumnTitle = Result
+End Function
+
+Public Function CellValueByRowTitle( _
+ByVal Sheet As Worksheet, _
+ByVal TitleColumn As Long, ByVal TitleWildCard As String, _
+ByVal Column As Long) As String
+    Dim Result As String: Result = ""
+    Dim Row As Long
+    Row = RowByTitle(Sheet, TitleColumn, TitleWildCard)
+    If Row <> 0 Then
+        Result = Sheet.Cells(Row, Column).Text
+    End If
+    CellValueByRowTitle = Result
+End Function
+
+Public Function CellValueByColumnGroupTitle( _
+ByVal Sheet As Worksheet, _
+ByVal GroupRow As Long, ByVal TitleRow As Long, _
+ByVal GroupWildCard As String, ByVal TitleWildCard As String, _
+ByVal Row As Long) As String
+    Dim Result As String: Result = ""
+    Dim Column As Long
+    Column = ColumnByGroupTitle(Sheet, GroupRow, TitleRow, GroupWildCard, TitleWildCard)
+    If Column <> 0 Then
+        Result = Sheet.Cells(Row, Column).Text
+    End If
+    CellValueByColumnGroupTitle = Result
+End Function
+
+Public Function CellValueByRowGroupTitle( _
+ByVal Sheet As Worksheet, _
+ByVal GroupColumn As Long, ByVal TitleColumn As Long, _
+ByVal GroupWildCard As String, ByVal TitleWildCard As String, _
+ByVal Column As Long) As String
+    Dim Result As String: Result = ""
+    Dim Row As Long
+    Row = RowByGroupTitle(Sheet, GroupColumn, TitleColumn, GroupWildCard, TitleWildCard)
+    If Row <> 0 Then
+        Result = Sheet.Cells(Row, Column).Text
+    End If
+    CellValueByRowGroupTitle = Result
 End Function
 
 
@@ -7310,6 +7401,32 @@ ByVal Book As Workbook) As Worksheet
         Book.Application.ScreenUpdating = ScreenUpdateBuffer
     End If
 End Function
+
+'--------------------------------------------------
+'・文字と文字書式をコピーする
+'--------------------------------------------------
+Public Sub SheetRangeCopy( _
+ByVal FromSheet As Worksheet, ByVal ToSheet As Worksheet)
+    Call CellRange(FromSheet, 1, Col_A, _
+        DataLastRow(FromSheet), DataLastColumn(FromSheet)).Copy( _
+            ToSheet.Range("A1"))
+End Sub
+
+Public Sub SheetRowHeightCopy( _
+ByVal FromSheet As Worksheet, ByVal ToSheet As Worksheet)
+    Dim Row As Long
+    For Row = 1 To DataLastRow(FromSheet)
+        ToSheet.Rows(Row).RowHeight = FromSheet.Rows(Row).RowHeight
+    Next
+End Sub
+
+Public Sub SheetColWidthCopy( _
+ByVal FromSheet As Worksheet, ByVal ToSheet As Worksheet)
+    Dim Col As Long
+    For Col = 1 To DataLastColumn(FromSheet)
+        ToSheet.Columns(Col).ColumnWidth = FromSheet.Columns(Col).ColumnWidth
+    Next
+End Sub
 
 '----------------------------------------
 '・ワークシートを確認ダイアログ無しで削除する
@@ -9041,6 +9158,18 @@ Public Sub MouseClick()
 End Sub
 
 '----------------------------------------
+'◆サウンド
+'----------------------------------------
+
+'音を鳴らす
+Public Sub SoundPlay(ByVal FilePath As String)
+    FilePath = InSpacePlusDoubleQuote(FilePath)
+    Call mciSendString("Open " + FilePath, "", 0, 0)
+    Call mciSendString("Play " + FilePath + " wait", "", 0, 0)
+    Call mciSendString("Close " + FilePath, "", 0, 0)
+End Sub
+
+'----------------------------------------
 '◆Internet系関数
 '----------------------------------------
 '----------------------------------------
@@ -9138,4 +9267,6 @@ ByVal MaxValue As String) As Boolean
     )
 
 End Function
+
+
 
