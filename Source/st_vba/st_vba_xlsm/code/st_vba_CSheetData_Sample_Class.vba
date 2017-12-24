@@ -47,7 +47,7 @@ Public Sub Initialize()
 End Sub
 
 Public Sub Initialize_Col()
-    m_Col_Third = ColumnNumberByTitle( _
+    m_Col_Third = ColumnByTitle( _
         m_Sheet, m_Row_DataTitle, "3”Ô–Ú‚Ì—ñ")
 End Sub
 

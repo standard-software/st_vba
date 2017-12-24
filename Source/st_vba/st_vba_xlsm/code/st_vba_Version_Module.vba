@@ -422,5 +422,8 @@
 '   ColumnNumberByTitle を ColumnByTitle に変更
 '・ CellValueByColumnTitle/CellValueByRowTitle
 '   /CellValueByColumnGroupTitle/CellValueByRowGroupTitle 追加
+'◇ ver 2017/12/24
+'・ st_vba_CSetting を st_vba_CSettingKeyValue と
+'   st_vba_CSettingGroupKeyValue に機能ごとに分離
 '--------------------------------------------------
 
