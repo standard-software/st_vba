@@ -425,5 +425,10 @@
 '◇ ver 2017/12/24
 '・ st_vba_CSetting を st_vba_CSettingKeyValue と
 '   st_vba_CSettingGroupKeyValue に機能ごとに分離
+'◇ ver 2018/01/25
+'・ DataLastCellRange >> DataLastCell 名前変更
+'・ LastCell 追加
+'・ SheetRangeCopy/SheetRowHeightCopy/SheetColWidthCopy に
+'   最終セル設定機能追加
 '--------------------------------------------------
 

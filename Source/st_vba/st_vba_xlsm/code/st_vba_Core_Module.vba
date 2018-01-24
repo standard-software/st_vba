@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        https://www.facebook.com/stndardsoftware/
 '--------------------------------------------------
-'Version:       2017/12/10
+'Version:       2018/01/25
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -216,7 +216,6 @@ Enum RangeClearType
     rcClear
     rcClearContents
     rcClearFormats
-
 End Enum
 
 '----------------------------------------
@@ -6715,9 +6714,13 @@ On Error Resume Next
     DataLastColumn = Result
 End Function
 
-Public Function DataLastCellRange(ByVal Sheet As Worksheet) As Range
-    Set DataLastCellRange = Sheet.Cells( _
+Public Function DataLastCell(ByVal Sheet As Worksheet) As Range
+    Set DataLastCell = Sheet.Cells( _
         DataLastRow(Sheet), DataLastColumn(Sheet))
+End Function
+
+Public Function LastCell(ByVal Sheet As Worksheet) As Range
+    Set LastCell = Sheet.Cells.SpecialCells(xlLastCell)
 End Function
 
 '----------------------------------------
@@ -7406,24 +7409,43 @@ End Function
 '・文字と文字書式をコピーする
 '--------------------------------------------------
 Public Sub SheetRangeCopy( _
-ByVal FromSheet As Worksheet, ByVal ToSheet As Worksheet)
+ByVal FromSheet As Worksheet, ByVal ToSheet As Worksheet, _
+Optional LastCellRange As Range = Nothing)
+
+    If IsNothing(LastCellRange) Then
+        Set LastCellRange = DataLastCell(FromSheet)
+    End If
+    
     Call CellRange(FromSheet, 1, Col_A, _
-        DataLastRow(FromSheet), DataLastColumn(FromSheet)).Copy( _
+        LastCellRange.Row, _
+        LastCellRange.Column).Copy( _
             ToSheet.Range("A1"))
 End Sub
 
 Public Sub SheetRowHeightCopy( _
-ByVal FromSheet As Worksheet, ByVal ToSheet As Worksheet)
+ByVal FromSheet As Worksheet, ByVal ToSheet As Worksheet, _
+Optional LastCellRange As Range = Nothing)
+
+    If IsNothing(LastCellRange) Then
+        Set LastCellRange = DataLastCell(FromSheet)
+    End If
+    
     Dim Row As Long
-    For Row = 1 To DataLastRow(FromSheet)
+    For Row = 1 To LastCellRange.Row
         ToSheet.Rows(Row).RowHeight = FromSheet.Rows(Row).RowHeight
     Next
 End Sub
 
 Public Sub SheetColWidthCopy( _
-ByVal FromSheet As Worksheet, ByVal ToSheet As Worksheet)
+ByVal FromSheet As Worksheet, ByVal ToSheet As Worksheet, _
+Optional LastCellRange As Range = Nothing)
+
+    If IsNothing(LastCellRange) Then
+        Set LastCellRange = DataLastCell(FromSheet)
+    End If
+    
     Dim Col As Long
-    For Col = 1 To DataLastColumn(FromSheet)
+    For Col = 1 To LastCellRange.Column
         ToSheet.Columns(Col).ColumnWidth = FromSheet.Columns(Col).ColumnWidth
     Next
 End Sub
