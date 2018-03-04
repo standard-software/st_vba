@@ -2545,6 +2545,18 @@ Private Sub testMonthMonthDayCount()
     )
 End Sub
 
+'----------------------------------------
+'・年度を返す関数
+'----------------------------------------
+Public Function YearNendo(ByVal Today As Date) As Long
+    Dim Result As Long
+    Result = Year(Today)
+    If InRange(1, Month(Today), 3) Then
+        Result = Result - 1
+    End If
+    YearNendo = Result
+End Function
+
 
 '----------------------------------------
 '◇今週/先週/来週の曜日指定の日付取得
@@ -6851,7 +6863,7 @@ End Sub
 
 
 '----------------------------------------
-'◇Sheet.Rangeのコピー処理
+'◇コピー
 '----------------------------------------
 
 '----------------------------------------
@@ -6913,11 +6925,56 @@ ByRef RangeDest As Range)
     Call Range_CopyNumberFormat(RangeSource, RangeDest)
 End Sub
 
+'--------------------------------------------------
+'・文字と文字書式をコピーする
+'--------------------------------------------------
+Public Sub SheetRangeCopy( _
+ByVal FromSheet As Worksheet, ByVal ToSheet As Worksheet, _
+Optional LastCellRange As Range = Nothing)
 
-'----------------------------------------
-'◇セル
-'----------------------------------------
+    If IsNothing(LastCellRange) Then
+        Set LastCellRange = DataLastCell(FromSheet)
+    End If
 
+    Call CellRange(FromSheet, 1, Col_A, _
+        LastCellRange.Row, _
+        LastCellRange.Column).Copy( _
+            ToSheet.Range("A1"))
+End Sub
+
+'--------------------------------------------------
+'・行高さのコピー
+'--------------------------------------------------
+Public Sub SheetRowHeightCopy( _
+ByVal FromSheet As Worksheet, ByVal ToSheet As Worksheet, _
+Optional LastCellRange As Range = Nothing)
+
+    If IsNothing(LastCellRange) Then
+        Set LastCellRange = DataLastCell(FromSheet)
+    End If
+
+    Dim Row As Long
+    For Row = 1 To LastCellRange.Row
+        ToSheet.Rows(Row).RowHeight = FromSheet.Rows(Row).RowHeight
+    Next
+End Sub
+
+'--------------------------------------------------
+'・列幅のコピー
+'--------------------------------------------------
+Public Sub SheetColWidthCopy( _
+ByVal FromSheet As Worksheet, ByVal ToSheet As Worksheet, _
+Optional LastCellRange As Range = Nothing)
+
+    If IsNothing(LastCellRange) Then
+        Set LastCellRange = DataLastCell(FromSheet)
+    End If
+
+    Dim Col As Long
+    For Col = 1 To LastCellRange.Column
+        ToSheet.Columns(Col).ColumnWidth = FromSheet.Columns(Col).ColumnWidth
+    Next
+End Sub
 
 
 
@@ -7357,12 +7414,12 @@ ByVal Book As Workbook) As Worksheet
 
     Call OriginalSheet.Copy(after:=GetLastSheet(Book))
     Set SheetCopyBookAdd = GetLastSheet(Book)
-    
+
     'シート表示状態を復帰する
     For I = 1 To Book.Sheets.Count - 1
         Book.Sheets(I).Visible = SheetVisibles(I - 1)
     Next
-    
+
     If ScreenUpdateBuffer Then
         Book.Application.ScreenUpdating = ScreenUpdateBuffer
     End If
@@ -7397,58 +7454,48 @@ ByVal Book As Workbook) As Worksheet
     CellRange(SheetTextCopyBookAdd, 1, Col_A, _
         DataLastRow(OriginalSheet), DataLastColumn(OriginalSheet)).Value = Values
     SheetTextCopyBookAdd.Name = OriginalSheet.Name
-        
+
     SheetTextCopyBookAdd.Visible = OriginalSheet.Visible
-    
+
     If ScreenUpdateBuffer Then
         Book.Application.ScreenUpdating = ScreenUpdateBuffer
     End If
 End Function
 
 '--------------------------------------------------
-'・文字と文字書式をコピーする
+'・シートコピーする際にActiveなシートを元に戻す関数
 '--------------------------------------------------
-Public Sub SheetRangeCopy( _
-ByVal FromSheet As Worksheet, ByVal ToSheet As Worksheet, _
-Optional LastCellRange As Range = Nothing)
+Public Function SheetCopyUnchangeActive(ByVal FromSheet As Worksheet, _
+Optional ByVal Before As Worksheet = Nothing, _
+Optional ByVal After As Worksheet = Nothing) As Worksheet
+    Dim Result As Worksheet
 
-    If IsNothing(LastCellRange) Then
-        Set LastCellRange = DataLastCell(FromSheet)
+    Dim ToBook As Workbook
+    If IsNothing(Before) And IsNothing(After) Then
+        Set ToBook = FromSheet.Parent
+    ElseIf IsNothing(Before) Then
+        Set ToBook = After.Parent
+    Else
+        Set ToBook = Before.Parent
     End If
-    
-    Call CellRange(FromSheet, 1, Col_A, _
-        LastCellRange.Row, _
-        LastCellRange.Column).Copy( _
-            ToSheet.Range("A1"))
-End Sub
 
-Public Sub SheetRowHeightCopy( _
-ByVal FromSheet As Worksheet, ByVal ToSheet As Worksheet, _
-Optional LastCellRange As Range = Nothing)
+    Dim ActiveBuffer As Worksheet
+    Set ActiveBuffer = ToBook.ActiveSheet
+'    Call FromSheet.Copy(Before:=Before, After:=After)
 
-    If IsNothing(LastCellRange) Then
-        Set LastCellRange = DataLastCell(FromSheet)
+    If IsNothing(Before) And IsNothing(After) Then
+         Call FromSheet.Copy
+    ElseIf IsNothing(Before) Then
+         Call FromSheet.Copy(, After)
+    Else
+         Call FromSheet.Copy(Before)
     End If
-    
-    Dim Row As Long
-    For Row = 1 To LastCellRange.Row
-        ToSheet.Rows(Row).RowHeight = FromSheet.Rows(Row).RowHeight
-    Next
-End Sub
 
-Public Sub SheetColWidthCopy( _
-ByVal FromSheet As Worksheet, ByVal ToSheet As Worksheet, _
-Optional LastCellRange As Range = Nothing)
+    Set Result = ToBook.ActiveSheet
+    ActiveBuffer.Activate
 
-    If IsNothing(LastCellRange) Then
-        Set LastCellRange = DataLastCell(FromSheet)
-    End If
-    
-    Dim Col As Long
-    For Col = 1 To LastCellRange.Column
-        ToSheet.Columns(Col).ColumnWidth = FromSheet.Columns(Col).ColumnWidth
-    Next
-End Sub
+    Set SheetCopyUnchangeActive = Result
+End Function
 
 '----------------------------------------
 '・ワークシートを確認ダイアログ無しで削除する

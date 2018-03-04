@@ -430,5 +430,8 @@
 '・ LastCell 追加
 '・ SheetRangeCopy/SheetRowHeightCopy/SheetColWidthCopy に
 '   最終セル設定機能追加
+'◇ ver 2018/02/24
+'・ YearNendo 追加
+'・ SheetCopyUnchangeActive 追加
 '--------------------------------------------------
 
