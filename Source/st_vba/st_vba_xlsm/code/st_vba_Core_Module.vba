@@ -6183,7 +6183,7 @@ ByVal FilePath As String, _
 ByVal SeparateChar As String)
 
     Dim LastCell As Range
-    Set LastCell = DataLastCellRange(Sheet)
+    Set LastCell = DataLastCell(Sheet)
 
     Dim Row As Long
     Dim Col As Long
@@ -7412,7 +7412,7 @@ ByVal Book As Workbook) As Worksheet
         Book.Sheets(I).Visible = True
     Next
 
-    Call OriginalSheet.Copy(after:=GetLastSheet(Book))
+    Call OriginalSheet.Copy(After:=GetLastSheet(Book))
     Set SheetCopyBookAdd = GetLastSheet(Book)
 
     'シート表示状態を復帰する

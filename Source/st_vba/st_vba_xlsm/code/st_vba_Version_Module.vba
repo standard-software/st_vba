@@ -376,7 +376,7 @@
 '・ ADODB.StreamがExcel2016 64bit環境で不具合があり
 '   環境依存かもしれないが問題を解決できなかったためにコードを分離
 '・ ShiftJISのみ対応の String_LoadFromFile/String_SaveToFile 追加
-'・ CommandExecuteReturnからADOStream_LoadTextFile削除
+'・ CommandExecuteReturnからADODBStream_LoadTextFile削除
 '・ st_vba_WaitForm.Update_ProgressInfo を .Updateに処理分離
 '・ Book_SaveAsの対応をxlsのみから、xlsx/xlsmを追加した
 '◇ ver 2017/07/03
@@ -433,5 +433,8 @@
 '◇ ver 2018/02/24
 '・ YearNendo 追加
 '・ SheetCopyUnchangeActive 追加
+'◇ ver 2018/03/04
+'・ Excel 2016 64bit版で動作確認がとれたので
+'   st_vba_ADODBStream を組み込み
 '--------------------------------------------------
 

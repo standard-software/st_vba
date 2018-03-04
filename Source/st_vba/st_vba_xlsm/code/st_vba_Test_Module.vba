@@ -10,4 +10,7 @@ Sub testMain()
     
     Call testString_SaveToFile
     Call testString_LoadFromFile
+    
+    Call testString_SaveTextFile
+    Call testString_LoadTextFile
 End Sub
