@@ -7465,6 +7465,8 @@ End Function
 '--------------------------------------------------
 '・シートコピーする際にActiveなシートを元に戻す関数
 '--------------------------------------------------
+'BeforeかAfterを指定しない場合は
+'FromSheet.Copy 命令で、新しいBookに新しいSheetが作成される
 Public Function SheetCopyUnchangeActive(ByVal FromSheet As Worksheet, _
 Optional ByVal Before As Worksheet = Nothing, _
 Optional ByVal After As Worksheet = Nothing) As Worksheet
@@ -7485,13 +7487,15 @@ Optional ByVal After As Worksheet = Nothing) As Worksheet
 
     If IsNothing(Before) And IsNothing(After) Then
          Call FromSheet.Copy
+         Set Result = ActiveWorkbook.ActiveSheet
     ElseIf IsNothing(Before) Then
          Call FromSheet.Copy(, After)
+         Set Result = ToBook.ActiveSheet
     Else
          Call FromSheet.Copy(Before)
+         Set Result = ToBook.ActiveSheet
     End If
 
-    Set Result = ToBook.ActiveSheet
     ActiveBuffer.Activate
 
     Set SheetCopyUnchangeActive = Result
@@ -7620,9 +7624,12 @@ ByVal Col_CheckBox As Long, _
 ByVal Col_Data As Long, _
 ByVal Row_Title As Long) As Boolean
 
+    Dim CheckOnText As String: CheckOnText = Wingdings_Checkbox_Checked
+    Dim CheckOffText As String: CheckOffText = Wingdings_Checkbox_UnChecked
 
     Dim Result As Boolean: Result = False
 
+    '指定列以外の部分での動作は行わない
     If Target.Column <> Col_CheckBox Then Exit Function
     If Target.Columns.Count <> 1 Then Exit Function
     If Target.Rows.Count <> 1 Then Exit Function
@@ -7636,7 +7643,7 @@ ByVal Row_Title As Long) As Boolean
         Dim I As Long
         For I = Row_Title + 1 To DataLastRow(Sheet)
             If Sheet.Cells(I, Col_Data).Value <> "" Then
-                If Sheet.Cells(I, Col_CheckBox).Value <> "ON" Then
+                If Sheet.Cells(I, Col_CheckBox).Value <> CheckOnText Then
                     AllOnFlag = False
                 End If
             End If
@@ -7645,19 +7652,24 @@ ByVal Row_Title As Long) As Boolean
             If Sheet.Cells(I, Col_Data).Value = "" Then
                 Sheet.Cells(I, Col_CheckBox).Value = ""
             Else
-                Sheet.Cells(I, Col_CheckBox).Value = IIf(AllOnFlag, "OFF", "ON")
+                Sheet.Cells(I, Col_CheckBox).Value = _
+                    IIf(AllOnFlag, _
+                        CheckOffText, _
+                        CheckOnText)
             End If
         Next
 
         Result = True
     ElseIf Row_Title + 1 <= Target.Row Then
 
-        If Target.Value = "" Then
-            Target.Value = "ON"
-        ElseIf Target.Value = "ON" Then
-            Target.Value = "OFF"
-        ElseIf Target.Value = "OFF" Then
-            Target.Value = ""
+        If Sheet.Cells(Target.Row, Col_Data).Value <> "" Then
+            If Target.Value = "" Then
+                Target.Value = CheckOnText
+            ElseIf Target.Value = CheckOnText Then
+                Target.Value = CheckOffText
+            ElseIf Target.Value = CheckOffText Then
+                Target.Value = CheckOnText
+            End If
         End If
         Result = True
     End If
@@ -7940,6 +7952,43 @@ End Function
 Public Sub testTopLeftCell()
     Call Check(Sheets(1).Cells(1, 1), TopLeftCell(Sheets(1), 0, 0))
 End Sub
+
+'----------------------------------------
+'・ 指定範囲(Range)にあるShapeを取得する
+'----------------------------------------
+'   ・  Shapeは中心がRangeに含まれている事で判断する
+'----------------------------------------
+Public Function Range_GetShape( _
+ByVal Sheet As Worksheet, _
+ByVal Range As Range) As Shape
+
+    Dim Result As Shape
+    Set Result = Nothing
+
+    Dim ShapeRange As Range
+    Dim Shape As Shape
+    For Each Shape In Sheet.Shapes
+    Do
+'        Shape.Placement = xlMove
+        Dim Point As Point
+        Point.X = Shape.Left + (Shape.Width / 2)
+        Point.Y = Shape.Top + (Shape.Height / 2)
+        Set ShapeRange = TopLeftCell(Sheet, Point.Y, Point.X)
+        'Shapeの中心が位置するセルを求める
+
+        If InRange(Range.Top, ShapeRange.Top, Range.Top + Range.Rows.Count - 1) Then
+            If InRange(Range.Left, ShapeRange.Left, Range.Left + Range.Columns.Count - 1) Then
+                Set Result = Shape
+                Exit Do
+            End If
+        End If
+
+    Loop While False
+    Next
+    
+    Set Range_GetShape = Result
+
+End Function
 
 '----------------------------------------
 '・ 指定範囲(Range)にあるShapeを削除する

@@ -436,5 +436,9 @@
 '◇ ver 2018/03/04
 '・ Excel 2016 64bit版で動作確認がとれたので
 '   st_vba_ADODBStream を組み込み
+'◇ ver 2020/02/01
+'・ Range_GetShape 追加
+'・ CheckBoxColumn 不具合修正
+'・ SheetCopyUnchangeActive 不具合修正
 '--------------------------------------------------
 
