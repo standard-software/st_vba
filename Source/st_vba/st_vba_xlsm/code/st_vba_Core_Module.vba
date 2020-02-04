@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        https://www.facebook.com/stndardsoftware/
 '--------------------------------------------------
-'Version:       2018/01/25
+'Version:       2020/02/05
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -6686,6 +6686,83 @@ ByVal Column As Long) As String
     CellValueByRowGroupTitle = Result
 End Function
 
+'----------------------------------------
+'◇キー名から値を取得、設定する
+'----------------------------------------
+'----------------------------------------
+'・Key列Value列指定
+'----------------------------------------
+'   ・  元はst_vba_CSettingKeyValueでの実装
+'----------------------------------------
+
+Public Function KeyReadValue( _
+ByVal Sheet As Worksheet, _
+ByVal Key As String, _
+Optional ByVal Col_Key As Long = Col_A, _
+Optional ByVal Col_Value As Long = Col_B) As String
+    Dim Row As Long
+    Row = RowByTitle(Sheet, Col_Key, Key)
+    If Row <> 0 Then
+        KeyReadValue = Sheet.Cells(Row, Col_Value).Value
+    Else
+        KeyReadValue = ""
+    End If
+End Function
+
+Public Sub KeyWriteValue( _
+ByVal Sheet As Worksheet, _
+ByVal Key As String, ByVal Value As String, _
+Optional ByVal Col_Key As Long = Col_A, _
+Optional ByVal Col_Value As Long = Col_B)
+    Dim Row As Long
+    Row = RowByTitle(Sheet, Col_Key, Key)
+    If Row <> 0 Then
+        Call CellText(Sheet.Cells(Row, Col_Value), Value)
+    Else
+        Row = DataLastRow(Sheet) + 1
+        Call CellText(Sheet.Cells(Row, Col_Key), Key)
+        Call CellText(Sheet.Cells(Row, Col_Value), Value)
+    End If
+End Sub
+
+'----------------------------------------
+'・Group列Key列Value列指定
+'----------------------------------------
+'   ・  元はst_vba_CSettingGroupKeyValueでの実装
+'----------------------------------------
+
+Public Function GroupKeyReadValue( _
+ByVal Sheet As Worksheet, _
+ByVal Group As String, ByVal Key As String, _
+Optional ByVal Col_Group As Long = Col_A, _
+Optional ByVal Col_Key As Long = Col_B, _
+Optional ByVal Col_Value As Long = Col_C) As String
+    Dim Row As Long
+    Row = RowByGroupTitle(Sheet, Col_Group, Col_Key, Group, Key)
+    If Row <> 0 Then
+        GroupKeyReadValue = Sheet.Cells(Row, Col_Value).Value
+    Else
+        GroupKeyReadValue = ""
+    End If
+End Function
+
+Public Sub GroupWriteValue( _
+ByVal Sheet As Worksheet, _
+ByVal Group As String, ByVal Key As String, ByVal Value As String, _
+Optional ByVal Col_Group As Long = Col_A, _
+Optional ByVal Col_Key As Long = Col_B, _
+Optional ByVal Col_Value As Long = Col_C)
+    Dim Row As Long
+    Row = RowByGroupTitle(Sheet, Col_Group, Col_Key, Group, Key)
+    If Row <> 0 Then
+        Call CellText(Sheet.Cells(Row, Col_Value), Value)
+    Else
+        Row = DataLastRow(Sheet) + 1
+        Call CellText(Sheet.Cells(Row, Col_Group), Group)
+        Call CellText(Sheet.Cells(Row, Col_Key), Key)
+        Call CellText(Sheet.Cells(Row, Col_Value), Value)
+    End If
+End Sub
 
 '----------------------------------------
 '◇最終行/列
@@ -7612,27 +7689,26 @@ End Sub
 '   ・  タイトル列をダブルクリックすると全行がON/OFF切り替わる
 '   ・  使い方は次の通り
 '           Private Sub Worksheet_BeforeDoubleClick(ByVal Target As Range, Cancel As Boolean)
-'               Cancel = CheckBoxColumn(Me, Target, Col_A, Col_D, 2)
+'               CheckBoxColumn(Me, Target, Col_A, Col_D, 2)
+'               Cancel = True
 '           End Sub
 '       Col_Aは対象列
 '       Col_Dはデータの有無をチェックする列
 '       2は、タイトル行、2+1以上がデータ列になる
 '----------------------------------------
-Public Function CheckBoxColumn(ByVal Sheet As Worksheet, _
+Public Sub CheckBoxColumn(ByVal Sheet As Worksheet, _
 ByVal Target As Range, _
 ByVal Col_CheckBox As Long, _
 ByVal Col_Data As Long, _
-ByVal Row_Title As Long) As Boolean
+ByVal Row_Title As Long)
 
     Dim CheckOnText As String: CheckOnText = Wingdings_Checkbox_Checked
     Dim CheckOffText As String: CheckOffText = Wingdings_Checkbox_UnChecked
 
-    Dim Result As Boolean: Result = False
-
     '指定列以外の部分での動作は行わない
-    If Target.Column <> Col_CheckBox Then Exit Function
-    If Target.Columns.Count <> 1 Then Exit Function
-    If Target.Rows.Count <> 1 Then Exit Function
+    If Target.Column <> Col_CheckBox Then Exit Sub
+    If Target.Columns.Count <> 1 Then Exit Sub
+    If Target.Rows.Count <> 1 Then Exit Sub
 
     If Target.Row = Row_Title Then
 
@@ -7659,7 +7735,6 @@ ByVal Row_Title As Long) As Boolean
             End If
         Next
 
-        Result = True
     ElseIf Row_Title + 1 <= Target.Row Then
 
         If Sheet.Cells(Target.Row, Col_Data).Value <> "" Then
@@ -7671,11 +7746,8 @@ ByVal Row_Title As Long) As Boolean
                 Target.Value = CheckOnText
             End If
         End If
-        Result = True
     End If
-
-    CheckBoxColumn = Result
-End Function
+End Sub
 
 '----------------------------------------
 '◇チェックボックス

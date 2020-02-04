@@ -440,5 +440,10 @@
 '・ Range_GetShape 追加
 '・ CheckBoxColumn 不具合修正
 '・ SheetCopyUnchangeActive 不具合修正
+'◇ ver 2020/02/05
+'・ CheckBoxColumn 改良
+'・ KeyReadValue/GroupKeyReadValue 追加
+'・ st_vba_CSettingKeyValue_Class
+'   st_vba_CSettingGroupKeyValue_Class.vba 削除
 '--------------------------------------------------
 
