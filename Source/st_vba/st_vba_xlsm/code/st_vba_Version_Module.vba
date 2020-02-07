@@ -445,5 +445,9 @@
 '・ KeyReadValue/GroupKeyReadValue 追加
 '・ st_vba_CSettingKeyValue_Class
 '   st_vba_CSettingGroupKeyValue_Class.vba 削除
+'◇ ver 2020/02/08
+'・ SheetsVisible 追加
+'・ SelectionOffset 追加
+'・ MergeCellHeight/MergeCellWidth 追加
 '--------------------------------------------------
 

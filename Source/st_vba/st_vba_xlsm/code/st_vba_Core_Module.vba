@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        https://www.facebook.com/stndardsoftware/
 '--------------------------------------------------
-'Version:       2020/02/05
+'Version:       2020/02/08
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -7060,6 +7060,44 @@ End Sub
 '----------------------------------------
 
 '----------------------------------------
+'・行と列での範囲指定
+'----------------------------------------
+Public Function CellRange( _
+ByVal Sheet As Worksheet, _
+ByVal Row1 As Long, ByVal Col1 As Long, _
+ByVal Row2 As Long, ByVal Col2 As Long) As Range
+    Set CellRange = Sheet.Range( _
+        Sheet.Cells(Row1, Col1), _
+        Sheet.Cells(Row2, Col2))
+End Function
+
+'----------------------------------------
+'・結合セルの高さ取得
+'----------------------------------------
+Public Function MergeCellHeight(Range As Range) As Long
+    Dim Result As Long: Result = 0
+    
+    Dim I As Long
+    For I = 1 To Range.MergeArea.Rows.Count
+        Result = Result + Range.MergeArea.Rows(I).Height
+    Next
+    MergeCellHeight = Result
+End Function
+
+'----------------------------------------
+'・結合セルの幅取得
+'----------------------------------------
+Public Function MergeCellWidth(Range As Range) As Long
+    Dim Result As Long: Result = 0
+    
+    Dim I As Long
+    For I = 1 To Range.MergeArea.Columns.Count
+        Result = Result + Range.MergeArea.Columns(I).Width
+    Next
+    MergeCellWidth = Result
+End Function
+
+'----------------------------------------
 '・範囲の上の1行
 '----------------------------------------
 Public Function RangeUpRow(ByRef SourceRange As Range) As Range
@@ -7082,6 +7120,8 @@ End Function
 
 '----------------------------------------
 '・範囲を上に1、移動する
+'----------------------------------------
+'   ・範囲と周りの値が自然に移動する
 '----------------------------------------
 Public Sub RangeMoveUpRowOne(ByRef SourceRange As Range)
     '複数の選択範囲には非対応
@@ -7153,6 +7193,42 @@ Public Sub RangeMoveDownRowOne(ByRef SourceRange As Range)
 
     Application.EnableEvents = EnableEventsBuffer
 
+End Sub
+
+'----------------------------------------
+'・選択範囲の移動
+'----------------------------------------
+'   ・Selection.Offsetには不具合があり、
+'     Col=0 の時に RowsCount以内の移動の場合に誤動作するので
+'     その対応のための関数
+'----------------------------------------
+Sub SelectionOffset(Row As Long, Col As Long)
+    If (Col = 0) And (Row < Selection.Areas(1).Rows.Count) Then
+        '下方向移動の場合の不具合解消
+        Selection.Offset(Selection.Areas(1).Rows.Count, 0).Activate
+        Selection.Offset(-1 * (Selection.Areas(1).Rows.Count - Row), 0).Activate
+    ElseIf (Row = 0) And (Col < Selection.Areas(1).Columns.Count) Then
+        '右方向移動の場合の不具合解消
+        Selection.Offset(0, Selection.Areas(1).Columns.Count).Activate
+        Selection.Offset(0, -1 * (Selection.Areas(1).Columns.Count - Col)).Activate
+    Else
+        Selection.Offset(Row, Col).Activate
+    End If
+    
+'    Selection.Offset(Selection.Rows.Count, 0).Activate
+'    Selection.Offset(-1 * (Selection.Rows.Count - 1), 0).Activate
+End Sub
+
+Sub testSelectionOffset()
+'    Call SelectionOffset(-1, 0)
+'    Call SelectionOffset(1, 1)
+'    Call SelectionOffset(2, -1)
+'    Call SelectionOffset(0, -1)
+
+    '下か右の移動時に
+    '複数選択でも範囲選択よりも小さい値を指定すると不具合がおきる
+'    Call SelectionOffset(1, 0)
+    Call SelectionOffset(0, 1)
 End Sub
 
 
@@ -7453,6 +7529,26 @@ End Sub
 '----------------------------------------
 
 '--------------------------------------------------
+'・シート表示切り替え
+'--------------------------------------------------
+'   ・SheetNames: カンマ区切りでシート名を複数指定
+'--------------------------------------------------
+Sub SheetsVisible(Book As Workbook, SheetNames As String, Value As XlSheetVisibility)
+    Dim SheetNameArray() As String
+    SheetNameArray = Split(SheetNames, ",")
+    'カンマ区切りテキストを分解して配列にする
+    
+    Dim TargetSheet As Worksheet
+    Dim I As Long
+    For I = 0 To ArrayCount(SheetNameArray) - 1
+        Set TargetSheet = GetSheet(Book, SheetNameArray(I))
+        If IsNotNothing(TargetSheet) Then
+            TargetSheet.Visible = Value
+        End If
+    Next
+End Sub
+
+'--------------------------------------------------
 '・先頭シート、最終シート
 '--------------------------------------------------
 Public Function GetLastSheet(ByVal Book As Workbook) As Worksheet
@@ -7620,20 +7716,9 @@ ByVal NumberingText As String)
 End Function
 
 '----------------------------------------
-'◇Range/Cell
+'◇Cell
 '----------------------------------------
 
-'----------------------------------------
-'・ワークシートセル指定
-'----------------------------------------
-Public Function CellRange( _
-ByVal Sheet As Worksheet, _
-ByVal Row1 As Long, ByVal Col1 As Long, _
-ByVal Row2 As Long, ByVal Col2 As Long) As Range
-    Set CellRange = Sheet.Range( _
-        Sheet.Cells(Row1, Col1), _
-        Sheet.Cells(Row2, Col2))
-End Function
 
 '----------------------------------------
 '・ワークシートへのテキスト配置
