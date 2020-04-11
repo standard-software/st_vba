@@ -13,7 +13,7 @@
 '   Name:       Standard Software
 '   URL:        https://www.facebook.com/stndardsoftware/
 '--------------------------------------------------
-'Version:       2020/02/08
+'Version:       2020/04/12
 '--------------------------------------------------
 
 '--------------------------------------------------
@@ -6025,12 +6025,12 @@ ByVal FolderDeleteFlag As Boolean)
         Call fso.DeleteFile(ShortcutFilePath)
         '↓フラグONなら空フォルダになった場合はフォルダ削除する
         If FolderDeleteFlag _
-        And fso.GetFolder(ShortcutFileParentFolderPath).SubFolders.Count = 0 Then
+        And fso.GetFolder(ShortcutFileParentFolderPath).SubFolders.Count = 0 _
+        And fso.GetFolder(ShortcutFileParentFolderPath).Files.Count = 0 Then
             Call fso.DeleteFolder(ShortcutFileParentFolderPath)
         End If
     End If
 End Sub
-
 
 '----------------------------------------
 '◆Iniファイル処理
