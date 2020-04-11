@@ -40,9 +40,9 @@ Private ParentHeightOrigin As Double
 
 Sub Initialize(ByRef Control As Object, _
 ByVal HorizonAnchorValue As HorizonAnchorType, _
-ByVal RightOffset As Double, _
+ByVal HorizonOffset As Double, _
 ByVal VerticalAnchorValue As VerticalAnchorType, _
-ByVal BottomOffset As Double)
+ByVal VerticalOffset As Double)
 
     Set TargetControl = Control
     HorizonAnchor = HorizonAnchorValue
@@ -52,14 +52,14 @@ ByVal BottomOffset As Double)
     TopMarginOrigin = TargetControl.Top
 
     RightMarginOrigin = TargetControl.Parent.InsideWidth - _
-        TargetControl.Left - TargetControl.Width + RightOffset
+        TargetControl.Left - TargetControl.Width + HorizonOffset
     '2016の場合、Resize可能Formであっても
-    'RightOffset=0にすると良い様子
+    'HorizonOffset=0にすると良い様子
     '2013の場合、Resize可能Formの場合は
-    'RightOffset=8にすると良い様子
+    'HorizonOffset=8にすると良い様子
     
     BottomMarginOrigin = TargetControl.Parent.InsideHeight - _
-        TargetControl.Top - TargetControl.Height + BottomOffset
+        TargetControl.Top - TargetControl.Height + VerticalOffset
     
     WidthOrigin = TargetControl.Width
     HeightOrigin = TargetControl.Height
@@ -105,13 +105,4 @@ Sub Layout()
     End Select
 End Sub
 
-'--------------------------------------------------
-'■履歴
-'◇ ver 2015/07/24
-'・ 作成
-'◇ ver 2017/02/05
-'・ Form上のコントロールでは Parent.Width が正しく動作するが
-'   MultiPage上のコントロールでは エラーになるので
-'   Parent.InsideWidth/InsideHeight に置き換えた。
-'--------------------------------------------------
 

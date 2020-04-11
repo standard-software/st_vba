@@ -119,6 +119,8 @@
 '・ コメントの修正
 '◇ ver 2015/07/23
 '・ StarndardSoftwareLibraryからst_vbaに名前変更
+'◇ ver 2015/07/24
+'・ st_vba_ControlAnchor 作成
 '◇ ver 2015/07/29
 '・ 64bit版Excelへの暫定対応(既存は32bit版Excelのみの対応)
 '   TaskDialogAPIを削除
@@ -279,6 +281,10 @@
 '◇ ver 2017/02/05
 '・ FileCreateWaitをFileExistWaitに変更し
 '   ファイルの存在の有無を待つように機能追加
+'・ st_vba_ControlAnchor
+'   Form上のコントロールでは Parent.Width が正しく動作するが
+'   MultiPage上のコントロールでは エラーになるので
+'   Parent.InsideWidth/InsideHeight に置き換えた。
 '◇ ver 2017/02/11
 '・ Array2dRowsStartIndex/Array2dRowsEndIndex
 '   Array2dColumnsStartIndex/Array2dColumnsEndIndex 追加
@@ -449,5 +455,8 @@
 '・ SheetsVisible 追加
 '・ SelectionOffset 追加
 '・ MergeCellHeight/MergeCellWidth 追加
+'◇ ver 2020/04/11
+'・ st_vba_ControlAnchor
+'   位置調整オフセットコードの若干の修正
 '--------------------------------------------------
 
