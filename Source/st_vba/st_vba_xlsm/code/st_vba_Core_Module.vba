@@ -9308,10 +9308,10 @@ End Sub
 '     WindowsVista/Windows7 �̂݉\
 '----------------------------------------
 Public Function IsTaskbarPinWindows() As Boolean
-    If (6 <= WindowsMajorVersion) _
+    If (6 = WindowsMajorVersion) _
     And (1 <= WindowsMinorVersion) Then
         IsTaskbarPinWindows = True
-    ElseIf (7 = WindowsMajorVersion) Then
+    ElseIf (7 <= WindowsMajorVersion) Then
         IsTaskbarPinWindows = True
     Else
         IsTaskbarPinWindows = False
