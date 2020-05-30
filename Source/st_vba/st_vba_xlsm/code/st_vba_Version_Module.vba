@@ -461,6 +461,10 @@
 '◇ ver 2020/04/12
 '・ SetShortcutIcon の修正
 '◇ ver 2020/04/12_2
-'・	IsTaskbarPinWindows の修正
+'・ IsTaskbarPinWindows の修正
+'◇ ver 2020/05/30
+'・ RowsRange/ColumnsRange 追加
+'・ GetHiddenRows/SetHiddenRows 追加
+'・ MoveRows 追加
 '--------------------------------------------------
 

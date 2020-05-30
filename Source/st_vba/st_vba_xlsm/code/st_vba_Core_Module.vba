@@ -7072,6 +7072,123 @@ ByVal Row2 As Long, ByVal Col2 As Long) As Range
 End Function
 
 '----------------------------------------
+'・行範囲を開始と終了の行番号で指定
+'----------------------------------------
+Public Function RowsRange( _
+    ByVal Sheet As Worksheet, _
+    ByVal Row1 As Long, ByVal Row2 As Long _
+) As Range
+    Set RowsRange = Sheet.Rows( _
+        CStr(Row1) & ":" & CStr(Row2) _
+    )
+End Function
+
+Sub testRowsRange()
+'    RowsRange(ActiveSheet, 2, 3).Select
+    RowsRange(ActiveSheet, 5, 3).Select
+End Sub
+
+'----------------------------------------
+'・行範囲を開始と終了の行番号で指定
+'----------------------------------------
+Public Function ColumnsRange( _
+    ByVal Sheet As Worksheet, _
+    ByVal Column1 As Long, ByVal Column2 As Long _
+) As Range
+    Set ColumnsRange = Sheet.Columns( _
+       ColumnText(Column1) & ":" & ColumnText(Column2) _
+    )
+End Function
+
+Sub testColumnsRange()
+'    ColumnsRange(ActiveSheet, 2, 5).Select
+    ColumnsRange(ActiveSheet, 7, 5).Select
+End Sub
+
+'----------------------------------------
+'・行の非表示状態を配列に取得する
+'----------------------------------------
+Public Function GetHiddenRows( _
+    ByVal Sheet As Worksheet, _
+    ByVal StartRow As Long, _
+    ByVal EndRow As Long _
+) As Long()
+    Dim Row As Long
+    For Row = StartRow To EndRow
+        If (Sheet.Rows(Row).Hidden) Then
+            Call ArrayAdd(GetHiddenRows, Row)
+        End If
+    Next
+End Function
+
+'----------------------------------------
+'・行の非表示状態を配列から設定する
+'----------------------------------------
+Public Sub SetHiddenRows( _
+    ByVal Sheet As Worksheet, _
+    ByVal StartRow As Long, _
+    ByVal EndRow As Long, _
+    ByVal HiddenRows As Variant _
+)
+    Call Assert(IsArray(HiddenRows), "Error:SetHiddenRows:HiddenRows is not Array.")
+    Dim Row As Long
+    For Row = StartRow To EndRow
+        If ArrayIndexOf(HiddenRows, Row) <> -1 Then
+            Sheet.Rows(Row).Hidden = True
+        End If
+    Next
+End Sub
+
+'----------------------------------------
+'・行を移動する
+'----------------------------------------
+Public Sub MoveRows( _
+    ByVal Sheet As Worksheet, _
+    ByVal StartRow As Long, _
+    ByVal EndRow As Long, _
+    ByVal TargetRow As Variant _
+)
+    If TargetRow = StartRow Then
+        Exit Sub
+    End If
+
+    Dim RowCount As Long: RowCount = _
+        RowsRange(Sheet, StartRow, EndRow).Rows.Count
+    
+    '移動する
+    If TargetRow < StartRow Then
+        '対象行の上に領域を確保する
+        Call RowsRange(Sheet, TargetRow, TargetRow + RowCount - 1).Insert
+        '移動する
+        Call RowsRange(Sheet, StartRow + RowCount, EndRow + RowCount).Cut( _
+            Destination:=Sheet.Rows(TargetRow) _
+        )
+        '移動元を削除する
+        Call RowsRange(Sheet, StartRow + RowCount, EndRow + RowCount).Delete
+    Else
+        '対象行+行数分の上に領域を確保する
+        Call RowsRange(Sheet, TargetRow + RowCount, TargetRow + RowCount + RowCount - 1).Insert
+        '移動する
+        Call RowsRange(Sheet, StartRow, EndRow).Cut( _
+            Destination:=Sheet.Rows(TargetRow + RowCount) _
+        )
+        '移動元を削除する
+        Call RowsRange(Sheet, StartRow, EndRow).Delete
+    End If
+End Sub
+
+Public Sub testMoveRows()
+'    Call MoveRows(ActiveSheet, 3, 5, 1)
+'    Call MoveRows(ActiveSheet, 3, 5, 2)
+'    Call MoveRows(ActiveSheet, 3, 5, 3)
+'    Call MoveRows(ActiveSheet, 3, 5, 4)
+'    Call MoveRows(ActiveSheet, 3, 5, 5)
+'    Call MoveRows(ActiveSheet, 3, 5, 6)
+'    Call MoveRows(ActiveSheet, 3, 5, 7)
+End Sub
+
+
+'----------------------------------------
 '・結合セルの高さ取得
 '----------------------------------------
 Public Function MergeCellHeight(Range As Range) As Long
